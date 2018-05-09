@@ -1,0 +1,11 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+<qresource>
+    <file alias="silhouette.svg">resources/silhouette.svg</file>
+    <file alias="transform.svg">resources/transform.svg</file>
+    <file alias="boolean.svg">resources/boolean.svg</file>
+    <file alias="hatching.svg">resources/hatching.svg</file>
+    <file alias="blending.svg">resources/blending.svg</file>
+    <file alias="group.svg">resources/group.svg</file>
+</qresource>
+</RCC>

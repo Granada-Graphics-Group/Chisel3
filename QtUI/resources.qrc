@@ -1,0 +1,33 @@
+<RCC>
+  <qresource prefix="/icons">
+    <file alias="editPalette.png">resources/editPalette.png</file>
+    <file alias="slice.svg">resources/slice.svg</file>
+    <file alias="addPalette.png">resources/addPalette.png</file>
+    <file alias="exportPalette.png">resources/exportPalette.png</file>
+    <file alias="importPalette.png">resources/importPalette.png</file>
+    <file alias="accept.png">resources/accept.png</file>
+    <file alias="duplicatePalette.png">resources/duplicatePalette.png</file>
+    <file alias="uploadPalette.png">resources/uploadPalette.png</file>
+    <file alias="cancel.png">resources/cancel.png</file>
+    <file alias="edit.png">resources/edit.png</file>
+    <file alias="unloadLayer.png">resources/unloadLayer.png</file>
+    <file alias="operateLayer.png">resources/operateLayer.png</file>
+    <file alias="loadLayer.png">resources/loadLayer.png</file>
+    <file alias="duplicateLayer.png">resources/duplicateLayer.png</file>
+    <file alias="eraseLayer.png">resources/eraseLayer.png</file>
+    <file alias="createLayer.png">resources/createLayer.png</file>
+    <file alias="editrow.png">resources/editrow.png</file>
+    <file alias="value.png">resources/value.png</file>
+    <file alias="brush.png">resources/brush.png</file>
+    <file alias="eraser.png">resources/eraser.png</file>
+    <file alias="picker.png">resources/picker.png</file>
+    <file alias="database.png">resources/database.png</file>
+    <file alias="add.png">resources/add.png</file>
+    <file alias="import.png">resources/import.png</file>
+    <file alias="open.png">resources/open.png</file>
+    <file alias="opacity.png">resources/opacity.png</file>
+    <file alias="palette.png">resources/palette.png</file>
+    <file alias="visible.png">resources/visible.png</file>
+    <file alias="hidden.png">resources/hidden.png</file>
+  </qresource>
+</RCC>

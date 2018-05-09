@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<programs>
+    <program name="ColorPainting">
+        <shaders>
+            <shader type="vertex"   name="paint.vert"/>
+            <shader type="fragment" name="colorpaint.frag"/>
+        </shaders>
+    </program>
+    <program name="iColorPainting">
+        <shaders>
+            <shader type="vertex"   name="paint.vert"/>
+            <shader type="fragment" name="icolorpaint.frag"/>
+        </shaders>
+    </program>
+    <program name="uColorPainting">
+        <shaders>
+            <shader type="vertex"   name="paint.vert"/>
+            <shader type="fragment" name="ucolorpaint.frag"/>
+        </shaders>
+    </program>
+    <program name="DataReading">
+        <shaders>
+            <shader type="vertex"   name="depth.vert"/>
+            <shader type="fragment" name="dataread.frag"/>
+        </shaders>
+    </program>
+    <program name="iDataReading">
+        <shaders>
+            <shader type="vertex"   name="depth.vert"/>
+            <shader type="fragment" name="idataread.frag"/>
+        </shaders>
+    </program>
+    <program name="uDataReading">
+        <shaders>
+            <shader type="vertex"   name="depth.vert"/>
+            <shader type="fragment" name="udataread.frag"/>
+        </shaders>
+    </program>    
+    <program name="DataErasing">
+        <shaders>
+            <shader type="vertex"   name="paint.vert"/>
+            <shader type="fragment" name="dataerase.frag"/>
+        </shaders>
+    </program>
+    <program name="EraseDilation">
+        <shaders>
+            <shader type="vertex"   name="dilation.vert"/>
+            <shader type="fragment" name="erasedilation.frag"/>
+        </shaders>
+    </program>  
+    <program name="Depth">
+        <shaders>
+            <shader type="vertex"   name="depth.vert"/>
+            <shader type="fragment"   name="depth.frag"/>
+        </shaders>
+    </program>
+    <program name="PaintTool">
+        <shaders>
+            <shader type="vertex"   name="painttool.vert"/>
+            <shader type="fragment"   name="painttool.frag"/>
+        </shaders>
+    </program>
+    <program name="Font">
+        <shaders>
+            <shader type="vertex"   name="painttool.vert"/>
+            <shader type="fragment"   name="font.frag"/>
+        </shaders>
+    </program>    
+    <program name="ProjectiveTex">
+        <shaders>
+            <shader type="vertex"   name="proj.vert"/>
+            <shader type="fragment"   name="proj.frag"/>
+        </shaders>
+    </program>
+    <program name="DepthTex">
+        <shaders>
+            <shader type="vertex"   name="depthTex.vert"/>
+            <shader type="fragment"   name="depthTex.frag"/>
+        </shaders>
+    </program>       
+    <program name="SeamMask">
+        <shaders>
+            <shader type="vertex"   name="seamMask.vert"/>
+            <shader type="fragment"   name="seamMask.frag"/>
+        </shaders>
+    </program>
+    <program name="Dilation">
+        <shaders>
+            <shader type="vertex"   name="dilation.vert"/>
+            <shader type="fragment"   name="dilation.frag"/>
+        </shaders>
+    </program>
+    <program name="iDilation">
+        <shaders>
+            <shader type="vertex"   name="dilation.vert"/>
+            <shader type="fragment"   name="idilation.frag"/>
+        </shaders>
+    </program>
+    <program name="uDilation">
+        <shaders>
+            <shader type="vertex"   name="dilation.vert"/>
+            <shader type="fragment"   name="udilation.frag"/>
+        </shaders>
+    </program>
+    <program name="ViewTex">
+        <shaders>
+            <shader type="vertex"   name="viewtex.vert"/>
+            <shader type="fragment"   name="viewtex.frag"/>
+        </shaders>
+    </program>      
+    <program name="AreaPerPixel">
+        <shaders>
+            <shader type="vertex"   name="areaperpixel.vert"/>
+            <shader type="geometry"   name="areaperpixel.geom"/>
+            <shader type="fragment"   name="areaperpixel.frag"/>
+        </shaders>
+    </program>
+<!--        <program name="Intersect">
+        <shaders>
+            <shader type="computer"   name="intersect.comp"/>
+        </shaders>
+    </program>-->
+    <program name="SlicePlane">
+        <shaders>
+            <shader type="vertex"   name="proj.vert"/>
+            <shader type="fragment"   name="sliceplane.frag"/>
+        </shaders>
+    </program>    
+    <program name="GeneralSlice">
+        <shaders>
+            <shader type="vertex"   name="generalslice.vert"/>
+            <shader type="fragment"   name="generalslice.frag"/>
+        </shaders>
+    </program>
+    <program name="MarkSlice">
+        <shaders>
+            <shader type="vertex"   name="markslice.vert"/>
+            <shader type="fragment"   name="markslice.frag"/>
+        </shaders>
+    </program>
+    <program name="iMarkSlice">
+        <shaders>
+            <shader type="vertex"   name="markslice.vert"/>
+            <shader type="fragment" name="imarkslice.frag"/>
+        </shaders>
+    </program>
+    <program name="uMarkSlice">
+        <shaders>
+            <shader type="vertex"   name="markslice.vert"/>
+            <shader type="fragment" name="umarkslice.frag"/>
+        </shaders>
+    </program>
+    <program name="DepthSlice">
+        <shaders>
+            <shader type="vertex"   name="depthslice.vert"/>
+            <shader type="fragment"   name="depthslice.frag"/>
+        </shaders>
+    </program>
+    <program name="DataReadSlice">
+        <shaders>
+            <shader type="vertex"   name="depthslice.vert"/>
+            <shader type="fragment" name="datareadslice.frag"/>
+        </shaders>
+    </program>
+    <program name="iDataReadSlice">
+        <shaders>
+            <shader type="vertex"   name="depthslice.vert"/>
+            <shader type="fragment" name="idatareadslice.frag"/>
+        </shaders>
+    </program> 
+    <program name="uDataReadSlice">
+        <shaders>
+            <shader type="vertex"   name="depthslice.vert"/>
+            <shader type="fragment" name="udatareadslice.frag"/>
+        </shaders>
+    </program>    
+    <program name="DataEraseSlice">
+        <shaders>
+            <shader type="vertex"   name="markslice.vert"/>
+            <shader type="fragment" name="dataeraseslice.frag"/>
+        </shaders>
+    </program>    
+</programs>    

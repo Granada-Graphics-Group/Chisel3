@@ -1,0 +1,72 @@
+#version 450
+#extension GL_ARB_compute_variable_group_size : enable
+
+struct Vertex
+{
+    float x, y, z;
+};
+
+layout(local_size_variable) in;
+
+layout(std430, binding = 0) buffer VertexBuffer
+{
+    Vertex vertices[];
+};
+
+layout(std430, binding = 1) buffer indexBuffer
+{
+    uint indices[];
+};
+
+layout(std430, binding = 2) buffer newIndexBuffer
+{
+    uint newIndices[];
+};
+
+layout(std430, binding = 3) buffer newTotal
+{
+    uint newIndexCount;
+}
+
+layout(std140, binding = 4) uniform inputData
+{
+    uint indexCount;
+    vec3 planeNormal;
+    vec3 planePoint;
+}
+
+void main()
+{
+    int index = gl_GlobalInvocationID.x;
+    
+    if(3 * index < indexCount)
+    {
+        memoryBarrier();
+        uint currentCount = newIndexCount;    
+    
+        uint index1 = indices[index];
+        uint index2 = indices[index + 2];
+        uint index3 = indices[index + 3];
+        
+        Vertex vert1 = vertices[index1];
+        Vertex vert2 = vertices[index2];
+        Vertex vert3 = vertices[index3];
+                
+        vec3 vertex1(vert1.x, vert1.y, vert1.z);
+        vec3 vertex2(vert2.x, vert2.y, vert2.z);
+        vec3 vertex3(vert3.x, vert3.y, vert3.z);
+        
+        float distance1 = dot(planeNormal, (vertex1 - planePoint));
+        float distance2 = dot(planeNormal, (vertex2 - planePoint));
+        float distance3 = dot(planeNormal, (vertex3 - planePoint));
+        
+        if(distance1 > 0 || distance2 > 0 || distance3 > 0)
+        {
+            atomicAdd(newIndexCount + 3);
+            newIndices[currentCount] = index1;
+            newIndices[currentCount] = index2;
+            newIndices[currentCount] = index3;
+        }
+    }    
+}
+

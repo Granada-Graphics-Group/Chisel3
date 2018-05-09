@@ -1,0 +1,2314 @@
+//*************************************************************************************//
+//Helper Functions
+//*************************************************************************************//
+
+vec4 RGB_to_HSV (vec4 color)
+{
+	float r, g, b, delta;
+	float colorMax, colorMin;
+	float h = 0, s = 0, v = 0;
+	vec4 hsv = 0;
+	r = color[0];
+	g = color[1];
+	b = color[2];
+	colorMax = max (r, g);
+	colorMax = max (colorMax, b);
+	colorMin = min (r, g);
+	colorMin = min (colorMin, b);
+	v = colorMax; // this is value
+	if (colorMax != 0)
+	{
+		s = (colorMax - colorMin) / colorMax;
+	}
+	if (s != 0) // if not achromatic
+	{
+		delta = colorMax - colorMin;
+
+		if (r == colorMax)
+		{
+			h = (g - b)/delta;
+		}
+		else if (g == colorMax)
+		{
+			h = 2.0 + (b - r) / delta;
+		}
+		else // b is max
+		{
+			h = 4.0 + (r - g)/delta;
+		}
+		h *= 60;
+		if( h < 0)
+		{
+			h +=360;
+		}
+		hsv[0] = h / 360.0; // moving h to be between 0 and 1.
+		hsv[1] = s;
+		hsv[2] = v;
+	}
+
+	return hsv;
+}
+
+//*************************************************************************************//
+//								Vertex shaders
+//*************************************************************************************//
+
+// VS
+
+#version 330
+
+in vec4 inPostion;
+in vec2 inTexCoord;
+
+smooth out vec2 outTexCoord;
+
+void main()
+{
+  outTexCoord = inTexCoord;
+  
+  gl_Position = inPosition
+}
+
+
+// VSBlur3x3
+
+#version 330
+
+in vec3 inPosition;
+in vec2 inTexCoord;
+
+smooth out vec2 Blur3x3[9];
+
+uniform float DeltaX;
+uniform float DeltaY;
+
+void main()
+{
+	Blur3x3[0] = inTexCoord.st - vec2(DeltaX, DeltaY);
+	Blur3x3[1] = inTexCoord.st - vec2(0, DeltaY);
+	Blur3x3[2] = inTexCoord.st - vec2(-DeltaX, DeltaY);
+	Blur3x3[3] = inTexCoord.st - vec2(DeltaX, 0);
+	Blur3x3[4] = inTexCoord.st;
+	Blur3x3[5] = inTexCoord.st - vec2(-DeltaX, 0);
+	Blur3x3[6] = inTexCoord.st - vec2(DeltaX, -DeltaY);
+	Blur3x3[7] = inTexCoord.st - vec2(0, -DeltaY);
+	Blur3x3[8] = inTexCoord.st - vec2(-DeltaX, -DeltaY);
+
+	gl_Position = vec4(inPosicion, 1.0);
+}
+
+
+// VSBlur5x5
+
+#version 330
+
+in vec3 inPosition;
+in vec2 inTexCoord;
+
+smooth out vec2 Blur5x5[9];
+
+uniform float DeltaX;
+uniform float DeltaY;
+
+void main()
+{
+	Blur5x5[0] = inTexCoord.st -  vec2( DeltaX * 2, DeltaY * 2);
+	Blur5x5[1] = inTexCoord.st -  vec2( DeltaX, 	DeltaY * 2);
+	Blur5x5[2] = inTexCoord.st -  vec2( 0,	 	DeltaY * 2);
+	Blur5x5[3] = inTexCoord.st -  vec2(-DeltaX, 	DeltaY * 2);
+	Blur5x5[4] = inTexCoord.st -  vec2(-DeltaX * 2, DeltaY * 2);
+	Blur5x5[5] = inTexCoord.st -  vec2( DeltaX * 2, DeltaY);
+	Blur5x5[6] = inTexCoord.st -  vec2( DeltaX, 	DeltaY);
+	Blur5x5[7] = inTexCoord.st -  vec2( 0, 		DeltaY);
+	Blur5x5[8] = inTexCoord.st -  vec2(-DeltaX, 	DeltaY);
+	Blur5x5[9] = inTexCoord.st -  vec2(-DeltaX * 2, DeltaY);
+	Blur5x5[10] = inTexCoord.st - vec2( DeltaX * 2, 0);
+	Blur5x5[11] = inTexCoord.st - vec2( DeltaX, 	0);
+	Blur5x5[12] = inTexCoord.st;
+	Blur5x5[13] = inTexCoord.st - vec2(-DeltaX, 	0);
+	Blur5x5[14] = inTexCoord.st - vec2(-DeltaX * 2, 0);
+	Blur5x5[15] = inTexCoord.st - vec2( DeltaX * 2, -DeltaY);
+	Blur5x5[16] = inTexCoord.st - vec2( DeltaX, 	-DeltaY);
+	Blur5x5[17] = inTexCoord.st - vec2( 0, 		-DeltaY);
+	Blur5x5[18] = inTexCoord.st - vec2(-DeltaX, 	-DeltaY);
+	Blur5x5[19] = inTexCoord.st - vec2(-DeltaX * 2, -DeltaY);
+	Blur5x5[20] = inTexCoord.st - vec2( DeltaX * 2, -DeltaY * 2);
+	Blur5x5[21] = inTexCoord.st - vec2( DeltaX, 	-DeltaY * 2);
+	Blur5x5[22] = inTexCoord.st - vec2( 0, 		-DeltaY * 2);
+	Blur5x5[23] = inTexCoord.st - vec2(-DeltaX, 	-DeltaY * 2);
+	Blur5x5[24] = inTexCoord.st - vec2(-DeltaX * 2,	-DeltaY * 2);
+	
+
+	gl_Position = vec4(inPosicion, 1.0);
+}
+
+
+
+// VSPassThroughParticle
+//For Generating particles
+#version 330
+
+in vec3 inPosition;
+in vec4 inColor;
+in vec4 inInfo;
+
+smooth out vec4 outColor;
+smooth out vec4 outInfo;
+
+void main()
+{
+  outColor = inColor;
+  outInfo = inInfo;
+  
+  gl_Position = vec4(inPosition, 1.0);
+}
+
+
+//*************************************************************************************//
+//								Geometry shaders
+//*************************************************************************************//
+
+// GSRenderOpticalFlow
+
+#version 330
+layout(lines) in;
+layout(triangle_strip, max_vertices = 4) out;
+
+smooth out vec2 TexCoord;
+smooth out vec2 GTexCoord;
+smooth out vec2 CGTexCoord;
+smooth out vec4 Color;
+out float Type;
+
+uniform int windowWidth;
+uniform int windowHeight;
+uniform int numParticleX;
+uniform int numParticleY;
+uniform float DeltaX;
+uniform float DeltaY;
+uniform sampler2D FlowBuffer0;
+uniform sampler2D Probability;
+
+vec2 g_positions[4] =
+{
+  vec2( -1, 1),
+  vec2( 1, 1),
+  vec2( -1, -1),
+  vec2( 1, -1),
+};
+
+vec2 g_texcoords[4] = 
+{ 
+  vec2(0,1), 
+  vec2(1,1),
+  vec2(0,0),
+  vec2(1,0),
+};
+
+float ScaleMap = 0.32;
+uniform mat4 g_mWorldViewProj0;
+uniform mat4 g_mInvView;
+
+void main()
+{
+  vec2 index;
+  index.x = (gl_in[0].gl_Position.x * numParticleX - numParticleY * 0.5) * windowWidth * scaleMap /numParticleX;
+  index.x = (gl_in[0].gl_Position.y * numParticleY - numParticleY * 0.5) * windowWidth * scaleMap /numParticleX;
+  
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  vec2 opticalFlowValue = FlowBuffer0.texture(texcoord).rg * 2 - vec2(1, 1);
+  float randomNumber = Probability.texture(texcoord);
+  
+  bool bDraw = true,
+  float angle;
+  
+  if(abs(opticalFlowValue.x) < 0.0001 && abs(opticalFlowValue.y) > 0.0001)
+  {
+    angle = PI * 0.5;
+    if(opticalFlowValue.y <= 0)
+      angle = -agle;
+  }
+  else if (abs(opticalFlowValue.x) < 0.0001 and abs(opticalFlowValue.y) < 0.0001)
+    bDraw = false;
+  else
+    angle = atan2(-opticalFlowValue.y, opticalFlowValue.x);
+  
+  float sine, cosine;
+  sine = sin(angle);
+  cosine = cos(angle);
+  
+  vec3 position;
+  
+  Type = 1;
+  CGTexCoord = texcoord;
+
+  float ofLength = clamp(length(opticalFlowValue), 0.3, 1);
+
+  float randomNumber0 = Probability.texture(texcoord - vec2( 0 , DeltaX * 2));
+  float randomNumber1 = Probability.texture(texcoord - vec2( DeltaX * 2, 0));
+  float randomNumber2 = Probability.texture(texcoord - vec2( - DeltaX * 2, 0));
+  Color = vec4(randomNumber0, randomNumber1, randomNumber2, 1);
+
+  if (randomNumber < ProbabilityMediumThreshold * 0.7 && bDraw)
+  {
+    for(int i=0; i<4; i++)
+    {	
+      float x = g_positions[i].r * 4 * ofLength;
+      float y = g_positions[i].g * 0.3;
+      if ( i == 0 || i == 2 )
+	y = y * 3;		
+
+      
+      //orient the stroke according to the gradient angle
+      position.r = x * cosine - y * sine;
+      position.g = x * sine + y * cosine;
+      position.b = 0;
+
+      vec2 pos = gl_in[0].gl_Position + vec2(position.r * DeltaX, position.g * DeltaY);
+      GTexCoord = vec2(pos.r, 1 - pos.g);
+
+      position = mul( position, (mat3)g_mInvView ) + vec3(index, 0); 
+      gl_Position = mul( vec4(position,1.0), g_mWorldViewProj0 );		
+
+      TexCoord = g_texcoords[i];
+      EmitVertex();
+    }
+    EmitPrimitive();
+  }
+}
+
+
+// GSRenderParticlesOnlyModel
+
+#version 330
+layout(lines) in;
+layout(triangle_strip, max_vertices = 4) out;
+
+in vec4 inInfo[2];
+in vec4 inColor[2];
+
+smooth out vec2 TexCoord;
+smooth out vec2 GTexCoord;
+smooth out vec2 CGTexCoord;
+smooth out vec4 Color;
+out float Type;
+
+uniform int windowWidth;
+uniform int windowHeight;
+uniform int numParticleX;
+uniform int numParticleY;
+uniform float DeltaX;
+uniform float DeltaY;
+uniform sampler2D ModelMatte;
+
+vec2 g_positions[4] =
+{
+  vec2( -1, 1),
+  vec2( 1, 1),
+  vec2( -1, -1),
+  vec2( 1, -1),
+};
+
+vec2 g_texcoords[4] = 
+{ 
+  vec2(0,1), 
+  vec2(1,1),
+  vec2(0,0),
+  vec2(1,0),
+};
+
+float ScaleMap = 0.32;
+uniform mat4 g_mWorldViewProj0;
+uniform mat4 g_mInvView;
+
+void main()
+{
+  vec2 StrokeSize = inInfo[0].rg;
+  vec4 StrokeColor = inColor[0];
+  float StrokeAngle = inInfo[0].b;
+  
+  vec2 index;
+  index.x = (gl_in[0].gl_Position.x * numParticleX - numParticleX * 0.5) * windowWidth * ScaleMap / numParticleX;
+  index.y = (gl_in[0].gl_Position.y * numParticleY - numParticleY * 0.5) * windowHeight * ScaleMap / numParticleY;
+  vec3 position;
+  float angle = (StrokeAngle * 2 - 0.5) * PI;
+  float sine, cosine;
+  sine = sin(angle);
+  cosine = cos(angle);
+
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  
+  if (ModelMatte.texture(texcoord).r < 0.5)
+    return;
+
+	//float OldGrad = RenderInfo.texture(texcoord, 0).b;
+  float PLength = StrokeSize.r, NLength = StrokeSize.r;
+
+  Color = StrokeColor;
+  CGTexCoord = texcoord;
+  Type = 0;
+  if (abs(StrokeLength - inInfo[0].r) < 0.01) //the stroke is large
+    Type = 1;
+  else if (abs(StrokeLength * SizeMediumThreshold - inInfo[0].r) < 0.01) //the stroke is medium
+    Type = 0.5;
+  else 
+    Type = 0;
+
+  for(int i = 0; i < 4; i++)
+  {	
+    float x;
+    float y = g_positions[i].g * StrokeSize.g;
+    if (g_positions[i].r > 0)
+      x = g_positions[i].r * PLength;
+    else
+      x = g_positions[i].r * NLength;
+				
+		
+    //orient the stroke according to the gradient angle
+    position.r = x * cosine - y * sine;
+    position.g = x * sine + y * cosine;
+    position.b = 0;
+
+    vec2 pos = gl_in[0].gl_Position + vec2(position.r * DeltaX, position.g * DeltaY);
+    GTexCoord = vec2(pos.r, 1 - pos.g);
+
+    position = mul(position, (mat3)g_mInvView ) + vec3(index, 0); 
+    gl_Position = mul( vec4(position,1.0), g_mWorldViewProj0 );
+
+    TexCoord = g_texcoords[i];
+    EmitVertex();
+  }	
+  EmitPrimitive();
+}
+
+
+// GSConstructParticlesSmall
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform sampler2D RenderInfo;
+uniform sampler2D ColorBuffer2;
+
+void main()
+{
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  
+  vec4 RenderInformation = RenderInfo.texture(texcoord);
+  float size = RenderInformation.r;
+  float StrokeAngle = RenderInformation.a;
+  float alpha = RenderInformation.g;
+  
+  if (abs(alpha - AlphaSmallThreshold) < 0.01) //the alpha value indicate the existence of stroke
+  {
+    gl_Position = gl_in[0].gl_Position;
+    Color = ve4(ColorBuffer2.texture(texcoord).rgb, alpha)  * ContrastThreshold - (ContrastThreshold - 1);			
+    Info = vec4(size * StrokeLength, size * strokeWidth, StrokeAngle, 1);  //1 denotes existing stroke, 0 denotes the stroke to be deleted, 0.5 denotes newly constructed particle
+    EmitVertex();
+  }
+  EmitPrimitive();
+}
+
+
+// GSConstructParticlesLarge
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform sampler2D RenderInfo;
+uniform sampler2D ColorBuffer2;
+
+void main()
+{
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  vec4 RenderInformation = RenderInfo.texture(texcoord);
+  
+  float size = RenderInformation.r;
+  float StrokeAngle = RenderInformation.a;
+  float alpha = RenderInformation.g;
+
+  if (abs(alpha - AlphaLargeThreshold) < 0.01) 
+  {
+    gl_Position = gl_in[0].gl_Position;
+    Color = vec4(ColorBuffer2.texture(texcoord).rgb, alpha)  * ContrastThreshold - (ContrastThreshold - 1);
+
+    Info = vec4(size * StrokeLength, size * strokeWidth, StrokeAngle, 1);  //1 denotes existing stroke, 0 denotes the stroke to be deleted, 0.5 denotes newly constructed particle
+    EmitVertex();
+  }
+  EmitPrimitive();
+}
+
+
+// GSConstructParticlesMedium
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform sampler2D RenderInfo;
+uniform sampler2D ColorBuffer2;
+
+void main()
+{
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  vec4 RenderInformation = RenderInfo.texture(texcoord);
+  float size = RenderInformation.r;
+  float StrokeAngle = RenderInformation.a;
+  float alpha = RenderInformation.g;
+  
+  if (abs(alpha - AlphaMediumThreshold) < 0.01) //the alpha value indicate the existence of stroke
+  {
+    gl_Position = gl_in[0].gl_Position;
+    Color = vec4(ColorBuffer2.texture(texcoord).rgb, alpha)  * ContrastThreshold - (ContrastThreshold - 1);
+
+    Info = vec4(size * StrokeLength, size * strokeWidth, StrokeAngle, 1);  //1 denotes existing stroke, 0 denotes the stroke to be deleted, 0.5 denotes newly constructed particle
+    EmitVertex();
+  }
+  EmitPrimitive();
+}
+
+// GSAppendParticlesLargeForVideo
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform sampler2D RenderInfo;
+uniform sampler2D Probability;
+uniform sampler2D TempImage;
+
+void main()
+{
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  vec4 RenderInformation = RenderInfo.texture(texcoord);
+  float size = RenderInformation.r;
+  float StrokeAngle = RenderInformation.a;
+  //float alpha = RenderInformation.g;
+
+  if (size > 0.9) //large stroke
+  //if (abs(alpha - AlphaLargeThreshold) < 0.01) //large stroke
+  {
+    float Prob = Probability.texture(texcoord + vec2(CurTime * 0.071, CurTime * 0.041));		
+    float Prob1 = Probability.texture(texcoord + vec2(CurTime * 0.082, CurTime *0.03));
+
+    //jitter the position a little bit in order to fill in the blank, do not insert particle at exactly the same location each time
+    gl_Position.x = gl_in[0].gl_Position.x + Prob * DeltaX * 3; 
+    gl_Position.y = gl_in[0].gl_Position + Prob1 * DeltaY * 3; 
+
+    vec3 c1 = ColorBuffer1.texture(texcoord).rgb;
+    vec3 c2 = ColorBuffer2.texture(texcoord).rgb;
+    vec3 c3 = ColorBuffer3.texture(texcoord).rgb;		
+
+    //average the color a little bit over color values of the previous frames
+    //Color.rgb = (c1 * 0.2 + c2 * 0.6 + c3 * 0.2) * ContrastThreshold - (ContrastThreshold - 1);
+    Color.rgb = c2 * ContrastThreshold - (ContrastThreshold - 1);	
+    Color.a = AlphaLargeThreshold * 0.5;
+    //Color.rgb = vec3(0,0,1); //testing
+    
+    Info = vec4(size * StrokeLength, size * strokeWidth, StrokeAngle, 0.5);  //1 denotes existing stroke, 0 denotes the stroke to be deleted, 0.5 denotes newly constructed particle
+		
+    float Emptyness = TempImage.texture(texcoord);
+		
+    //when there are absolute emptiness, definitely add a stroke here
+      if (Emptyness < ProbabilityLargeThreshold * 0.54) //0.07
+      {
+	if (texcoord.r < 0.9 && texcoord.g < 0.9 && texcoord.r > 0.1 && texcoord.g > 0.1)
+	{
+	  //Color.rgb = vec3(0,0,1);
+	  //if(Prob < ProbabilityLargeThreshold * 1.5)
+	  //Color.rgb = vec3(0,0,1); //blue
+	  EmitVertex();
+	}
+      }
+      else if (Emptyness < ProbabilityLargeThreshold * 1.08) //when it is not really empty, add a new stroke probablisitcally
+      {
+
+	//Color.rgb = vec3(0,1,0);
+	//Color.a = AlphaLargeThreshold - 0.1; //vec4(0,0,1,1);
+	//Color.rgb = vec3(0,0,1);
+
+	//if it is at the image boundary
+	if (texcoord.r > 0.1 && texcoord.r < 0.9 && texcoord.g > 0.1 && texcoord.g < 0.9)
+	{
+	  if(Prob < ProbabilityLargeThreshold )
+	    EmitVertex();
+	}
+	else
+	{
+	  //if not very empty, then add new strokes conditionally
+	  if(Prob < ProbabilityLargeThreshold * 0.3)
+	    EmitVertex();
+	}			
+      }
+  }
+  EmitPrimitive();
+}
+
+
+// GSDeleteParticlesLarge
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+in vec4 inInfo[2];
+in vec4 inColor[2];
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform sampler2D Probability;
+uniform sampler2D TempImage;
+
+void main()
+{
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  float Prob = Probability.texture(texcoord + vec2(CurTime * 0.06, CurTime * 0.04));
+
+  float overlap = TempImage.texture(texcoord);
+
+  //if there are many strokes overlapped on each other, append the paricle conditionally
+  if (overlap >= ProbabilityLargeThreshold * 3.07) //there was && Prob < (1 - ProbabilityLargeThreshold)
+  {
+    //in highly overlapped region, delete the stroke conditionally
+    if (Prob < 1 - overlap * (1 - ProbabilityLargeThreshold) * 0.6 )
+    {
+      //Color.rgb = vec3(1,0,0);
+      Color = inColor[0];
+      Info = inInfo[0];
+      gl_Position = gl_in[0].gl_Position;
+      EmitVertex();  
+    }
+
+    //VSParticle output = input[0];		
+    //Color.rgb = vec3(1,0,0);
+    //ParticleOutputStream.Append(output);
+  }
+  else
+  {
+      Color = inColor[0];
+      Info = inInfo[0];
+      gl_Position = gl_in[0].gl_Position;
+      EmitVertex();      
+  }
+  EmitPrimitive();
+}
+
+// GSDeleteParticlesSmall
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+in vec4 inInfo[2];
+in vec4 inColor[2];
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform sampler2D Probability;
+uniform sampler2D TempImage;
+
+void main()
+{
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  float Prob = Probability.texture(texcoord + vec2(CurTime * 0.05, CurTime * 0.03));
+  float overlap = TempImage.texture(texcoord);
+  //float overlap = TempImage.texture(texcoord, 0 ).a;
+
+  if (overlap >= ProbabilitySmallThreshold * 0.7 && Prob < (1 - ProbabilitySmallThreshold * 1.2))
+  {
+    //VSParticle output = input[0];
+    //Color.rgb = vec3(1,1,0);
+    //ParticleOutputStream.Append(output);
+  }
+  else
+  {
+      Color = inColor[0];
+      Info = inInfo[0];
+      gl_Position = gl_in[0].gl_Position;
+      EmitVertex();      
+  }
+  EmitPrimitive();
+}
+
+
+// GSUpdateParticlesSmall
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+in vec4 inInfo[2];
+in vec4 inColor[2];
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform float GradientLargeThreshold;
+uniform float GradientMediumThreshold;
+uniform float SizeMediumThreshold;
+uniform float SizeSmallThreshold;
+uniform float ContrastThreshold;
+uniform float FadeOutSpeedThreshold;
+uniform float FadeInSpeedThreshold;
+
+uniform sampler2D FlowBuffer0;
+uniform sampler2D RenderInfo;
+uniform sampler2D ColorBuffer1;
+uniform sampler2D ColorBuffer2;
+uniform sampler2D ColorBuffer3;
+
+void main()
+{
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  
+  vec2 Displacement = FlowBuffer0.texture(texcoord).rg * 2 - vec2(1, 1);	 //the optical flow vector at the current pixel location	
+  vec2 DisplacedPos = gl_in[0].gl_Position + vec2(Displacement.x, Displacement.y); //the new location of the updated stroke
+  
+  //discard the particle if it is out of the image boundary
+  //discard the particle if the alpha value is too small
+  if (min(DisplacedPos.r, DisplacedPos.g) >=0 && max(DisplacedPos.r, DisplacedPos.g) <= 1 && inColor[0].a > FadeOutSpeedThreshold)
+  {	
+    vec2 newTexcoord = vec2(DisplacedPos.r, 1 - DisplacedPos.g); //the texture coordinate of the new stroke location
+    
+    vec4 RenderInformation = RenderInfo.texture(newTexcoord);
+    float size = RenderInformation.r;
+    float StrokeGrad = RenderInformation.b;
+    float StrokeAngle = RenderInformation.a;
+    float alpha = RenderInformation.g;
+    
+    Color.a = inColor[0].a;
+    Info = inInfo[0];
+    //update the position, size, angle, color (as well as alpha value) of the particle
+    gl_Position = DisplacedPos;
+    
+    
+    //the stroke is normal
+    if (inInfo[0].a > 0.6)
+    {
+      if (abs(size * StrokeLength - inInfo[0].r) > 0.01) //the stroke size has changed
+      {	
+	
+	Info.a = 0; //indicate the stroke is going to be deleted gradually
+	Color.a -= FadeOutSpeedThreshold; //gradually fade the stroke out				
+      }
+    }
+    //the stroke is newly constructed
+    else if (inInfo[0].a > 0.4)
+    {
+      //the upper bound is subject to change
+      if (inColor[0].a > alpha - FadeInSpeedThreshold)
+	Info.a = 1;
+      else
+	Color.a += FadeInSpeedThreshold;				
+    }
+    //the stroke is to be deleted, decrease the alpha value
+    else
+    {
+      //if the stroke has come back to the correct frequency, then treat it as a new stroke again
+      if ( StrokeGrad >= GradientMediumThreshold - 0.001 )
+	Info.a = 0.5;
+      else
+	Color.a -= FadeOutSpeedThreshold; //gradually fade the stroke out
+    }
+    
+    //if the new location has a small stroke
+    //Displacement = DisplacedPos - gl_in[0].gl_Position;
+    if ( StrokeGrad >= GradientMediumThreshold - 0.001 && Displacement.r * Displacement.r + Displacement.g * Displacement.g >= 0.02 )
+      Info.b = StrokeAngle;
+    else
+    {
+      if (abs(StrokeAngle - Info.b) < 0.002)
+	Info.b = StrokeAngle;
+      else
+      {
+	if (StrokeAngle > Info.b)
+	  Info.b = Info.b + 0.001;
+	else
+	  Info.b = Info.b - 0.001;
+      }
+    }
+    
+    
+    vec3 c1 = ColorBuffer1.texture(newTexcoord).rgb;
+    vec3 c2 = ColorBuffer2.texture(newTexcoord).rgb;
+    vec3 c3 = ColorBuffer3.texture(newTexcoord).rgb;
+    
+    //average the previous colors and the current color
+    //Color.rgb = (c1 * 0.2 + c2 * 0.6 + c3 * 0.2) * ContrastThreshold - (ContrastThreshold - 1);	
+    Color.rgb = (0.3 * inColor[0].rgb + 0.7 * c2 ) * ContrastThreshold - (ContrastThreshold - 1);
+    EmitVertex();	
+  }
+  EmitPrimitive();
+}
+
+
+// GSUpdateParticlesMedium
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+in vec4 inInfo[2];
+in vec4 inColor[2];
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform float GradientLargeThreshold;
+uniform float GradientMediumThreshold;
+uniform float SizeMediumThreshold;
+uniform float SizeSmallThreshold;
+uniform float ContrastThreshold;
+uniform float FadeOutSpeedThreshold;
+uniform float FadeInSpeedThreshold;
+
+uniform sampler2D FlowBuffer0;
+uniform sampler2D RenderInfo;
+uniform sampler2D ColorBuffer1;
+uniform sampler2D ColorBuffer2;
+uniform sampler2D ColorBuffer3;
+
+void main()
+{
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  
+  vec2 Displacement = FlowBuffer0.texture(texcoord).rg * 2 - vec2(1, 1);	
+  
+  vec2 DisplacedPos = gl_in[0].gl_Position + vec2(Displacement.x, Displacement.y); //the new location of the updated stroke
+  
+  //discard the particle if it is out of the image boundary
+  //discard the particle if the alpha value is too small
+  if (min(DisplacedPos.r, DisplacedPos.g) >=0 && max(DisplacedPos.r, DisplacedPos.g) <= 1 && inColor[0].a > FadeOutSpeedThreshold)
+  {
+    vec2 newTexcoord = vec2(DisplacedPos.r, 1 - DisplacedPos.g); //the texture coordinate of the new stroke location
+    
+    vec4 RenderInformation = RenderInfo.texture(newTexcoord);
+    float size = RenderInformation.r;
+    float StrokeGrad = RenderInformation.b;
+    float StrokeAngle = RenderInformation.a;
+    float alpha = RenderInformation.g;
+    
+    Color.a = inColor[0].a;
+    Info = inInfo[0];
+    //update the position, size, angle, color (as well as alpha value) of the particle
+    gl_Position = DisplacedPos;
+    
+    
+    //the stroke is normal
+    if (inInfo[0].a > 0.6)
+    {
+      if (abs(size * StrokeLength - inInfo[0].r) > 0.01) //the stroke size has changed
+      {		
+	Info.a = 0; //indicate the stroke is going to be deleted gradually
+	Color.a -= FadeOutSpeedThreshold; //gradually fade the stroke out
+      }
+    }
+    //the stroke is newly constructed
+    else if (inInfo[0].a > 0.4)
+    {
+      //the upper bound is subject to change
+      if (inColor[0].a > alpha - FadeInSpeedThreshold)
+	Info.a = 1;
+      else
+	Color.a += FadeInSpeedThreshold;
+      
+    }
+    //the stroke is to be deleted, decrease the alpha value
+    else
+    {
+      //if the stroke has come back to the correct frequency, then treat it as a new stroke again
+      if (StrokeGrad >= GradientLargeThreshold - 0.001 && StrokeGrad <= GradientMediumThreshold + 0.01)
+	Info.a = 0.5;
+      else
+	Color.a -= FadeOutSpeedThreshold; //gradually fade the stroke out
+    }
+    
+    
+    Displacement = DisplacedPos - gl_in[0].gl_Position;
+    //if (strokeGrad.r >= GradientMediumThreshold || Displacement.r * Displacement.r + Displacement.g * Displacement.g >= 0.01)
+	//if the stroke size hasn't changed, stay in the right frequency
+    if (abs(size * StrokeLength - inInfo[0].r) <= 0.01 && Displacement.r * Displacement.r + Displacement.g * Displacement.g >= 0.04)
+      //if (Displacement.r * Displacement.r + Displacement.g * Displacement.g >= 0.01 && )
+      Info.b = StrokeAngle;
+    else
+    {
+      if (abs(StrokeAngle - Info.b) < 0.002)
+	Info.b = StrokeAngle;
+      else
+      {
+	if (StrokeAngle > Info.b)
+	  Info.b = Info.b + 0.001;
+	else
+	  Info.b = Info.b - 0.001;
+      }
+    }
+    
+    vec3 c1 = ColorBuffer1.texture(newTexcoord).rgb;
+    vec3 c2 = ColorBuffer2.texture(newTexcoord).rgb;
+    vec3 c3 = ColorBuffer3.texture(newTexcoord).rgb;		
+    
+    //average the color a little bit over color values of the previous frames		
+    //Color.rgb = (c1 * 0.2 + c2 * 0.6 + c3 * 0.2) * ContrastThreshold - (ContrastThreshold - 1);
+    Color.rgb = (0.3 * inColor[0].rgb + 0.7 * c2 ) * ContrastThreshold - (ContrastThreshold - 1);
+    EmitVertex();
+  }
+  EmitPrimitive();
+}
+
+// GSUpdateParticlesLarge
+
+#version 330
+layout(lines) in;
+layout(points, max_vertices = 1) out;
+
+in vec4 inInfo[2];
+in vec4 inColor[2];
+
+smooth out vec4 Color;
+smooth out vec4 Info;
+
+uniform float GradientLargeThreshold;
+uniform float GradientMediumThreshold;
+uniform float SizeMediumThreshold;
+uniform float SizeSmallThreshold;
+uniform float ContrastThreshold;
+uniform float FadeOutSpeedThreshold;
+uniform float FadeInSpeedThreshold;
+
+uniform sampler2D FlowBuffer0;
+uniform sampler2D RenderInfo;
+uniform sampler2D ColorBuffer1;
+uniform sampler2D ColorBuffer2;
+uniform sampler2D ColorBuffer3;
+
+void main()
+{	
+  vec2 texcoord = vec2(gl_in[0].gl_Position.r, 1 - gl_in[0].gl_Position.g);
+  
+  //if background of a model, do not update the particle
+  /*if (ModelMatte.texture(texcoord, 0 ).r < 0.5)
+   *	{
+   *		ParticleOutputStream.Append(input[0]);
+   *		return;
+   }*/
+  
+  //vec4 currentDifference = ColorBuffer0.texture(texcoord, 0 ) - ColorBuffer1.texture(texcoord, 0 );
+  //vec4 GradientX = (ColorBuffer0.texture(texcoord + vec2( DeltaX,   0), 0) 
+  //	              - ColorBuffer0.g fSampleLevel( samLinear, texcoord - vec2( DeltaX,   0), 0)
+  //				  + ColorBuffer1.texture(texcoord + vec2( DeltaX,   0), 0) 
+  //	              - ColorBuffer1.texture(texcoord - vec2( DeltaX,   0), 0)) * 0.5;
+  
+  //vec4 GradientY = (ColorBuffer0.texture(texcoord + vec2( 0,   DeltaY), 0) 
+  //	              - ColorBuffer0.texture(texcoord - vec2( 0,   DeltaY), 0)
+  //				  + ColorBuffer1.texture(texcoord + vec2( 0,   DeltaY), 0) 
+  //	              - ColorBuffer1.texture(texcoord - vec2( 0,   DeltaY), 0)) * 0.5;
+  
+  ////float gX = (GradientX.r + GradientX.g + GradientX.b ) * 0.33;
+  ////float gY = (GradientY.r + GradientY.g + GradientY.b ) * 0.33;
+  //float gX = 0.299 * GradientX.r + 0.557 * GradientX.g + 0.144 * GradientX.b;
+  //float gY = 0.299 * GradientY.r + 0.557 * GradientY.g + 0.144 * GradientY.b;
+  
+  //float gradientMagnitude = sqrt(gX * gX + gY * gY + Lambda);
+  
+  ////since the value stored is not the actual optical, therefore need to retrieve the actual value
+  ////vec2 preVectorBlured = blur(CoordTex).rg * 2 - vec2(1,1);
+  //vec2 preVectorBlured = vec2(0,0);
+  
+  
+  //float preDotGradient = preVectorBlured.r * gX + preVectorBlured.g * gY;
+  
+  //vec2 Displacement;
+  ////float CD = (currentDifference.r + currentDifference.g + currentDifference.b) / 3.0f;
+  //float CD = currentDifference.r * 0.299 + currentDifference.g * 0.557 + currentDifference.b * 0.144;
+  //Displacement.r = preVectorBlured.r + (CD + preDotGradient) * (gX / gradientMagnitude);
+  //Displacement.g = preVectorBlured.g + (CD + preDotGradient) * (gY / gradientMagnitude);
+  
+  vec2 Displacement = FlowBuffer0.texture(texcoord).rg * 2 - vec2(1, 1);
+  /*if (Displacement.r > 0.01)
+   *		Displacement.r = 0.01;
+   *	else if(Displacement.r < -0.01)
+   *		Displacement.r = -0.01;
+   * 
+   *	if (Displacement.g > 0.01)
+   *		Displacement.g = 0.01;
+   *	else if(Displacement.g < -0.01)
+   *		Displacement.g = -0.01;*/
+  //loading the optical flow value from disk files
+  //vec2 Displacement = OpticalFlowTexture.texture(texcoord, 0).rg * 2 - vec2(1, 1);
+  //Displacement = vec2(0.0, 0.0); //testing
+  vec2 DisplacedPos = gl_in[0].gl_Position + vec2(Displacement.x, Displacement.y); //the new location of the updated stroke
+  
+  if (min(DisplacedPos.r, DisplacedPos.g) >=0 && max(DisplacedPos.r, DisplacedPos.g) <= 1 && inColor[0].a > FadeOutSpeedThreshold)
+  {
+    vec2 newTexcoord = vec2(DisplacedPos.r, 1 - DisplacedPos.g); //the texture coordinate of the new stroke location
+    
+    vec4 RenderInformation = RenderInfo.texture(newTexcoord);
+    float size = RenderInformation.r;
+    float StrokeGrad = RenderInformation.b;
+    float StrokeAngle = RenderInformation.a;
+    //float alpha = RenderInformation.g;
+    
+    //10/17
+    //float RenderAlpha = StrokeBuffer.texture(newTexcoord, 0 );
+    
+    //if the alpha at the target position is very large, do not put new stroke there.
+    //if (RenderAlpha < 0.8)
+    //{
+      
+
+      Color.a = inColor[0].a;
+      Info = Info[0];
+      //update the position, size, angle, color (as well as alpha value) of the particle
+      gl_Position = DisplacedPos;
+      
+      
+      //the stroke is normal
+      if (Info[0].a > 0.6)
+      {
+	if (abs(size * StrokeLength - Info[0].r) > 0.01) //if the stroke size has changed
+	{		
+	  Info.a = 0; //indicate the stroke is going to be deleted gradually
+	  Color.a -= FadeOutSpeedThreshold; //gradually fade the stroke out
+	}
+      }
+      //the stroke is newly constructed
+      else if (Info[0].a > 0.4)
+      {
+	//the upper bound is subject to change
+	if (inColor[0].a > 0.6)//alpha - FadeInSpeedThreshold
+	  Info.a = 1;
+	else
+	  Color.a += FadeInSpeedThreshold;
+	
+      }
+      //if the stroke is determined to be deleted
+      else
+      {
+	//if the stroke has come back to the correct frequency, then treat it as a new stroke again
+	if (StrokeGrad < GradientLargeThreshold)
+	  Info.a = 0.5;
+	else
+	  Color.a -= FadeOutSpeedThreshold; //gradually fade the stroke out
+      }
+      
+      Displacement = DisplacedPos - gl_in[0].gl_Position;
+      //if (strokeGrad.r >= GradientMediumThreshold || Displacement.r * Displacement.r + Displacement.g * Displacement.g >= 0.01)
+      if (Displacement.r * Displacement.r + Displacement.g * Displacement.g >= 0.06)
+	Info.b = StrokeAngle;
+      else
+      {
+	if (abs(StrokeAngle - Info.b) < 0.002)
+	  Info.b = StrokeAngle;
+	else
+	{
+	  if (StrokeAngle > Info.b)
+	    Info.b = Info.b + 0.001;
+	  else
+	    Info.b = Info.b - 0.001;
+	}
+      }
+      
+      vec3 c1 = ColorBuffer1.texture(newTexcoord).rgb;
+      vec3 c2 = ColorBuffer2.texture(newTexcoord).rgb;
+      vec3 c3 = ColorBuffer3.texture(newTexcoord).rgb;		
+      
+      //average the color a little bit over color values of the previous frames
+      //Color.rgb = (c1 * 0.2 + c2 * 0.6 + c3 * 0.2) * ContrastThreshold - (ContrastThreshold - 1);
+      Color.rgb = (0.3 * inColor[0].rgb + 0.7 * c2 ) * ContrastThreshold - (ContrastThreshold - 1);
+      //Color.rgb = c2  * ContrastThreshold - (ContrastThreshold - 1);
+      EmitVertex();
+      //}
+  }	
+  EmitPrimitive();
+}
+
+// RenderPaperTexture
+#version 330
+
+smooth in vec2 CoordTex;
+
+out vec4 FragColor;
+
+uniform sampler2D PaperTex;
+
+void main()
+{
+  FragColor = vec4(1,1,0.9,PaperTex.texture(CoordTex).r * 0.2);
+}
+   
+   
+//*************************************************************************************//
+//								Pixel shaders
+//*************************************************************************************//
+
+// Original
+
+#version 330
+
+smooth in vec2 CoordTex;
+
+out vec4 FragColor;
+
+uniform float ContrastThreshold;
+uniform sampler2D ColorBuffer2;
+
+void main()
+{
+  
+  /*if (OpticalFlowTexture.SampleLevel(samLinear, CoordTex, 0).r > 0.5001 || OpticalFlowTexture.SampleLevel(samLinear, CoordTex, 0).g > 0.5001)
+   *   r *eturn vec4(1,0,0,1);
+   *   else return vec4(0,0,0,1);*/
+  //return vec4(OpticalFlowTexture.SampleLevel(samLinear, CoordTex, 0).rg, 0, 1);
+  FragColor = ColorBuffer2.texture(CoordTex) * ContrastThreshold - (ContrastThreshold - 1);
+  //return PaperTex.texture(CoordTex, 0);
+  //return vec4(Probability.texture(CoordTex, 0));
+}
+
+// RenderModelOnVideoFrame
+#version 330
+
+smooth in vec2 CoordTex;
+
+out vec4 FragColor;
+
+uniform float ContrastThreshold;
+uniform sampler2D ModelMatte;
+uniform sampler2D ColorBuffer0;
+uniform sampler2D ColorBuffer3;
+
+void main()
+{
+  float RenderChoices = ModelMatte.texture( samLinear, CoordTex, 0);
+  if (RenderChoices > 0.5)
+    FragColor = ColorBuffer0.texture(CoordTex) + (ContrastThreshold - 1) / ContrastThreshold;
+  else
+    FragColor = ColorBuffer3.texture(CoordTex);
+}
+
+
+// RenderModelMatte
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D ModelMatte;
+
+void main()
+{
+  float RenderChoices = ModelMatte.texture(CoordTex, 0);
+  if (RenderChoices > 0.5)
+    //return vec4(1,0,0,1);
+    FragColor = vec4(1,0,0,0);
+  else FragColor = vec4(0,0,0,1);
+}
+
+// RenderGradient
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D RenderInfo;
+
+void main()
+{
+  float g = RenderInfo.texture(CoordTex).b;
+  
+  /*if (0.5 > RenderInfo.texture(CoordTex, 0).r && 0.5 - RenderInfo.texture(CoordTex, 0).r < 0.0001 )
+   *   r *eturn vec4(0,0,1,1);
+   *   else if (RenderInfo.texture(CoordTex, 0).r> 0.5 && RenderInfo.texture(CoordTex, 0).r - 0.5 < 0.0001 )
+   *      r e*turn vec4(0,1,0,1);
+   *      else
+   *	return vec4(0,0,0,1);*/
+  
+  
+  //return RenderInfo.texture(CoordTex, 0);
+  FragColor =  vec4(g,g,g,1);
+  //return vec4( 1, 0,0, 1);
+}
+
+// RenderMipMap
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D MipRendering;
+
+void main()
+{
+  vec4 color = MipRendering.texture(CoordTex);
+  if (color.a > 0.7 ) 
+    FragColor = vec4(1,0,0,1);
+  else FragColor = vec4(0,0,0,1);
+  //return MipRendering.texture(CoordTex, 0 );
+}
+
+
+// RenderEmptyPosition
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D TempImage;
+
+void main()
+{
+  float emptiness = TempImage.texture(CoordTex, 0);
+  if (emptiness < 0.14)
+    FragColor = vec4(1,0,0,1);
+  else
+    FragColor = vec4(0,0,0,1);
+}
+
+
+// RenderDeletingPosition
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D TempImage;
+
+void main()
+{
+  //float overlap = TempImage.texture(CoordTex, 0 ).a;
+  float overlap = TempImage.texture(CoordTex, 0 );
+  //return vec4(overlap, 0,0,1);
+  if (overlap >= 0.4)
+    FragColor = vec4(1,0,0,1);
+  else
+    FragColor = vec4(0,0,0,1);
+  //return vec4(1,0,0,1);
+}
+
+
+// RenderOpticalFlow
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D FlowBuffer0;
+
+void main()
+{
+  vec2 velocity = FlowBuffer0.texture(CoordTex, 0 );
+  /*if (velocity.r < 0.5)
+   *   r *eturn vec4(1,0,0,1);
+   *   else if (velocity.r > 0.5)
+   * r e*turn vec4(0,1,0,1);
+   * return vec4(0,0,0,1);*/
+  //if (abs(velocity.r - 0.3) < 0.01)
+  //return vec4(1,0,0,1);
+  //else
+  //return vec4(0,1,0,1);
+  
+  FragColor = vec4(velocity, 0, 1);
+  //if (abs(velocity.r * velocity.r + velocity.g * velocity.g - 0.5) < 0.00001)
+  //return vec4(0,0,0,1);
+  //else
+  //return vec4(velocity, 0, 1);
+}
+
+
+// RenderStrokePosition
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D RenderInfo;
+
+void main()
+{
+  float Stroke = RenderInfo.texture(CoordTex, 0).g;
+  //float Stroke = StrokeBuffer.texture(CoordTex, 0 ).a;
+  if ( Stroke > 0.001)
+    FragColor = vec4(1, 1, 1, 1);
+  else
+    FragColor = vec4(0, 0, 0, 1);
+}
+
+
+// SmoothOverlappingIndication
+//propagate the overlapping value to the neighborhood
+#version 330
+
+smooth in vec2 Blur3x3[9];
+
+out vec4 FragColor;
+
+uniform sampler2D TempImage;
+
+void main()
+{
+  vec4 finalColor;
+
+  for (int i = 0; i < 9; i++)
+    finalColor = texture(TempImage, Blur3x3[i]);
+
+  return finalColor/9.0f;
+}
+
+
+//--------------------------------------------------------------------------------------
+// GaussianSmooth
+//--------------------------------------------------------------------------------------
+
+// GaussianSmooth3x3
+#version 330
+
+smooth in vec2 Blur3x3[9];
+
+out vec4 FragColor;
+
+uniform float ContrastThreshold;
+uniform sampler2D ColorBuffer2;
+
+void main()
+{
+  vec4 finalColor;
+
+  for (int i = 0; i < 9; i++)
+    finalColor = texture(ColorBuffer2, Blur3x3[i]);
+
+  FragColor = finalColor/9.0f * ContrastThreshold - (ContrastThreshold - 1); //enhance contrast		
+}
+
+// GaussianSmooth5x5
+#version 330
+
+smooth in vec2 Blur5x5[25];
+
+out vec4 FragColor;
+
+uniform float ContrastThreshold;
+uniform sampler2D ColorBuffer2;
+
+void main()
+{
+  vec4 color[25];
+
+  for (int i = 0; i < 9; i++)
+    color[1] = texture(ColorBuffer2, Blur5x5[i]);
+  
+  vec4 colorRow1 = 2 * color[0] + 4 * color[1] + 5 * color[2] + 4 * color[3] + 2 * color[4];
+  vec4 colorRow2 = 4 * color[0] + 9 * color[1] + 12 * color[2] + 9 * color[3] + 4 * color[4];
+  vec4 colorRow3 = 5 * color[0] + 12 * color[1] + 15 * color[2] + 12 * color[3] + 5 * color[4];
+  vec4 colorRow4 = 4 * color[0] + 9 * color[1] + 12 * color[2] + 9 * color[3] + 4 * color[4];
+  vec4 colorRow5 = 2 * color[0] + 4 * color[1] + 5 * color[2] + 4 * color[3] + 2 * color[4];
+
+  FragColor = colorRow1 + colorRow2 + colorRow3 + colorRow4 + colorRow5) / 159.0f * ContrastThreshold - (ContrastThreshold - 1);	
+}
+
+// DetermineStroke
+uniform sampler2D StrokeTex;
+
+vec2 DetermineStrokeDetail(vec2 texcoord)
+{
+  vec2 Result;
+  //Calculate lighting factor and alpha mask value
+  //TODO
+  //float dx = 0.0149; //1 / stroke texture width
+  //float dy = 0.0036; //1 / stroke texture height
+  float dx = 1.0f / StrokeTexLength;
+  float dy = 1.0f / StrokeTexWidth;
+  vec3 v1, v2, v3, v4;
+  float rr = StrokeTex.texture(vec2(texcoord.r + dx, texcoord.g     )).r;
+  float ll = StrokeTex.texture(vec2(texcoord.r - dx, texcoord.g     )).r;
+  float uu = StrokeTex.texture(vec2(texcoord.r,      texcoord.g + dy)).r;
+  float bb = StrokeTex.texture(vec2(texcoord.r,      texcoord.g - dy)).r;
+  
+  Result.r = AlphaMask.texture(texcoord, 0 ).r;
+  
+  v1 = vec3( 4 * dx, 0,      rr - ll);
+  v2 = vec3( 0     , 4 * dy, uu - bb);
+  vec3 normal = normalize(cross(v1,v2));
+  float lightingFactor = abs(dot(normal, vec3(0,0,1)));
+  
+  if (renderStyle == 0)
+    lightingFactor = 1;
+  Result.g = lightingFactor;
+  return Result;
+}
+
+//--------------------------------------------------------------------------------------
+// Sobel Filter
+//--------------------------------------------------------------------------------------
+//the modified sobel filter not only compute the gradient magnitude and the angle but also compute the lighting factor
+
+//SobelFilter
+#version 330
+
+smooth in vec2 Blur3x3[9];
+smooth in vec2 CoordTex;
+
+out vec4 FragColor;
+
+uniform float AngleThreshold;
+uniform bool OnRealGradientAngle;
+uniform float ContrastThreshold;
+uniform sampler2D ColorBuffer1;
+uniform sampler2D StrokeTex;
+
+vec2 DetermineStrokeDetail(vec2 texcoord)
+{
+  vec2 Result;
+  //Calculate lighting factor and alpha mask value
+  //TODO
+  //float dx = 0.0149; //1 / stroke texture width
+  //float dy = 0.0036; //1 / stroke texture height
+  float dx = 1.0f / StrokeTexLength;
+  float dy = 1.0f / StrokeTexWidth;
+  vec3 v1, v2, v3, v4;
+  float rr = StrokeTex.texture(vec2(texcoord.r + dx, texcoord.g     )).r;
+  float ll = StrokeTex.texture(vec2(texcoord.r - dx, texcoord.g     )).r;
+  float uu = StrokeTex.texture(vec2(texcoord.r,      texcoord.g + dy)).r;
+  float bb = StrokeTex.texture(vec2(texcoord.r,      texcoord.g - dy)).r;
+  
+  Result.r = AlphaMask.texture(texcoord, 0 ).r;
+  
+  v1 = vec3( 4 * dx, 0,      rr - ll);
+  v2 = vec3( 0     , 4 * dy, uu - bb);
+  vec3 normal = normalize(cross(v1,v2));
+  float lightingFactor = abs(dot(normal, vec3(0,0,1)));
+  
+  if (renderStyle == 0)
+    lightingFactor = 1;
+  Result.g = lightingFactor;
+  return Result;
+}
+
+void main()
+{
+  vec4 color[9];
+  
+  for (int i = 0; i < 9; i++)
+    color[i] = texture(ColorBuffer1, Blur3x3[i]);
+  
+  vec4 gX = color[0] - color[2]  + 2 * color[3] - 2 * color[5] + color[6] - color[8];
+  vec4 gY = color[0] - color[6]  + 2 * color[1] - 2 * color[7] + color[2] - color[8];
+  
+  float gX1 = 0.299 * gX.r + 0.557 * gX.g + 0.144 * gX.b;
+  float gY1 = 0.299 * gY.r + 0.557 * gY.g + 0.144 * gY.b;
+  
+  float gradient = sqrt(gX1 * gX1 + gY1 * gY1);
+
+  float gradientAngle = 0;
+
+  if (!OnRealGradientAngle && gradient< angleThreshold)	
+  {	
+    //GradientAngle = 0;
+    //GradientAngle = RGB_to_HSV(ColorBuffer1.texture(CoordTex, 0 )).r;
+    gradientAngle = ColorBuffer1.texture(CoordTex).r;//CHANGE			
+  }
+  else
+  {
+    //finalColor.b = Gradient.y;	
+  
+    float y = sqrt(gY * gY);
+    float x = sqrt(gX * gX);
+  
+    if (gX.r < 0) X = -x;
+    if (gY.r > 0) Y = -y;
+  
+    float angle;
+    
+    if (abs(x) < 0.001)
+      angle = 0;
+    else
+      angle= atan2(y, x);
+  
+    GradientAngle = ( angle / PI + 1 ) * 0.5;
+  }
+
+  vec2 detail = DetermineStrokeDetail(CoordTex);
+  //return vec4(Gradient, Gradient, Gradient, GradientAngle);	
+  FragColor vec4(detail, gradient, gradientAngle);
+
+//return vec4(0.6, 0.5, 0.2, 1);
+//return ColorBuffer1.texture(CoordTex, 0 );
+}
+
+
+// AddSobelFilterWithFocus
+#version 330
+
+smooth in vec2 Blur3x3[9];
+smooth in vec2 CoordTex;
+
+out vec4 FragColor;
+
+uniform float AngleThreshold;
+uniform float GradientThreshold;
+uniform float GradientLargeThreshold;
+uniform float GradientMediumThreshold;
+uniform float GradientSmallThreshold;
+uniform float ProbabilityLargeThreshold;
+uniform float ProbabilityMediumThreshold;
+uniform float ProbabilitySmallThreshold;
+uniform float AlphaLargeThreshold;
+uniform float AlphaSmallThreshold;
+uniform float SizeMediumThreshold;
+uniform float SizeSmallThreshold;
+uniform bool OnRealGradientAngle;
+uniform float ContrastThreshold;
+uniform float MouseX;
+uniform float MouseY;
+uniform float focusf;
+
+uniform sampler2D ColorBuffer1;
+uniform sampler2D Probability;
+
+vec4 RGB_to_HSV (vec4 color)
+{
+	float r, g, b, delta;
+	float colorMax, colorMin;
+	float h = 0, s = 0, v = 0;
+	vec4 hsv = 0;
+	r = color[0];
+	g = color[1];
+	b = color[2];
+	colorMax = max (r, g);
+	colorMax = max (colorMax, b);
+	colorMin = min (r, g);
+	colorMin = min (colorMin, b);
+	v = colorMax; // this is value
+	if (colorMax != 0)
+	{
+		s = (colorMax - colorMin) / colorMax;
+	}
+	if (s != 0) // if not achromatic
+	{
+		delta = colorMax - colorMin;
+
+		if (r == colorMax)
+		{
+			h = (g - b)/delta;
+		}
+		else if (g == colorMax)
+		{
+			h = 2.0 + (b - r) / delta;
+		}
+		else // b is max
+		{
+			h = 4.0 + (r - g)/delta;
+		}
+		h *= 60;
+		if( h < 0)
+		{
+			h +=360;
+		}
+		hsv[0] = h / 360.0; // moving h to be between 0 and 1.
+		hsv[1] = s;
+		hsv[2] = v;
+	}
+
+	return hsv;
+}
+
+
+void main()
+{
+  vec4 color[9];
+  
+  for (int i = 0; i < 9; i++)
+    color[i] = texture(ColorBuffer1, Blur3x3[i]);
+  
+  vec4 gX = color[0] - color[2]  + 2 * color[3] - 2 * color[5] + color[6] - color[8];
+  vec4 gY = color[0] - color[6]  + 2 * color[1] - 2 * color[7] + color[2] - color[8];
+  
+  float gX1 = 0.299 * gX.r + 0.557 * gX.g + 0.144 * gX.b;
+  float gY1 = 0.299 * gY.r + 0.557 * gY.g + 0.144 * gY.b;
+  
+  vec2 fxy = vec2(MouseX, MouseY);
+  float rad = length(fxy - CoordTex);// /sqrt(2);
+  float scale;
+  
+  if (OnFocusPoint)
+    scale = focusf + (1 - focusf) * smoothstep(1 - focusr2, 1 - focusr1, 1 - rad);
+  else
+    scale = focusf + ModelMatte.texture(CoordTex, 0 ).r * (1 - focusf);
+  
+  float gradient = sqrt(gX1 * gX1 + gY1 * gY1) * scale;
+  
+  float gradientAngle = 0;
+  //if (!OnRealGradientAngle && Gradient< angleThreshold)	
+  if (gradient< AngleThreshold) //in low frequency area
+  {
+    if (OnRealGradientAngle)
+      gradientAngle = ColorBuffer0.texture(CoordTex, 0 ).r;//CHANGE
+    else
+    {
+      vec3 hsv = RGB_to_HSV(ColorBuffer0.texture(CoordTex, 0 )).rgb;
+      gradientAngle = fmod(hsv.r * smoothstep(0, 0.1, hsv.g * hsv.b) + 0.25, 1.0);
+    }
+  }
+  else
+  {
+    float y = sqrt(gY * gY);
+    float x = sqrt(gX * gX);
+  
+    //float Y = gY1;
+    //float X = gX1;
+  
+    //if (X < 0) X = -X;
+    //if (Y > 0) Y = -Y;
+    if (gX.r < 0) x = -x;
+    if (gY.r > 0) y = -y;
+  
+    float angle;
+    if (abs(X) < 0.01)		
+      ;
+    //angle = PI * 0.5;
+    else
+      angle= atan2(y, x);
+    
+    gradientAngle = ( angle / PI + 1 ) * 0.5;
+  }
+
+  //return vec4(Gradient, Gradient, Gradient, GradientAngle);
+  //vec2 opticalFlow = FlowBuffer0.texture(CoordTex, 0 ).rg;
+  //return vec4(opticalFlow, Gradient, GradientAngle);
+
+  //calculate the stroke properties
+  vec4 finalColor;
+  float prob = Probability.texture(CoordTex); //probability from 0 - 1
+  finalColor = vec4(0, 0, gradient, gradientAngle);
+
+  //for the large stroke
+  if (gradient < GradientLargeThreshold)
+  {	
+    finalColor.r = 1; //size
+    if (prob < ProbabilityLargeThreshold && GradientThreshold < GradientLargeThreshold) //prob 0.05
+      finalColor.g = AlphaLargeThreshold;
+  }	
+  //for the medium stroke
+  else if (gradient >= GradientLargeThreshold && Gradient < GradientMediumThreshold)
+  {
+    finalColor.r = SizeMediumThreshold;
+    if (prob < ProbabilityMediumThreshold && GradientThreshold < GradientMediumThreshold) //prob 0.15
+      finalColor.g = AlphaMediumThreshold;
+  }
+  //for the small stroke
+  else if (gradient >= GradientMediumThreshold) // 0.3
+  {		
+    finalColor.r = SizeSmallThreshold;
+    if (prob < ProbabilitySmallThreshold) //prob 0.2
+      finalColor.g = AlphaSmallThreshold;
+  }
+  
+  FragColor = finalColor;
+}
+
+// AddSobelFilter
+#version 330
+
+smooth in vec2 Blur3x3[9];
+smooth in vec2 CoordTex;
+
+out vec4 FragColor;
+
+uniform float AngleThreshold;
+uniform float GradientThreshold;
+uniform float GradientLargeThreshold;
+uniform float GradientMediumThreshold;
+uniform float GradientSmallThreshold;
+uniform float ProbabilityLargeThreshold;
+uniform float ProbabilityMediumThreshold;
+uniform float ProbabilitySmallThreshold;
+uniform float AlphaLargeThreshold;
+uniform float AlphaSmallThreshold;
+uniform float SizeMediumThreshold;
+uniform float SizeSmallThreshold;
+uniform bool OnRealGradientAngle;
+uniform float ContrastThreshold;
+uniform float MouseX;
+uniform float MouseY;
+uniform float focusf;
+
+uniform sampler2D ColorBuffer0;
+uniform sampler2D StrokeTex;
+uniform sampler2D Probability;
+
+vec4 RGB_to_HSV (vec4 color)
+{
+	float r, g, b, delta;
+	float colorMax, colorMin;
+	float h = 0, s = 0, v = 0;
+	vec4 hsv = 0;
+	r = color[0];
+	g = color[1];
+	b = color[2];
+	colorMax = max (r, g);
+	colorMax = max (colorMax, b);
+	colorMin = min (r, g);
+	colorMin = min (colorMin, b);
+	v = colorMax; // this is value
+	if (colorMax != 0)
+	{
+		s = (colorMax - colorMin) / colorMax;
+	}
+	if (s != 0) // if not achromatic
+	{
+		delta = colorMax - colorMin;
+
+		if (r == colorMax)
+		{
+			h = (g - b)/delta;
+		}
+		else if (g == colorMax)
+		{
+			h = 2.0 + (b - r) / delta;
+		}
+		else // b is max
+		{
+			h = 4.0 + (r - g)/delta;
+		}
+		h *= 60;
+		if( h < 0)
+		{
+			h +=360;
+		}
+		hsv[0] = h / 360.0; // moving h to be between 0 and 1.
+		hsv[1] = s;
+		hsv[2] = v;
+	}
+
+	return hsv;
+}
+
+void main()
+{
+  vec4 color[9];
+  
+  for (int i = 0; i < 9; i++)
+    color[i] = texture(ColorBuffer1, Blur3x3[i]);
+  
+  vec4 gX = color[0] - color[2]  + 2 * color[3] - 2 * color[5] + color[6] - color[8];
+  vec4 gY = color[0] - color[6]  + 2 * color[1] - 2 * color[7] + color[2] - color[8];
+  
+  float gX1 = 0.299 * gX.r + 0.557 * gX.g + 0.144 * gX.b;
+  float gY1 = 0.299 * gY.r + 0.557 * gY.g + 0.144 * gY.b;
+  
+  vec2 fxy = vec2(MouseX, MouseY);
+  float rad = length(fxy - CoordTex);// /sqrt(2);
+  float scale;
+  
+  if (OnFocusPoint)
+    scale = focusf + (1 - focusf) * smoothstep(1 - focusr2, 1 - focusr1, 1 - rad);
+  else
+    scale = focusf + ModelMatte.texture(CoordTex, 0 ).r * (1 - focusf);
+  
+  float gradient = sqrt(gX1 * gX1 + gY1 * gY1) * scale;
+  
+  float gradientAngle = 0;
+  //if (!OnRealGradientAngle && Gradient< angleThreshold)	
+  if (gradient< AngleThreshold) //in low frequency area
+  {
+    if (OnRealGradientAngle)
+      gradientAngle = ColorBuffer0.texture(CoordTex, 0 ).r;//CHANGE
+    else
+    {
+	vec3 hsv = RGB_to_HSV(ColorBuffer0.texture(CoordTex, 0 )).rgb;
+	gradientAngle = fmod(hsv.r * smoothstep(0, 0.1, hsv.g * hsv.b) + 0.25, 1.0);
+	//jitter the gradient angle a bit
+	gradientAngle = fmod(gradientAngle + Probability.texture(CoordTex) * 0.1, 1.0);
+    }
+  }
+  else
+  {
+    float y = sqrt(gY * gY);
+    float x = sqrt(gX * gX);
+  
+    //float Y = gY1;
+    //float X = gX1;
+  
+    //if (X < 0) X = -X;
+    //if (Y > 0) Y = -Y;
+    if (gX.r < 0) x = -x;
+    if (gY.r > 0) y = -y;
+  
+    float angle;
+    if (abs(x) < 0.01)		
+      ;
+    //angle = PI * 0.5;
+    else
+      angle= atan2(y, x);
+    
+    gradientAngle = ( angle / PI + 1 ) * 0.5;
+  }
+
+  //return vec4(Gradient, Gradient, Gradient, GradientAngle);
+  //vec2 opticalFlow = FlowBuffer0.texture(CoordTex, 0 ).rg;
+  //return vec4(opticalFlow, Gradient, GradientAngle);
+
+  //calculate the stroke properties
+  vec4 finalColor;
+  float prob = Probability.texture(CoordTex); //probability from 0 - 1
+  finalColor = vec4(0, 0, gradient, gradientAngle);
+
+  //for the large stroke
+  if (gradient < GradientLargeThreshold)
+  {	
+    finalColor.r = 1; //size
+    if (prob < ProbabilityLargeThreshold && GradientThreshold < GradientLargeThreshold) //prob 0.05
+      finalColor.g = AlphaLargeThreshold;
+  }	
+
+  //for the medium stroke
+  else if (gradient >= GradientLargeThreshold && gradient < GradientMediumThreshold)
+  {
+    finalColor.r = SizeMediumThreshold;
+    if (prob < ProbabilityMediumThreshold && GradientThreshold < GradientMediumThreshold) //prob 0.15
+      finalColor.g = AlphaMediumThreshold;
+  }
+
+  //for the small stroke
+  else if (gradient >= GradientMediumThreshold) // 0.3
+  {		
+    finalColor.r = SizeSmallThreshold;
+    if (prob < ProbabilitySmallThreshold) //prob 0.2
+      finalColor.g = AlphaSmallThreshold;
+  }
+  FragColor = finalColor;
+}
+
+// ConstructStrokesDetails
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D RenderInfo;
+uniform sampler2D MipRendering;
+
+vec2 DetermineStrokeDetail(vec2 texcoord)
+{
+  vec2 Result;
+  //Calculate lighting factor and alpha mask value
+  //TODO
+  //float dx = 0.0149; //1 / stroke texture width
+  //float dy = 0.0036; //1 / stroke texture height
+  float dx = 1.0f / StrokeTexLength;
+  float dy = 1.0f / StrokeTexWidth;
+  vec3 v1, v2, v3, v4;
+  float rr = StrokeTex.texture(vec2(texcoord.r + dx, texcoord.g     )).r;
+  float ll = StrokeTex.texture(vec2(texcoord.r - dx, texcoord.g     )).r;
+  float uu = StrokeTex.texture(vec2(texcoord.r,      texcoord.g + dy)).r;
+  float bb = StrokeTex.texture(vec2(texcoord.r,      texcoord.g - dy)).r;
+  
+  Result.r = AlphaMask.texture(texcoord, 0 ).r;
+  
+  v1 = vec3( 4 * dx, 0,      rr - ll);
+  v2 = vec3( 0     , 4 * dy, uu - bb);
+  vec3 normal = normalize(cross(v1,v2));
+  float lightingFactor = abs(dot(normal, vec3(0,0,1)));
+  
+  if (renderStyle == 0)
+    lightingFactor = 1;
+  Result.g = lightingFactor;
+  return Result;
+}
+
+void main()
+{
+  vec4 finalColor;
+  
+  finalColor.rg = DetermineStrokeDetail(CoordTex);
+  finalColor.b = RenderInfo.texture(CoordTex).b;
+  finalColor.a = MipRendering.texture(CoordTex).a; //the alpha value of the rendering of previous frame
+  
+  FragColor = finalColor;
+}
+
+// vblur
+uniform float DeltaX;
+unfiorm float DeltaY;
+
+uniform sampler2D PreviousVector;
+
+vec4 blur(vec2 texcoord)
+{
+  //Blur the previous result
+  vec4 c  = PreviousVector.texture(texcoord);
+  vec4 ul = PreviousVector.texture(texcoord - vec2( DeltaX,   DeltaY));
+  vec4 u  = PreviousVector.texture(texcoord - vec2( 0,        DeltaY));
+  vec4 ur = PreviousVector.texture(texcoord - vec2(-DeltaX,   DeltaY));
+  vec4 l  = PreviousVector.texture(texcoord - vec2( DeltaX,   0));
+  vec4 r  = PreviousVector.texture(texcoord - vec2(-DeltaX,   0));
+  vec4 bl = PreviousVector.texture(texcoord - vec2( DeltaX,  -DeltaY));
+  vec4 b  = PreviousVector.texture(texcoord - vec2( 0,       -DeltaY));
+  vec4 br = PreviousVector.texture(texcoord - vec2(-DeltaX,  -DeltaY));	
+  
+  return (c + ul + u + ur + l + r + bl + b + br) / 9.0f;
+}
+
+// Gradient
+uniform float AngleThreshold;
+uniform bool OnRealGradientAngle;
+
+vec2 Gradient(vec2 Blur3x3[9], Texture2D BufferName)
+{
+  vec4 color[9];
+  
+  for (int i = 0; i < 9; i++)
+    color[i] = texture(BufferName, Blur3x3[i]);  
+  
+  /*vec3 gX = ul - ur + 2 * l - 2 * r + bl - br;
+   *   f l*oat3 gY = ul - bl + 2 * u - 2 * b + ur - br;
+   *   vec3 G = sqrt(gX * gX + gY * gY);
+   * float Gradient = (G.r + G.g + G.b) * 0.33;*/
+  
+  vec4 gX = color[0] - color[2]  + 2 * color[3] - 2 * color[5] + color[6] - color[8];
+  vec4 gY = color[0] - color[6]  + 2 * color[1] - 2 * color[7] + color[2] - color[8];
+  
+  float gX1 = 0.299 * gX.r + 0.557 * gX.g + 0.144 * gX.b;
+  float gY1 = 0.299 * gY.r + 0.557 * gY.g + 0.144 * gY.b;
+  
+  float gradient = sqrt(gX1 * gX1 + gY1 * gY1);
+  
+  float gradientAngle = 0;
+  if (!OnRealGradientAngle && gradient< AngleThreshold)		
+    gradientAngle = BufferName.texture(CoordTex, 0 ).r;//CHANGE	
+    else
+    {
+      float y = sqrt(gY * gY);
+      float x = sqrt(gX * gX);
+      
+      if (gX.r < 0) x = -x;
+      if (gY.r > 0) y = -y;
+      
+      float angle;
+      if (abs(x) < 0.001)
+	angle = 0;
+      else
+	angle= atan2(y, x);
+      
+      gradientAngle = ( angle / PI + 1 ) * 0.5;
+    }
+    
+    return vec2(gradient, gradientAngle);
+}
+
+
+// RenderTest
+#version 330
+
+out vec4 FragColor;
+
+uniform sampler2D ColorBuffer0;
+
+void main()
+{
+  FragColor = ColorBuffer0.texture(CoordTex);
+}
+
+
+// PreOpticalFlow
+#version 330
+
+out vec4 FragColor;
+
+uniform float DeltaX;
+uniform float DeltaY;
+uniform sampler2D ColorBuffer2;
+uniform sampler2d ColorBuffer3;
+
+void main()
+{
+  vec4 currentDifference = ColorBuffer2.texture(CoordTex) - ColorBuffer3.texture(CoordTex);
+  vec4 gradientX = (ColorBuffer2.texture(CoordTex + vec2( DeltaX,   0)) 
+  - ColorBuffer2.texture(CoordTex - vec2( DeltaX,   0))
+  + ColorBuffer3.texture(CoordTex + vec2( DeltaX,   0)) 
+  - ColorBuffer3.texture(CoordTex - vec2( DeltaX,   0))) * 0.5;
+  
+  vec4 gradientY = (ColorBuffer2.texture(CoordTex + vec2( 0,   DeltaY)) 
+  - ColorBuffer2.texture(CoordTex - vec2( 0,   DeltaY))
+  + ColorBuffer3.texture(CoordTex + vec2( 0,   DeltaY)) 
+  - ColorBuffer3.texture(CoordTex - vec2( 0,   DeltaY))) * 0.5;
+  
+  float cD = (currentDifference.r + currentDifference.g + currentDifference.b) / 3.0f;
+  
+  float gX = 0.33 * gradientX.r + 0.34 * gradientX.g + 0.33 * gradientX.b;
+  float gY = 0.33 * gradientY.r + 0.34 * gradientY.g + 0.33 * gradientY.b;
+  
+  cD = (cD + 1) * 0.5;
+  gX = (gX + 1) * 0.5;
+  gY = (gY + 1) * 0.5;
+  
+  //float gradientMagnitude = sqrt(gX * gX + gY * gY + Lambda);
+  //float gradientMagnitude = gX * gX + gY * gY + Lambda;
+  
+  /*if (gX > 1)
+   *   r *eturn vec4(1,0,0,1);
+   * else
+   *   return vec4(0,1,0,1);*/
+  
+  FragColor =  vec4(cD, gX, gY, 1);
+  //return vec4(1,0,0,1);
+}
+
+
+// OpticalFlowI1
+//the positive optical flow value means upwared and rightward movement
+//called at odd iterations
+#version 330
+
+out vec4 FragColor;
+
+uniform float DeltaX;
+uniform float DeltaY;
+uniform float Lamda;
+uniform sampler2D ColorBuffer2;
+uniform sampler2d ColorBuffer3;
+uniform sampler2D PreviousVector;
+
+void main()
+{
+  vec4 imageInfo = ColorBuffer0.texture(CoordTex);
+  float cD = imageInfo.r * 2 - 1;
+  float gX = imageInfo.g * 2 - 1;
+  float gY = imageInfo.b * 2 - 1;
+  //float gradientMagnitude = sqrt(gX * gX + gY * gY + Lambda);
+  float gradientMagnitude = gX * gX + gY * gY + Lambda;
+  //float gradientMagnitude = imageInfo.a;
+  
+  vec2 c  = PreviousVector.texture(CoordTex);
+  vec2 ul = PreviousVector.texture(CoordTexUL);
+  vec2 u  = PreviousVector.texture(CoordTexU);
+  vec2 ur = PreviousVector.texture(CoordTexUR);
+  vec2 l  = PreviousVector.texture(CoordTexL);
+  vec2 r  = PreviousVector.texture(CoordTexR);
+  vec2 bl = PreviousVector.texture(CoordTexBL);
+  vec2 b  = PreviousVector.texture(CoordTexB);
+  vec2 br = PreviousVector.texture(CoordTexBR);
+  
+  vec2 result = (c + ul + u + ur + l + r + bl + b + br) / 9.0f;
+  vec2 preVectorBlured = result.rg * 2 - vec2(1,1);
+  
+  float preDotGradient = preVectorBlured.r * gX + preVectorBlured.g * gY;
+  
+  vec2 velocity;
+  velocity.r = preVectorBlured.r - (cD + preDotGradient) * (gX / gradientMagnitude);
+  velocity.g = preVectorBlured.g - (cD + preDotGradient) * (gY / gradientMagnitude);
+  
+  velocity.r = (velocity.r * 0.5 + 1) * 0.5;
+  velocity.g = (velocity.g * 0.5 + 1) * 0.5;
+  
+  FragColor = velocity;
+  //return vec4(CD, gX, gY, gradientMagnitude);
+  //return vec4(0,0,0,1);
+}
+
+
+// OpticalFlowI2
+#version 330
+
+out vec4 FragColor;
+
+uniform float DeltaX;
+uniform float DeltaY;
+uniform float Lamda;
+uniform sampler2D ColorBuffer2;
+uniform sampler2d ColorBuffer3;
+uniform sampler2D PreviousVector0;
+
+void main()
+{
+  vec4 imageInfo = ColorBuffer0.texture(CoordTex);
+  float CD = imageInfo.r * 2 - 1;
+  float gX = imageInfo.g * 2 - 1;
+  float gY = imageInfo.b * 2 - 1;
+  //float gradientMagnitude = sqrt(gX * gX + gY * gY + Lambda);
+  float gradientMagnitude = gX * gX + gY * gY + Lambda;
+  //float gradientMagnitude = imageInfo.a;
+  
+  
+  vec2 c  = PreviousVector0.texture(CoordTex);
+  vec2 ul = PreviousVector0.texture(CoordTexUL);
+  vec2 u  = PreviousVector0.texture(CoordTexU;
+  vec2 ur = PreviousVector0.texture(CoordTexUR);
+  vec2 l  = PreviousVector0.texture(CoordTexL);
+  vec2 r  = PreviousVector0.texture(CoordTexR);
+  vec2 bl = PreviousVector0.texture(CoordTexBL);
+  vec2 b  = PreviousVector0.texture(CoordTexB);
+  vec2 br = PreviousVector0.texture(CoordTexBR);
+  
+  vec2 result = (c + ul + u + ur + l + r + bl + b + br) / 9.0f;
+  vec2 preVectorBlured = result.rg * 2 - vec2(1,1);
+  
+  float preDotGradient = preVectorBlured.r * gX + preVectorBlured.g * gY;
+  
+  vec2 velocity;
+  velocity.r = preVectorBlured.r - (cD + preDotGradient) * (gX / gradientMagnitude);
+  velocity.g = preVectorBlured.g - (cD + preDotGradient) * (gY / gradientMagnitude);
+  
+  velocity.r = (velocity.r * 0.5 + 1) * 0.5;
+  velocity.g = (velocity.g * 0.5 + 1) * 0.5;
+  
+  return velocity;
+  //return vec4(CD, gX, gY, gradientMagnitude);
+  //return vec4(0,0,0,1);
+}
+
+// PSRenderScene
+#version 330
+
+out vec4 FragColor;
+
+void main()
+{
+  return 0.01;
+}
+
+// PSRenderOpticalFlow
+#version 330
+
+smooth in vec4 Color;
+
+out vec4 FragColor;
+
+void main()
+{
+  FragColor = Color;
+}
+
+// PSRenderParticles
+#version 330
+
+smooth in vec4 Color;
+smooth in vec2 TexCoord;
+in float Type;
+
+out vec4 FragColor;
+
+uniform float StrokeLength;
+uniform bool OnClipping;
+uniform float GradientMediumThreshold;
+uniform sampler2D RenderInfo;
+uniform sampler2D StrokeBuffer;
+uniform sampler2D GTexCoord;
+uniform sampler2D CGTexCoord;
+
+void main()
+{ 	
+  vec3 mask = StrokeBuffer.texture(TexCoord).rgb;
+  
+  vec4 color = Color * mask.y * vec4(1, 1, 1, mask.x);
+  if (Type > 0.6 && OnClipping) //large stroke
+  {
+    //color = vec4(1,0,1,1);
+    vec2 step = (CGTexCoord - GTexCoord) * 0.5 / StrokeLength;
+    int i = 0;
+    for (i = 0; i <= 2 * StrokeLength; i++)
+    {
+      //float size = StrokeBuffer.texture(GTexCoord + step * i, 0 ).b;
+      vec2 texcoord = GTexCoord + step * i;
+      float gradient = RenderInfo.texture(texcoord, 0 ).b;
+      
+      //if encounter both the medium and small gradient during the searching
+      if (gradient >= GradientLargeThreshold)
+      {
+	color = vec4(0,0,0,0);
+	//color = vec4(1,0,0,1);
+	break;
+      }	
+    }
+  }
+  else if (input.type > 0.4 && OnClipping) //medium stroke
+  {
+    //color = vec4(1,0,0,1);
+    vec2 step = (CGTexCoord - GTexCoord) * 0.5 / StrokeLength;
+    int i = 0;
+    for (i = 0; i <= 2 * StrokeLength; i++)
+    {
+      vec2 texcoord = GTexCoord + step * i;
+      float gradient = RenderInfo.texture(texcoord, 0 ).b;
+      
+      //if encounter small gradient during the searching
+      if (gradient >= GradientMediumThreshold)
+      {
+	color = vec4(0,0,0,0);
+	//color = vec4(0,0,1,1);
+	break;
+      }
+    }
+    //color = vec4(0,0,1,1);
+  }
+  
+  FragColor = color;
+  
+  //return vec4(1,0,0,1);
+}
+
+//--------------------------------------------------------------------------------------
+// GaussianSmooth
+//--------------------------------------------------------------------------------------
+// EnlargeStroke
+#version 330
+
+smooth in vec2 Blur3x3[9];
+
+out vec4 FragColor;
+
+uniform sampler2D RenderInfo;
+
+void main()
+{
+  float count = 0.0f;
+  vec4 result = 0.0f;
+  vec4 c  = RenderInfo.texture(Blur3x3[4]);
+  vec4 ul = RenderInfo.texture(Blur3x3[0]);
+  vec4 u  = RenderInfo.texture(Blur3x3[1]);
+  vec4 ur = RenderInfo.texture(Blur3x3[2]);
+  vec4 l  = RenderInfo.texture(Blur3x3[3]);
+  vec4 r  = RenderInfo.texture(Blur3x3[5]);
+  vec4 bl = RenderInfo.texture(Blur3x3[6]);
+  vec4 b  = RenderInfo.texture(Blur3x3[7]);
+  vec4 br = RenderInfo.texture(Blur3x3[8]);	
+  
+  if (max(max(c.r, c.g), c.b) < 0.9)
+  {
+    result = result + c;
+    count = count + 1.0f;
+  }
+  
+  if (max(max(ul.r, ul.g), ul.b) < 0.9)
+  {
+    result = result + ul;
+    count = count + 1.0f;
+  }
+  
+  if (max(max(u.r, u.g), u.b) < 0.9)
+  {
+    result = result + u;
+    count = count + 1.0f;
+  }
+  
+  if (max(max(ur.r, ur.g), ur.b) < 0.9)
+  {
+    result = result + ur;
+    count = count + 1.0f;
+  }
+  
+  if (max(max(l.r, l.g), l.b) < 0.9)
+  {
+    result = result + l;
+    count = count + 1.0f;
+  }
+  
+  if (max(max(r.r, r.g), r.b) < 0.9)
+  {
+    result = result + r;
+    count = count + 1.0f;
+  }
+  
+  if (max(max(bl.r, bl.g), bl.b) < 0.9)
+  {
+    result = result + bl;
+    count = count + 1.0f;
+  }
+  
+  if (max(max(b.r, b.g), b.b) < 0.9)
+  {
+    result = result + b;
+    count = count + 1.0f;
+  }
+  
+  if (max(max(br.r, br.g), br.b) < 0.9)
+  {
+    result = result + br;
+    count = count + 1.0f;
+  }
+  
+  if (count > 0.0)
+    FragColor = result / count ;// * 1.1 - 0.1;
+  else
+    FragColor = vec4(1,1,1,1);
+}
+
+
+// MedianFilter
+#version 330
+
+smooth in vec2 Blur3x3[9];
+
+out vec4 FragColor;
+
+uniform sampler2D RenderInfo;
+
+void main()
+{
+
+
+float FindMedian(float a, float b, float c)
+{
+  float median;
+  if( a < b )
+  {
+    if( b < c)
+    {
+      median = b;
+    }
+    else
+    {
+      median = max(a,c);
+    }
+  }
+  else
+  {
+    if( a < c)
+    {
+      median = a;
+    }
+    else
+    {
+      median = max(b,c);
+    }
+  }
+  return median;
+}
+
+void main()
+{
+  vec4 c  = RenderInfo.texture(Blur3x3[4]);
+  vec4 ul = RenderInfo.texture(Blur3x3[0]);
+  vec4 u  = RenderInfo.texture(Blur3x3[1]);
+  vec4 ur = RenderInfo.texture(Blur3x3[2]);
+  vec4 l  = RenderInfo.texture(Blur3x3[3]);
+  vec4 r  = RenderInfo.texture(Blur3x3[5]);
+  vec4 bl = RenderInfo.texture(Blur3x3[6]);
+  vec4 b  = RenderInfo.texture(Blur3x3[7]);
+  vec4 br = RenderInfo.texture(Blur3x3[8]);	
+	
+  
+  float Ur = FindMedian(ul.r, u.r, ur.r);
+  float Mr = FindMedian(c.r, l.r, r.r);
+  float Br = FindMedian(bl.r, b.r, br.r);
+  float Red = FindMedian(Ur, Mr, Br);
+  
+  float Ug = FindMedian(ul.g, u.g, ur.g);
+  float Mg = FindMedian(c.g, l.g, r.g);
+  float Bg = FindMedian(bl.g, b.g, br.g);
+  float Green = FindMedian(Ug, Mg, Bg);
+  
+  float Ub = FindMedian(ul.b, u.b, ur.b);
+  float Mb = FindMedian(c.b, l.b, r.b);
+  float Bb = FindMedian(bl.b, b.b, br.b);
+  float Blue = FindMedian(Ub, Mb, Bb);
+  
+  FragColor = vec4(Red, Green, Blue, c.a);	
+}
+
