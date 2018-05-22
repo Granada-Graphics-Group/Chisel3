@@ -143,7 +143,7 @@ void PLYLoader::readData(std::istream& inputStream)
     glm::vec3 max(std::numeric_limits<float>::min());
     glm::vec3 min(std::numeric_limits<float>::max());
     std::vector<std::array<size_t, 4>> vertexCategories;
-    auto colorCategoryIndex = 0;
+    auto colorCategoryIndex = -1;
     bool addAlphaToColor = false;
     bool colorToFloat = false;
                 
@@ -173,7 +173,7 @@ void PLYLoader::readData(std::istream& inputStream)
                 elementSize += property.mTypeSize;
             }
 
-            if(vertexCategories[colorCategoryIndex][3] < 4)
+            if(colorCategoryIndex > -1 && vertexCategories[colorCategoryIndex][3] < 4)
                 addAlphaToColor = true;            
             
             for(size_t i = 0; i < element.mCount; ++i)
@@ -232,7 +232,7 @@ void PLYLoader::readData(std::istream& inputStream)
                 elementSize += property.mTypeSize;
             }            
             
-            if(propertyCategories[colorCategoryIndex][1] < 4)
+            if(useNewData && propertyCategories[colorCategoryIndex][1] < 4)
                 addAlphaToColor = true;            
             
             auto newIndexCount = 0;
@@ -365,7 +365,7 @@ void PLYLoader::readData(std::istream& inputStream)
     else
     {
         std::vector<float> meshColors;   
-        meshColors.resize(4 * meshData[GLBuffer::Vertex].size()/3, 1.0f);
+        meshColors.resize(meshData[GLBuffer::Vertex].size()/3, 1.0f);
         mesh->updateData(GLBuffer::Color, 0, meshColors.size() * sizeof(float), meshColors.data());
     }
     mesh->updateData(GLBuffer::Index, 0, meshData[GLBuffer::Index].size(), meshData[GLBuffer::Index].data());
@@ -373,14 +373,14 @@ void PLYLoader::readData(std::istream& inputStream)
 
     mesh->setBoundingBox(min, max);
 
-    auto model = mResourceManager->createModel("objModel");
-    auto material = mResourceManager->createMaterial("objMaterial", "ProjectiveTex");
+    auto model = mResourceManager->createModel("plyModel");
+    auto material = mResourceManager->createMaterial("plyMaterial", "ProjectiveTex");
     model->setMesh(mesh);
     model->insertMaterial(material);
 
     mScene->insertModel(model);
 
-    auto camera = mResourceManager->createCamera("objCamera", model);
+    auto camera = mResourceManager->createCamera("plyCamera", model);
 
     mScene->insertCamera(camera);
     mScene->setProjCameraNeedUpdate(true);

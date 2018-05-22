@@ -66,6 +66,8 @@ public slots:
     void cancelEditing();
     void editSchema();
     void selectEditingMode();
+    void showErrorInSchemaEditing(const QString& message, int row, int column);
+    void hideErrorMessage();    
     void updateColumnVisibility();
     
 protected:
@@ -88,6 +90,7 @@ private:
     };
 
     void setEditingMode(EditingMode newState);
+    QPoint errorMessagePosition();
             
     QLineEdit* mFilterLineEdit;
         
@@ -122,6 +125,7 @@ private:
     VSizedLayout* mGlobalVerticalLayout;
 
     std::unique_ptr<BalloonMessageDialog> mErrorDialog;
+    std::pair<int, int> mBadEditedCellIndices;
     
     EditingMode mEditingMode;
     DataBaseTable mTempTableSchema;

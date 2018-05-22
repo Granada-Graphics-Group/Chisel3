@@ -95,13 +95,50 @@ bool DataBaseTableSchemaModel::setData(const QModelIndex& index, const QVariant&
     if(role == Qt::EditRole)
     {
         if(index.row() == 0)
-            mLayer->changeFieldName(index.column(), qvariant_cast<QString>(value).toStdString());
-        else if(index.row() == 1)
-            mLayer->changeFieldType(index.column(), static_cast<DataBaseField::Type>(value.toUInt()));
-        
-        emit dataChanged(index, index);
+        {
+            auto newFieldName = qvariant_cast<QString>(value);
+            if(newFieldName != "id")
+            {
+                if(!mLayer->containField(newFieldName.toStdString()))
+                {
+                    QRegExp exp("^[a-zA-Z_][a-zA-Z0-9_]*$");
+                    
+                    if(newFieldName.contains(exp))
+                    {
+                        mInvalidField = false;
+                        mLayer->changeFieldName(index.column(), qvariant_cast<QString>(value).toStdString());
+                        emit dataChanged(index, index);
 
-        return true;
+                        return true;
+                    }
+                    else
+                    {
+                        mInvalidField = true;
+                        emit errorMessageGenerated("Invalid field name", index.row(), index.column());                        
+                        return false;
+                    }
+                }
+                else
+                {
+                    mInvalidField = true;
+                    emit errorMessageGenerated("Field name already exist", index.row(), index.column());                    
+                    return false;
+                }
+            }
+            else
+            {
+                mInvalidField = true;
+                emit errorMessageGenerated("id is a reserved field name", index.row(), index.column());
+                return false;
+            }
+        }
+        else if(index.row() == 1)
+        {
+            mLayer->changeFieldType(index.column(), static_cast<DataBaseField::Type>(value.toUInt()));
+            emit dataChanged(index, index);
+
+            return true;
+        }
     }
 
     return false;

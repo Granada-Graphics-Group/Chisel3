@@ -32,7 +32,9 @@ void FBXExporterDialog::exportModel()
 {
     QFileInfo file(mUi->filePathEdit->text());
     auto layerIndex = mUi->segmentationLayerComboBox->currentData();
-    mChisel->exportChiselModel(file.absoluteFilePath().toStdString(), file.suffix().toStdString(), layerIndex.toInt());
+	auto exportCamera = mUi->exportCameraCheck->isChecked();
+    if(file.suffix().length() == 0) file = QFileInfo(mUi->filePathEdit->text() + ".fbx");
+    mChisel->exportChiselModel(file.absoluteFilePath().toStdString(), file.suffix().toStdString(), layerIndex.toInt(), exportCamera);
     
     accept();
 }

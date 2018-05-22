@@ -24,6 +24,7 @@ public:
     
     const QStringList& fieldTypeString() const { return mFieldTypes; }
     DataBaseTable* schema() const;
+    bool hasInvalidField() const { return mInvalidField; }
     
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
     
@@ -31,7 +32,8 @@ public:
     void setDatabaseLayer(RegisterLayer* layer);
     void copySchemaContents(const DataBaseTable& schema);
 
-signals:    
+signals:
+    void errorMessageGenerated(const QString& message, int row, int column);
     void tableSchemaCreated(const std::string& SQLStatement);
     
 public slots:
@@ -44,6 +46,7 @@ public slots:
 private:
     DataBaseTable* mTableSchema = nullptr;
     RegisterLayer* mLayer = nullptr;
+    bool mInvalidField = false;
     QStringList mFieldTypes = {"Integer", "Double", "String", "Date", "Resource", "Area"};
     QStringList mSQLTypes = {"INTEGER", "REAL", "TEXT", "TEXT", "TEXT", "REAL"};
 };

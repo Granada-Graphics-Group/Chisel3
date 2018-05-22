@@ -1,6 +1,7 @@
 #include "fbxexporter.h"
 #include "resourcemanager.h"
 #include "scene3d.h"
+#include "camera.h"
 #include "logger.hpp"
 
 #include <glm/glm.hpp>
@@ -52,7 +53,7 @@ void FBXExporter::exportSceneToFile(std::string filepath, Scene3D* scene)
     mExporter->Destroy();
 }
 
-void FBXExporter::exportSegmentedModelToFile(std::string filepath, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation)
+void FBXExporter::exportSegmentedModelToFile(std::string filepath, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation, Camera* camera)
 {    
     mFbxScene = FbxScene::Create(mManager, model->name().c_str());
     
@@ -62,7 +63,10 @@ void FBXExporter::exportSegmentedModelToFile(std::string filepath, Model3D* mode
         exit(1);
     }
     
-    populateFBXScene(mFbxScene, model, segmentation);    
+    populateFBXScene(mFbxScene, model, segmentation);
+
+	if (camera != nullptr)
+		addCamera(mFbxScene, camera);
 
     auto mExporter = FbxExporter::Create(mManager, "");
     mExporter->SetFileExportVersion(FBX_2014_00_COMPATIBLE);
@@ -235,7 +239,7 @@ void FBXExporter::populateFBXScene(fbxsdk::FbxScene* fbxScene, Model3D* model, c
         auto node = FbxNode::Create(fbxScene, pair.first.c_str());
         node->SetNodeAttribute(fbxMesh);
 
-        auto eulerAngles = glm::eulerAngles(model->orientation());
+        auto eulerAngles = glm::degrees(glm::eulerAngles(model->orientation()));
         node->LclRotation.Set({eulerAngles.x, eulerAngles.y, eulerAngles.z});
 
         auto position = model->position();
@@ -246,4 +250,39 @@ void FBXExporter::populateFBXScene(fbxsdk::FbxScene* fbxScene, Model3D* model, c
 
         rootNode->AddChild(node);
     } 
+}
+
+void FBXExporter::addCamera(fbxsdk::FbxScene* fbxScene, Camera * camera)
+{
+	// Create a node for our camera in the scene.
+	auto cameraNode = FbxNode::Create(fbxScene, "cameraNode");
+
+	// Create a light.
+	auto fbxCamera = FbxCamera::Create(fbxScene, "camera");
+
+	fbxCamera->SetAspect(FbxCamera::eFixedResolution, camera->aspectWidth(), camera->aspectHeight());
+	fbxCamera->FieldOfViewX.Set(camera->fieldOfViewX());
+	fbxCamera->FieldOfViewY.Set(camera->fieldOfViewY());
+	fbxCamera->FieldOfView.Set(camera->fieldOfView());
+	fbxCamera->FocalLength.Set(camera->focalLength());
+	fbxCamera->SetFarPlane(camera->farPlane());
+	fbxCamera->SetNearPlane(camera->nearPlane());
+
+	auto position = camera->position();
+	fbxCamera->Position.Set({position.x, position.y, position.z});
+
+	cameraNode->LclTranslation.Set({ position.x, position.y, position.z });
+
+	auto eulerAngles = glm::degrees(glm::eulerAngles(camera->orientation()));
+	cameraNode->LclRotation.Set({ eulerAngles.x, eulerAngles.y, eulerAngles.z });
+
+	auto up = camera->upDirection();
+	fbxCamera->UpVector.Set({ up.x, up.y, up.z });
+
+	// Set the node attribute of the camera node.
+	cameraNode->SetNodeAttribute(fbxCamera);
+
+	// Add the camera node to the root node in the scene.
+	auto rootNode = fbxScene->GetRootNode();
+	rootNode->AddChild(cameraNode);
 }

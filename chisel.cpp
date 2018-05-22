@@ -203,10 +203,10 @@ void Chisel::import3DModel(std::string name, std::string extension, std::string 
     mDirtyFlag = true;
 }
 
-void Chisel::exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex)
+void Chisel::exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex, bool exportCamera)
 {
     auto segmentation = segmentModelWithLayer(layerIndex);
-    mResourceManager->exportSegmentedModel(filePath, extension, mRenderer->scene()->models()[0], segmentation);
+    mResourceManager->exportSegmentedModel(filePath, extension, mRenderer->scene()->models()[0], segmentation, mRenderer->scene()->camera());
 }
 
 bool Chisel::setDatabase(std::string name)

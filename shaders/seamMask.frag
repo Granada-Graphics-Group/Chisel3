@@ -33,11 +33,13 @@ layout(location = 0) out vec4 FragColor;
 uniform sampler2DArray ArrayTexture[13];
 
 void main()
-{    
+{   
+    ivec3 texSize = textureSize(ArrayTexture[paintIndices.x], 0);
+
     for(int x = -2; x <= 2; x++)
         for(int y = -2; y <= 2; y++)
         {
-            vec2 offset = vec2(x/2048.0, y/2048.0);
+            vec2 offset = vec2(float(x)/texSize.x, float(y)/texSize.y);
             float depth = texture(ArrayTexture[paintIndices.x], vec3(CoordST, paintIndices.y)).x;
             float depthOffset = texture(ArrayTexture[paintIndices.x], vec3(CoordST + offset, paintIndices.y)).x;
             

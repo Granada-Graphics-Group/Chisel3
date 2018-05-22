@@ -328,7 +328,7 @@ DataBaseEditorWidget::DataBaseEditorWidget(DataBaseTableSchemaModel* schemaModel
 
     
     mErrorDialog = std::make_unique<BalloonMessageDialog>(this);
-    mErrorDialog->setWindowFlags(mErrorDialog->windowFlags() | Qt::WindowTransparentForInput | Qt::WindowDoesNotAcceptFocus);
+    mErrorDialog->setWindowFlags(mErrorDialog->windowFlags() /*| Qt::WindowTransparentForInput*/ | Qt::WindowDoesNotAcceptFocus);
     mErrorDialog->setTipOrientation(BalloonDialog::TipOrientation::Up);    
     mErrorDialog->setAttribute(Qt::WA_ShowWithoutActivating);
     mErrorDialog->setBackgroundColor(Qt::darkRed);    
@@ -336,6 +336,8 @@ DataBaseEditorWidget::DataBaseEditorWidget(DataBaseTableSchemaModel* schemaModel
     selectEditingMode();
 
     connect(schemaModel, &DataBaseTableSchemaModel::dataChanged, this, &DataBaseEditorWidget::updateSizes);
+    connect(schemaModel, &DataBaseTableSchemaModel::dataChanged, this, &DataBaseEditorWidget::hideErrorMessage);
+    connect(schemaModel, &DataBaseTableSchemaModel::errorMessageGenerated, this, &DataBaseEditorWidget::showErrorInSchemaEditing);     
     connect(dataModel, &DataBaseTableDataModel::dataChanged, this, &DataBaseEditorWidget::updateVisibleColumns);
     connect(mDataView->horizontalHeader(), &QHeaderView::sectionResized, this, &DataBaseEditorWidget::updateVisibleColumns);
     
@@ -451,7 +453,7 @@ void DataBaseEditorWidget::clearResourceDirectorySelection()
 
 void DataBaseEditorWidget::hide()
 {
-    if(mErrorDialog->isVisible()) mErrorDialog->hide();
+    hideErrorMessage();
     BalloonWidget::hide();
 }
 
@@ -463,7 +465,7 @@ void DataBaseEditorWidget::filterTable()
     if(!dataModel->lastError().isValid())
     {
         mErrorDialog->clearMessage();        
-        if(mErrorDialog->isVisible()) mErrorDialog->hide();
+        hideErrorMessage();
     }
     else
     {        
@@ -472,10 +474,9 @@ void DataBaseEditorWidget::filterTable()
         dataModel->select();
         
         mErrorDialog->setMessage(error, Qt::white); 
-        auto dialogPos = static_cast<QWidget*>(mFilterLineEdit->parent())->mapToGlobal(mFilterLineEdit->pos() + QPoint(0, mFilterLineEdit->height()));
         mErrorDialog->adjustSize();
         mErrorDialog->show();
-        mErrorDialog->move(dialogPos);
+        mErrorDialog->move(errorMessagePosition());
     }
 }
 
@@ -485,7 +486,7 @@ void DataBaseEditorWidget::clearFilterTable()
     mFilterLineEdit->clear();
     dataModel->setFilter("");
     
-    if(mErrorDialog->isVisible()) mErrorDialog->hide();
+    hideErrorMessage();
 }
 
 void DataBaseEditorWidget::updateSizes()
@@ -569,6 +570,23 @@ void DataBaseEditorWidget::selectEditingMode()
     else
         setEditingMode(EditingMode::Table);
 }
+
+void DataBaseEditorWidget::showErrorInSchemaEditing(const QString& message, int row, int column)
+{
+    mErrorDialog->setMessage(message, Qt::white);
+    mBadEditedCellIndices = {row, column};
+
+    mErrorDialog->adjustSize();
+    mErrorDialog->show();
+    mErrorDialog->move(errorMessagePosition());    
+}
+
+void DataBaseEditorWidget::hideErrorMessage()
+{
+    if(mErrorDialog->isVisible()) mErrorDialog->hide();
+}
+
+
 
 // *** Private slots *** //
 
@@ -716,9 +734,8 @@ void DataBaseEditorWidget::showEvent(QShowEvent* event)
     
     if(!mErrorDialog->isEmpty())
     {
-        auto dialogPos = static_cast<QWidget*>(mFilterLineEdit->parent())->mapToGlobal(mFilterLineEdit->pos() + QPoint(0, mFilterLineEdit->height()));
         mErrorDialog->show();
-        mErrorDialog->move(dialogPos);
+        mErrorDialog->move(errorMessagePosition());
     }
 }
 
@@ -727,10 +744,9 @@ void DataBaseEditorWidget::moveEvent(QMoveEvent* event)
     BalloonWidget::moveEvent(event);
     
     if(!mErrorDialog->isEmpty())
-    {
-        auto dialogPos = static_cast<QWidget*>(mFilterLineEdit->parent())->mapToGlobal(mFilterLineEdit->pos() + QPoint(0, mFilterLineEdit->height()));
+    {       
         mErrorDialog->show();
-        mErrorDialog->move(dialogPos);
+        mErrorDialog->move(errorMessagePosition());
     }    
 }
 
@@ -754,3 +770,19 @@ void DataBaseEditorWidget::setEditingMode(EditingMode newMode)
         mSchemaEditingWidget->show();
     }
 }
+
+QPoint DataBaseEditorWidget::errorMessagePosition()
+{
+    QPoint dialogPos;
+    if(mEditingMode == EditingMode::Table)
+        dialogPos = static_cast<QWidget*>(mFilterLineEdit->parent())->mapToGlobal(mFilterLineEdit->pos() + QPoint(0, mFilterLineEdit->height()));
+    else
+    {
+        int height = mSchemaView->rowViewportPosition(mBadEditedCellIndices.first) +  mSchemaView->rowHeight(mBadEditedCellIndices.first);
+        int width = mSchemaView->columnViewportPosition(mBadEditedCellIndices.second) + mSchemaView->columnWidth(mBadEditedCellIndices.second) / 2;
+        dialogPos = mSchemaView->viewport()->mapToGlobal({width, height}) - QPoint(mErrorDialog->width() / 2, 0);
+    }
+
+    return dialogPos;
+}
+

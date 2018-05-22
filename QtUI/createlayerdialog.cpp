@@ -134,15 +134,19 @@ void CreateLayerDialog::validateLayerName()
         }
         else
         {
+            mValidName = false;
+            
             mErrorDialog->setMessage("Invalid Layer Name", Qt::white);        
             auto height = mUi->nameTextEdit->height() - mErrorDialog->height();
             mErrorDialog->move(mapToGlobal(mUi->nameTextEdit->pos() + QPoint(mUi->nameTextEdit->width(), height/2.0)));
             mErrorDialog->adjustSize();
-            mErrorDialog->show();                    
+            mErrorDialog->show();            
         }
     }
     else
     {
+        mValidName = false; 
+        
         mErrorDialog->setMessage("The layer already exists", Qt::white);        
         auto height = mUi->nameTextEdit->height() - mErrorDialog->height();
         mErrorDialog->move(mapToGlobal(mUi->nameTextEdit->pos() + QPoint(mUi->nameTextEdit->width(), height/2.0)));

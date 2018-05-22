@@ -9,6 +9,7 @@
 
 class ResourceManager;
 class Scene3D;
+class Camera;
 class Model3D;
 
 class FBXExporter
@@ -18,12 +19,12 @@ public:
     ~FBXExporter();
     
     void exportSceneToFile(std::string filepath, Scene3D* scene);
-    void exportSegmentedModelToFile(std::string filepath, Model3D* model, const std::map<std::string, std::vector<uint32_t>>& segmentation);
+    void exportSegmentedModelToFile(std::string filepath, Model3D* model, const std::map<std::string, std::vector<uint32_t>>& segmentation, Camera* camera);
         
 private:
     void populateFBXScene(FbxScene* fbxScene, Scene3D* scene);
     void populateFBXScene(FbxScene* fbxScene, Model3D* model, const std::map<std::string, std::vector<uint32_t>>& segmentation);
-    void exportScene(Scene3D* scene);
+	void addCamera(fbxsdk::FbxScene* fbxScene, Camera* camera);
     
     FbxManager* mManager = nullptr;
     FbxScene* mFbxScene = nullptr;  

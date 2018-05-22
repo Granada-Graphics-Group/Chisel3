@@ -20,6 +20,9 @@ public slots:
     void deleteSelectedField();
     void resizeTableView();
     
+protected slots:    
+    void closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint hint) override;    
+    
 private:
     
 };

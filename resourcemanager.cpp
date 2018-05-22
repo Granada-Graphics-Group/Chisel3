@@ -328,7 +328,7 @@ Camera* ResourceManager::createCamera(std::string name, Model3D* model)
         
         auto matrix = model->modelMatrix();
         auto bbox = model->mesh()->boundingBox();
-        auto widthZ = (matrix * glm::vec4(bbox.max, 1.0)).z - (matrix * glm::vec4(bbox.min, 1.0)).z;
+        auto widthZ = glm::length(matrix * glm::vec4(bbox.max, 1.0) - matrix * glm::vec4(bbox.min, 1.0));//(matrix * glm::vec4(bbox.max, 1.0)).z - (matrix * glm::vec4(bbox.min, 1.0)).z;
 
         camera->setFarPlane(widthZ * 20);
         camera->setNearPlane(0.0999);
@@ -1728,12 +1728,16 @@ void ResourceManager::exportScene(std::string name, std::string extension, std::
    }
 }
 
-void ResourceManager::exportSegmentedModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation)
+void ResourceManager::exportSegmentedModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation, Camera* camera)
 {
     if(extension == "fbx")
     {
         FBXExporter exporter;
-        exporter.exportSegmentedModelToFile(filePath, model, segmentation);
+
+		if(segmentation.size())
+			exporter.exportSegmentedModelToFile(filePath, model, segmentation, camera);
+		//else
+		//	exporter.exportSceneToFile(filePath, model, exportCamera);
     }
 }
 

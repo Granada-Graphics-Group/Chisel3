@@ -103,7 +103,7 @@ public:
     void loadChiselFile(std::string name, std::string path);
     void saveChiselProject(std::string name = "", std::string path = "");
     void import3DModel(std::string name, std::string extension, std::string path);
-    void exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex);    
+    void exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex, bool exportCamera);    
     
     bool setDatabase(std::string name);
    

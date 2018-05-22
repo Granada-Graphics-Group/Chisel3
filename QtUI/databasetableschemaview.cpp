@@ -66,3 +66,14 @@ void DataBaseTableSchemaView::resizeTableView()
     //resize(horizontalHeader()->length() + 2 * frameWidth(), verticalHeader()->length() + 2 * frameWidth());    
     //updateGeometry();
 }
+
+// *** Protected slots *** //
+
+void DataBaseTableSchemaView::closeEditor(QWidget* editor, QAbstractItemDelegate::EndEditHint hint)
+{
+    if(currentIndex().row() == 0 && static_cast<DataBaseTableSchemaModel*>(model())->hasInvalidField())        
+        edit(currentIndex());
+    else
+        QTableView::closeEditor(editor, hint);
+}
+
