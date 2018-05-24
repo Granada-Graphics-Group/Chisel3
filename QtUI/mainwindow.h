@@ -130,12 +130,13 @@ public slots:
     void addPaletteToCollection();
     void applySelectedPaletteToLayer();
     
-    void selectBackgroundColor();
     void editLightingParameters();
     void setSpecularColor(float value);
     void setSpecularPower(float value);
     void toggleVertexColorVisibility(bool checked);
     void selectDefaultModelColor();
+	void selectBackgroundColor();
+	void alignCameraToModel();
 
     void updateMarkToolRadius(int sliderValue);
     void updateMarkToolSlider(float radius);

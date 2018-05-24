@@ -27,7 +27,8 @@ Renderer::Renderer(RendererType type, int windowWidth, int windowHeight, Resourc
             mPickMode = [this](bool pick){ this->mGLRenderer->setPickMode(pick); };
             mSliceMode = [this](bool slice){ this->mGLRenderer->setSliceMode(slice); };
             mClearSlice = [this]() { this->mGLRenderer->clearSlice(); };
-            mResetCamera = [this](){ this->mGLRenderer->resetCamera(); };            
+            mAlignMainCameraToModel = [this](){ this->mGLRenderer->alignMainCameraToModel(); };
+            mAlignCameraToModel = [this](Camera* camera, Model3D* model) { this->mGLRenderer->alignCameraToModel(camera, model); };
             mInsertMarkTool = [this](){ this->mGLRenderer->insertMarkTool(); };
             mRemoveMarkTool = [this](){ this->mGLRenderer->removeMarkTool(); };
             mUpdateMarkToolPosition = [this](int x, int y){ this->mGLRenderer->updateMarkToolPosition(x, y); };
@@ -165,11 +166,6 @@ void Renderer::setSliceMode(bool slice)
 void Renderer::clearSlice()
 {
     mClearSlice();
-}
-
-void Renderer::resetCamera()
-{
-    mResetCamera();
 }
 
 void Renderer::insertMarkTool()
@@ -314,11 +310,6 @@ void Renderer::removeScene(Scene3D* scene)
     mGLRenderer->removeScene(scene);
 }
 
-void Renderer::setBackgroundColor(glm::vec4 color)
-{
-    mGLRenderer->setClearColor(color);
-}
-
 void Renderer::toggleVertexColorVisibility(bool checked)
 {
     mGLRenderer->toggleVertexColorVisibility(checked);
@@ -337,6 +328,21 @@ void Renderer::setSpecularColor(glm::vec3 color)
 void Renderer::setSpecularPower(float power)
 {
     mGLRenderer->setSpecularPower(power);
+}
+
+void Renderer::setBackgroundColor(glm::vec4 color)
+{
+	mGLRenderer->setClearColor(color);
+}
+
+void Renderer::alignMainCameraToModel()
+{
+	mAlignMainCameraToModel();
+}
+
+void Renderer::alignCameraToModel(Camera * camera, Model3D * model)
+{
+    mAlignCameraToModel(camera, model);
 }
 
 std::vector<glm::byte> Renderer::readLayerData(unsigned int layerIndex)

@@ -55,8 +55,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>268</width>
-         <height>673</height>
+         <width>98</width>
+         <height>78</height>
         </rect>
        </property>
        <attribute name="label">
@@ -144,7 +144,7 @@
          <x>0</x>
          <y>0</y>
          <width>268</width>
-         <height>673</height>
+         <height>733</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -431,8 +431,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>223</width>
-            <height>667</height>
+            <width>228</width>
+            <height>731</height>
            </rect>
           </property>
           <attribute name="label">
@@ -624,8 +624,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>223</width>
-            <height>667</height>
+            <width>98</width>
+            <height>28</height>
            </rect>
           </property>
           <attribute name="label">
@@ -665,7 +665,7 @@
      <x>0</x>
      <y>0</y>
      <width>1848</width>
-     <height>38</height>
+     <height>18</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -701,10 +701,12 @@
     <property name="title">
      <string>Vie&amp;w</string>
     </property>
-    <addaction name="actionBackgroundColor"/>
     <addaction name="actionEditLightingParameters"/>
     <addaction name="actionShowVertexColor"/>
     <addaction name="actionDefaultModelColor"/>
+    <addaction name="actionBackgroundColor"/>
+    <addaction name="separator"/>
+    <addaction name="actionAlignCameraToModel"/>
    </widget>
    <widget class="QMenu" name="menuPalette">
     <property name="title">
@@ -1210,6 +1212,11 @@
   <action name="actionExportModel">
    <property name="text">
     <string>Export &amp;model...</string>
+   </property>
+  </action>
+  <action name="actionAlignCameraToModel">
+   <property name="text">
+    <string>Align camera to model</string>
    </property>
   </action>
  </widget>

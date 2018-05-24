@@ -20,8 +20,10 @@ class ResourceManager;
 class Texture;
 class Program;
 class Chisel;
-class Mesh;
 class Scene3D;
+class Camera;
+class Model3D;
+class Mesh;
 
 class Renderer
 {
@@ -56,7 +58,6 @@ public:
     void setPickMode(bool pick);
     void setSliceMode(bool slice);
     void clearSlice();
-    void resetCamera();
     void insertMarkTool();
     void removeMarkTool();
     void updateMarkToolPosition(int x, int y);
@@ -87,12 +88,14 @@ public:
     void loadChiselScene(Scene3D* scene);
     void swapChiselScene(Scene3D* scene);
     void removeScene(Scene3D* scene);
-    
-    void setBackgroundColor(glm::vec4 color);
+        
     void toggleVertexColorVisibility(bool checked);
     void setDefaultModelColor(glm::vec4 color);
     void setSpecularColor(glm::vec3 color);
     void setSpecularPower(float power);
+	void setBackgroundColor(glm::vec4 color);
+	void alignMainCameraToModel();
+    void alignCameraToModel(Camera* camera, Model3D* model);
 
     std::vector<glm::byte> readLayerData(unsigned int layerIndex);
     std::vector<glm::byte> readLayerMask(unsigned int layerIndex);
@@ -131,7 +134,8 @@ private:
     std::function<void(bool)> mPickMode;
     std::function<void(bool)> mSliceMode;
     std::function<void()> mClearSlice;
-    std::function<void()> mResetCamera;
+    std::function<void()> mAlignMainCameraToModel;
+    std::function<void(Camera*, Model3D*)> mAlignCameraToModel;
     std::function<void()> mInsertMarkTool;
     std::function<void()> mRemoveMarkTool;
     std::function<void(int, int)> mUpdateMarkToolPosition;

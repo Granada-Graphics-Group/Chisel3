@@ -56,7 +56,7 @@
     </spacer>
    </item>
    <item>
-    <widget class="QGroupBox" name="layerTypeBox">
+    <widget class="QGroupBox" name="segmentModelBox">
      <property name="title">
       <string>Segment &amp;3D Model</string>
      </property>

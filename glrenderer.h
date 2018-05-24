@@ -114,7 +114,8 @@ public:
     void setReadMode(bool read);// { (read) ? mMode = Mode::Read : mMode = Mode::Render; }
     void setPickMode(bool pick);// { (pick) ? mMode = Mode::Pick : mMode = Mode::Render; }
     void setSliceMode(bool slice);
-    void resetCamera();
+    void alignMainCameraToModel();
+    void alignCameraToModel(Camera *camera, Model3D * model);
     void insertMarkTool();
     void removeMarkTool();
     void updateMarkToolPosition(int x, int y);

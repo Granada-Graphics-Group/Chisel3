@@ -33,7 +33,7 @@ FBXExporter::~FBXExporter()
 
 // *** Public Methods *** //
 
-void FBXExporter::exportSceneToFile(std::string filepath, Scene3D* scene)
+void FBXExporter::exportSceneToFile(std::string filepath, Scene3D* scene, bool exportCamera)
 {
     mFbxScene = FbxScene::Create(mManager, scene->name().c_str());
     
@@ -43,7 +43,9 @@ void FBXExporter::exportSceneToFile(std::string filepath, Scene3D* scene)
         exit(1);
     }
     
-    populateFBXScene(mFbxScene, scene);    
+    //populateFBXScene(mFbxScene, scene);
+
+    if (exportCamera) addCamera(mFbxScene, scene->camera());
 
     auto mExporter = FbxExporter::Create(mManager, "");
     mExporter->SetFileExportVersion(FBX_2014_00_COMPATIBLE);
@@ -53,7 +55,7 @@ void FBXExporter::exportSceneToFile(std::string filepath, Scene3D* scene)
     mExporter->Destroy();
 }
 
-void FBXExporter::exportSegmentedModelToFile(std::string filepath, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation, Camera* camera)
+void FBXExporter::exportModelToFile(std::string filepath, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation, Camera* camera, bool exportCamera)
 {    
     mFbxScene = FbxScene::Create(mManager, model->name().c_str());
     
@@ -63,10 +65,13 @@ void FBXExporter::exportSegmentedModelToFile(std::string filepath, Model3D* mode
         exit(1);
     }
     
-    populateFBXScene(mFbxScene, model, segmentation);
+    if (segmentation.size())
+        populateFBXScene(mFbxScene, model, segmentation, camera);
+    else
+        populateFBXScene(mFbxScene, model, camera);
 
-	if (camera != nullptr)
-		addCamera(mFbxScene, camera);
+
+	if (exportCamera) addCamera(mFbxScene, camera);
 
     auto mExporter = FbxExporter::Create(mManager, "");
     mExporter->SetFileExportVersion(FBX_2014_00_COMPATIBLE);
@@ -81,74 +86,72 @@ void FBXExporter::exportSegmentedModelToFile(std::string filepath, Model3D* mode
 
 // *** Private Methods *** //
 
-void FBXExporter::populateFBXScene(FbxScene* fbxScene, Scene3D* scene)
+void FBXExporter::populateFBXScene(FbxScene* fbxScene, Model3D* model, Camera* camera)
 {
     auto rootNode = fbxScene->GetRootNode();
-     
-    for(const auto& model : scene->models())
-    {
-        auto mesh = model->mesh();
 
-        auto fbxMesh = FbxMesh::Create(fbxScene, mesh->name().c_str());
-        
-        auto normalElement= fbxMesh->CreateElementNormal();
-        normalElement->SetMappingMode(FbxGeometryElement::eByControlPoint);
-        normalElement->SetReferenceMode(FbxGeometryElement::eDirect);
+    auto mesh = model->mesh();
 
-        auto vColorElement= fbxMesh->CreateElementVertexColor();
-        vColorElement->SetMappingMode(FbxGeometryElement::eByControlPoint);
-        vColorElement->SetReferenceMode(FbxGeometryElement::eDirect);
+    auto fbxMesh = FbxMesh::Create(fbxScene, mesh->name().c_str());
         
-        auto uvElement = fbxMesh->CreateElementUV("UVSet1");
-        uvElement->SetMappingMode(FbxGeometryElement::eByControlPoint);
-        uvElement->SetReferenceMode(FbxGeometryElement::eDirect);
+    auto normalElement= fbxMesh->CreateElementNormal();
+    normalElement->SetMappingMode(FbxGeometryElement::eByControlPoint);
+    normalElement->SetReferenceMode(FbxGeometryElement::eDirect);
+
+    auto vColorElement= fbxMesh->CreateElementVertexColor();
+    vColorElement->SetMappingMode(FbxGeometryElement::eByControlPoint);
+    vColorElement->SetReferenceMode(FbxGeometryElement::eDirect);
+        
+    auto uvElement = fbxMesh->CreateElementUV("UVSet1");
+    uvElement->SetMappingMode(FbxGeometryElement::eByControlPoint);
+    uvElement->SetReferenceMode(FbxGeometryElement::eDirect);
         
 //         FbxGeometryElementMaterial* materialElement = fbxMesh->CreateElementMaterial();
 //         materialElement->SetMappingMode(FbxGeometryElement::eAllSame);
         
-        fbxMesh->InitControlPoints(mesh->elementCount());
+    fbxMesh->InitControlPoints(mesh->vertexCount());
         
-        auto controlPoints = fbxMesh->GetControlPoints();
-        auto vertexBuffer = reinterpret_cast<const float *>(mesh->vertexBuffer().data());
-        auto normalBuffer = reinterpret_cast<const float *>(mesh->normalBuffer().data());
-        auto uvBuffer = reinterpret_cast<const float *>(mesh->uvBuffer().data());
-        auto colorBuffer = reinterpret_cast<const float *>(mesh->colorBuffer().data());
-        auto indexBuffer = reinterpret_cast<const uint32_t *>(mesh->indexBuffer().data());
+    auto controlPoints = fbxMesh->GetControlPoints();
+    auto vertexBuffer = reinterpret_cast<const float *>(mesh->vertexBuffer().data());
+    auto normalBuffer = reinterpret_cast<const float *>(mesh->normalBuffer().data());
+    auto uvBuffer = reinterpret_cast<const float *>(mesh->uvBuffer().data());
+    auto colorBuffer = reinterpret_cast<const float *>(mesh->colorBuffer().data());
+    auto indexBuffer = reinterpret_cast<const uint32_t *>(mesh->indexBuffer().data());
                 
-        for(auto i = 0; i < mesh->elementCount(); ++i)
-        {
-            controlPoints[i] = {vertexBuffer[3 * i], vertexBuffer[3 * i + 1], vertexBuffer[3 * i + 2], 1.0};
-            normalElement->GetDirectArray().Add({normalBuffer[3 * i], normalBuffer[3 * i + 1], normalBuffer[3 * i + 2], 1.0});
-            uvElement->GetDirectArray().Add({uvBuffer[2 * i], uvBuffer[2 * i + 1]});
-            vColorElement->GetDirectArray().Add({colorBuffer[4 * i], colorBuffer[4 * i + 1], colorBuffer[4 * i + 2], colorBuffer[4 * i + 3]});
-        }
+    for(auto i = 0; i < mesh->vertexCount(); ++i)
+    {
+        controlPoints[i] = {vertexBuffer[3 * i], vertexBuffer[3 * i + 1], vertexBuffer[3 * i + 2], 1.0};
+        normalElement->GetDirectArray().Add({normalBuffer[3 * i], normalBuffer[3 * i + 1], normalBuffer[3 * i + 2], 1.0});
+        uvElement->GetDirectArray().Add({uvBuffer[2 * i], uvBuffer[2 * i + 1]});
+        vColorElement->GetDirectArray().Add({colorBuffer[4 * i], colorBuffer[4 * i + 1], colorBuffer[4 * i + 2], colorBuffer[4 * i + 3]});
+    }
         
-        for(auto i = 0; i < mesh->elementCount(); i+=3)
-        {
-            fbxMesh->BeginPolygon();
-            fbxMesh->AddPolygon(indexBuffer[i]);
-            fbxMesh->AddPolygon(indexBuffer[i + 1]);
-            fbxMesh->AddPolygon(indexBuffer[i + 2]);
-            fbxMesh->EndPolygon();
-        }
+    for(auto i = 0; i < mesh->elementCount(); i+=3)
+    {
+        fbxMesh->BeginPolygon();
+        fbxMesh->AddPolygon(indexBuffer[i]);
+        fbxMesh->AddPolygon(indexBuffer[i + 1]);
+        fbxMesh->AddPolygon(indexBuffer[i + 2]);
+        fbxMesh->EndPolygon();
+    }
         
-        auto node = FbxNode::Create(fbxScene, model->name().c_str());
-        node->SetNodeAttribute(fbxMesh);
+    auto node = FbxNode::Create(fbxScene, model->name().c_str());
+    node->SetNodeAttribute(fbxMesh);
         
-        auto eulerAngles = glm::eulerAngles(model->orientation());
-        node->LclRotation.Set({eulerAngles.x, eulerAngles.y, eulerAngles.z});
+    auto orientation = camera->orientation() * model->orientation();
+    auto eulerAngles = glm::degrees(glm::eulerAngles(orientation));
+    node->LclRotation.Set({ eulerAngles.x, eulerAngles.y, eulerAngles.z });
 
-        auto position = model->position();
-        node->LclTranslation.Set({position.x, position.y, position.z});
+    auto position = model->position();
+    node->LclTranslation.Set({ position.x, position.y, position.z });
+
+    auto scale = model->scale();
+    node->LclScaling.Set({ scale.x, scale.y, scale.z });
         
-        auto scale = model->scale();
-        node->LclScaling.Set({scale.x, scale.y, scale.z});
-        
-        rootNode->AddChild(node);
-    }     
+    rootNode->AddChild(node);
 }
 
-void FBXExporter::populateFBXScene(fbxsdk::FbxScene* fbxScene, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation)
+void FBXExporter::populateFBXScene(fbxsdk::FbxScene* fbxScene, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation, Camera* camera)
 {
     auto rootNode = fbxScene->GetRootNode();
      
@@ -199,47 +202,12 @@ void FBXExporter::populateFBXScene(fbxsdk::FbxScene* fbxScene, Model3D* model, c
             fbxMesh->AddPolygon(i + 2);
             fbxMesh->EndPolygon();
         }
-        
-//         Index Count > vertex count
-//         std::set<uint32_t> unique;
-//         std::vector<uint32_t> newIndices;
-// 
-//         for(const auto& index : indices)
-//         {
-//             auto result = unique.insert(index);            
-//             if(result.second)
-//                 newIndices.push_back(static_cast<uint32_t>(unique.size()) - 1);
-//             else
-//                 newIndices.push_back(std::distance(begin(unique), result.first) - 1);
-//         }
-//         
-//         
-//         fbxMesh->InitControlPoints(unique.size());
-//         auto controlPoints = fbxMesh->GetControlPoints();
-// 
-//         int i = 0;
-//         for(const auto& idx: unique)
-//         {
-//             controlPoints[i] = {vertexBuffer[3 * idx], vertexBuffer[3 * idx + 1], vertexBuffer[3 * idx + 2], 1.0};
-//             normalElement->GetDirectArray().Add({normalBuffer[3 * idx], normalBuffer[3 * idx + 1], normalBuffer[3 * idx + 2], 1.0});
-//             uvElement->GetDirectArray().Add({uvBuffer[2 * idx], uvBuffer[2 * idx + 1]});
-//             vColorElement->GetDirectArray().Add({colorBuffer[4 * idx], colorBuffer[4 * idx + 1], colorBuffer[4 * idx + 2], colorBuffer[4 * idx + 3]});
-//             ++i;
-//         }
-//         
-//         for(auto i = 0; i < newIndices.size(); i += 3)
-//         {
-//             fbxMesh->BeginPolygon();
-//             fbxMesh->AddPolygon(newIndices[i]);
-//             fbxMesh->AddPolygon(newIndices[i + 1]);
-//             fbxMesh->AddPolygon(newIndices[i + 2]);
-//             fbxMesh->EndPolygon();
-//         }           
-        
+                         
         auto node = FbxNode::Create(fbxScene, pair.first.c_str());
         node->SetNodeAttribute(fbxMesh);
 
-        auto eulerAngles = glm::degrees(glm::eulerAngles(model->orientation()));
+		auto orientation = camera->orientation() * model->orientation();
+        auto eulerAngles = glm::degrees(glm::eulerAngles(orientation));
         node->LclRotation.Set({eulerAngles.x, eulerAngles.y, eulerAngles.z});
 
         auto position = model->position();
@@ -273,8 +241,8 @@ void FBXExporter::addCamera(fbxsdk::FbxScene* fbxScene, Camera * camera)
 
 	cameraNode->LclTranslation.Set({ position.x, position.y, position.z });
 
-	auto eulerAngles = glm::degrees(glm::eulerAngles(camera->orientation()));
-	cameraNode->LclRotation.Set({ eulerAngles.x, eulerAngles.y, eulerAngles.z });
+	//auto eulerAngles = glm::degrees(glm::eulerAngles(camera->orientation()));
+	cameraNode->LclRotation.Set({ 0, 90, 0 });
 
 	auto up = camera->upDirection();
 	fbxCamera->UpVector.Set({ up.x, up.y, up.z });

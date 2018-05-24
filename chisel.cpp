@@ -203,10 +203,11 @@ void Chisel::import3DModel(std::string name, std::string extension, std::string 
     mDirtyFlag = true;
 }
 
-void Chisel::exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex, bool exportCamera)
+void Chisel::exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex, bool segmentModel, bool exportCamera)
 {
-    auto segmentation = segmentModelWithLayer(layerIndex);
-    mResourceManager->exportSegmentedModel(filePath, extension, mRenderer->scene()->models()[0], segmentation, mRenderer->scene()->camera());
+    std::map<std::string, std::vector<uint32_t> > segmentation = (segmentModel) ? segmentModelWithLayer(layerIndex) : std::map<std::string, std::vector<uint32_t> >();
+
+    mResourceManager->exportModel(filePath, extension, mRenderer->scene()->models()[0], segmentation, mRenderer->scene()->camera(), exportCamera);
 }
 
 bool Chisel::setDatabase(std::string name)
@@ -1232,6 +1233,11 @@ void Chisel::setSpecularColor(glm::vec3 color)
 void Chisel::setSpecularPower(float power)
 {
     mRenderer->setSpecularPower(power);
+}
+
+void Chisel::alignMainCameraToModel()
+{
+    mRenderer->alignMainCameraToModel();
 }
 
 

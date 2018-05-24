@@ -312,7 +312,7 @@ void PLYLoader::readData(std::istream& inputStream)
 //     memcpy(indices.data(), meshData[GLBuffer::Index].data(), meshData[GLBuffer::Index].size());
 //     memcpy(colors.data(), meshData[GLBuffer::Color].data(), meshData[GLBuffer::Color].size());
     
-    auto mesh = mResourceManager->createMesh("objMesh");
+    auto mesh = mResourceManager->createMesh("plyMesh");
     mesh->updateData(GLBuffer::Vertex, 0, meshData[GLBuffer::Vertex].size(), meshData[GLBuffer::Vertex].data());
     if(meshData[GLBuffer::Normal].size())
         mesh->updateData(GLBuffer::Normal, 0, meshData[GLBuffer::Normal].size(), meshData[GLBuffer::Normal].data());

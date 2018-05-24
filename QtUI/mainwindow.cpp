@@ -1669,21 +1669,6 @@ void MainWindow::applySelectedPaletteToLayer()
     }
 }
 
-
-void MainWindow::selectBackgroundColor()
-{
-    auto currentColor = mChisel->backgroundColor();
-        
-    auto newColor = QColorDialog::getColor(QColor::fromRgbF(currentColor.x, currentColor.y, currentColor.z, currentColor.w), this->parentWidget(), "Select Color:", QColorDialog::ShowAlphaChannel);
-        
-    if(newColor.isValid())
-    {
-        mUi->Visualizer->makeCurrent();
-        mChisel->setBackgroundColor({newColor.redF(), newColor.greenF(), newColor.blueF(), newColor.alphaF()});
-        mUi->Visualizer->update();
-    }
-}
-
 void MainWindow::editLightingParameters()
 {
     mLightingDialog = new LightingDialog(this);
@@ -1735,6 +1720,26 @@ void MainWindow::selectDefaultModelColor()
         mChisel->setDefaultModelColor({newColor.redF(), newColor.greenF(), newColor.blueF(), newColor.alphaF()});
         mUi->Visualizer->update();
     }
+}
+
+void MainWindow::selectBackgroundColor()
+{
+	auto currentColor = mChisel->backgroundColor();
+
+	auto newColor = QColorDialog::getColor(QColor::fromRgbF(currentColor.x, currentColor.y, currentColor.z, currentColor.w), this->parentWidget(), "Select Color:", QColorDialog::ShowAlphaChannel);
+
+	if (newColor.isValid())
+	{
+		mUi->Visualizer->makeCurrent();
+		mChisel->setBackgroundColor({ newColor.redF(), newColor.greenF(), newColor.blueF(), newColor.alphaF() });
+		mUi->Visualizer->update();
+	}
+}
+
+void MainWindow::alignCameraToModel()
+{
+	mChisel->alignMainCameraToModel();
+	mUi->Visualizer->update();
 }
 
 void MainWindow::updateMarkToolRadius(int sliderValue)
@@ -1802,11 +1807,12 @@ void MainWindow::createActions()
     connect(mUi->actionSave, &QAction::triggered, this, &MainWindow::saveChiselProject);
     connect(mUi->actionSaveAs, &QAction::triggered, this, &MainWindow::saveChiselProjectAs);
     connect(mUi->actionExit, &QAction::triggered, this, &MainWindow::close);
-
-    connect(mUi->actionBackgroundColor, &QAction::triggered, this, &MainWindow::selectBackgroundColor);
+    
     connect(mUi->actionEditLightingParameters, &QAction::triggered, this, &MainWindow::editLightingParameters);
     connect(mUi->actionShowVertexColor, &QAction::toggled, this, &MainWindow::toggleVertexColorVisibility);
     connect(mUi->actionDefaultModelColor, &QAction::triggered, this, &MainWindow::selectDefaultModelColor);
+	connect(mUi->actionBackgroundColor, &QAction::triggered, this, &MainWindow::selectBackgroundColor);
+	connect(mUi->actionAlignCameraToModel, &QAction::triggered, this, &MainWindow::alignCameraToModel);
 
     connect(mUi->actionExportToTexture, &QAction::triggered, this, &MainWindow::exportLayerAsImage);
     connect(mUi->actionRenameLayer, &QAction::triggered, this, &MainWindow::triggerRenameLayer);
@@ -1994,6 +2000,7 @@ void MainWindow::setState(MainWindow::State state)
             
             mUi->actionShowVertexColor->setDisabled(true);
             mUi->actionDefaultModelColor->setDisabled(true);
+            mUi->actionAlignCameraToModel->setDisabled(true);
 
             mUi->actionCreateHistogram->setDisabled(true);
             
@@ -2050,6 +2057,7 @@ void MainWindow::setState(MainWindow::State state)
             
             mUi->actionShowVertexColor->setEnabled(true);
             mUi->actionDefaultModelColor->setEnabled(!mUi->actionShowVertexColor->isChecked());
+            mUi->actionAlignCameraToModel->setEnabled(true);
 
             mUi->actionCreateHistogram->setDisabled(true);
                         
@@ -2123,6 +2131,7 @@ void MainWindow::setState(MainWindow::State state)
 
             mUi->actionShowVertexColor->setEnabled(true);
             mUi->actionDefaultModelColor->setEnabled(!mUi->actionShowVertexColor->isChecked());
+            mUi->actionAlignCameraToModel->setEnabled(true);
 
             mUi->actionCreateHistogram->setEnabled(true);
 
@@ -2165,6 +2174,7 @@ void MainWindow::setState(MainWindow::State state)
             
             mUi->actionShowVertexColor->setEnabled(true);
             mUi->actionDefaultModelColor->setEnabled(!mUi->actionShowVertexColor->isChecked());
+            mUi->actionAlignCameraToModel->setEnabled(true);
 
             mUi->actionCreateHistogram->setEnabled(true);
                         

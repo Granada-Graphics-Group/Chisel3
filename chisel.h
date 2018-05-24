@@ -103,7 +103,7 @@ public:
     void loadChiselFile(std::string name, std::string path);
     void saveChiselProject(std::string name = "", std::string path = "");
     void import3DModel(std::string name, std::string extension, std::string path);
-    void exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex, bool exportCamera);    
+    void exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex, bool segmentModel, bool exportCamera);    
     
     bool setDatabase(std::string name);
    
@@ -178,6 +178,7 @@ public:
     void setDefaultModelColor(glm::vec4 color);
     void setSpecularColor(glm::vec3 color);
     void setSpecularPower(float power);
+	void alignMainCameraToModel();
     
     void onMouseButtons(MouseButton button, MouseAction action, int mods, double xPos, double yPos);
     void onMousePosition(double xPos, double yPos);

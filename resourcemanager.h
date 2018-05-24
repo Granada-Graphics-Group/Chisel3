@@ -172,7 +172,7 @@ public:
     void saveScene3D(std::string name, std::string path = "");
     void unloadScene3D(std::string name);
     void exportScene(std::string name, std::string extension, std::string path);
-    void exportSegmentedModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t>>& segmentation, Camera* camera);
+    void exportModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t>>& segmentation, Camera* camera, bool exportCamera);
     
     std::string chiselName() const { return mCHISelName; }
     std::string defaultChiselPath() const { return mDefaultChiselPath; }

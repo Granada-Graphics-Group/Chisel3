@@ -325,35 +325,8 @@ Camera* ResourceManager::createCamera(std::string name, Model3D* model)
         camera->setFieldOfViewY(28.841);
         camera->setFieldOfView(49.134);
         camera->setFocalLength(35);
-        
-        auto matrix = model->modelMatrix();
-        auto bbox = model->mesh()->boundingBox();
-        auto widthZ = glm::length(matrix * glm::vec4(bbox.max, 1.0) - matrix * glm::vec4(bbox.min, 1.0));//(matrix * glm::vec4(bbox.max, 1.0)).z - (matrix * glm::vec4(bbox.min, 1.0)).z;
 
-        camera->setFarPlane(widthZ * 20);
-        camera->setNearPlane(0.0999);
-                
-        auto glmPerspective = glm::perspective(glm::radians(camera->fieldOfViewY()), camera->aspectRatio(), camera->nearPlane(), camera->farPlane());        
-        camera->setProjectionMatrix(glmPerspective);
-                        
-        LOG("Matrix: ", glm::to_string(matrix));
-        
-        auto distance = bbox.height()/(2.0/tan(glm::radians(camera->fieldOfViewY())/2.0));
-        auto distance2 = glm::length(bbox.max - bbox.center) / glm::tan(glm::radians(camera->fieldOfViewY())/2.0);
-
-        auto position2 = glm::vec3(matrix * glm::vec4(bbox.center, 1.0)) - glm::abs(distance2) * camera->forwardDirection();
-        position2 = glm::vec3(matrix * glm::vec4(position2, 1.0));
-
-        auto up = glm::vec3(0, 1, 0);
-        auto view = glm::lookAt(position2, glm::vec3(matrix * glm::vec4(bbox.center, 1.0)), up);
-        LOG("GLM View: ", glm::to_string(view));
-
-        camera->setOrientation(glm::quat_cast(view));        
-        camera->setTarget(glm::vec3(matrix * glm::vec4(bbox.center, 1.0)));           
-        camera->setPosition(glm::vec3(-view[3][0], -view[3][1], -view[3][2]));
-        camera->setUp(up);
-
-        LOG("After: ", glm::to_string(camera->viewMatrix()));          
+        mRenderer->alignCameraToModel(camera, model);       
     }
     
     return camera;
@@ -1724,20 +1697,17 @@ void ResourceManager::exportScene(std::string name, std::string extension, std::
    if(extension == "fbx")
    {
        FBXExporter exporter;
-       exporter.exportSceneToFile(path + name + "." + extension, mRenderer->scene());
+       //exporter.exportSceneToFile(path + name + "." + extension, mRenderer->scene());
    }
 }
 
-void ResourceManager::exportSegmentedModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation, Camera* camera)
+void ResourceManager::exportModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t> >& segmentation, Camera* camera, bool exportCamera)
 {
     if(extension == "fbx")
     {
         FBXExporter exporter;
 
-		if(segmentation.size())
-			exporter.exportSegmentedModelToFile(filePath, model, segmentation, camera);
-		//else
-		//	exporter.exportSceneToFile(filePath, model, exportCamera);
+        exporter.exportModelToFile(filePath, model, segmentation, camera, exportCamera);
     }
 }
 

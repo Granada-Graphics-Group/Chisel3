@@ -219,7 +219,7 @@ void GLRenderer::init(GLuint defaultFB)
     auto fontTexture = mFontManager->loadFont(appDirPath.absolutePath().toStdString() + "/fonts/", "arial.ttf", 24);
     auto fontMeshMat = mManager->createMaterial("FontTex");
     fontMeshMat->setDiffuseTexture(fontTexture);
-    auto fontMesh = mFontManager->generateMeshText("arial.ttf","Alpha Version 0.6", 20, 30);
+    auto fontMesh = mFontManager->generateMeshText("arial.ttf","Alpha Version 0.6.1", 20, 30);
     auto fontModel = new Model3D("FontModel", fontMesh, { fontMeshMat });
     mFontScene = new Scene3D("FontScene", {mOrthoCamera.get()}, {fontModel});
     mFontScene->setRenderer(this);
@@ -413,50 +413,52 @@ void GLRenderer::setSliceMode(bool slice)
     }
 }
 
-void GLRenderer::resetCamera()
+void GLRenderer::alignMainCameraToModel()
 {
-    auto camera = mMainScene->camera();
-    //camera->setPosition(mCameraInitPosition);
-    LOG("Before: ", glm::to_string(camera->viewMatrix()));
-    LOG("Before Proj: ", glm::to_string(camera->projectionMatrix()));
-    auto bbox = mMainScene->models()[0]->mesh()->boundingBox();
-    auto matrix = mMainScene->models()[0]->modelMatrix();
-//     auto bbox2 = mMainScene->models()[1]->mesh()->boundingBox();
-//     auto matrix2 = mMainScene->models()[1]->modelMatrix();
-    LOG("Matrix: ", glm::to_string(matrix));
-//     LOG("Matrix 2: ", glm::to_string(matrix2));
-    
-    auto distance = bbox.height()/(2.0/tan(glm::radians(camera->fieldOfViewY())/2.0));
-    auto distance2 = glm::length(bbox.max - bbox.center) * 2.0 / glm::tan(glm::radians(camera->fieldOfViewY())/2.0);    
-    auto position = glm::vec3(748.113, 534.366, 650.764);//bbox.center - distance * camera->forwardDirection();
-    auto position2 = bbox.center - glm::abs(distance2) * camera->forwardDirection();
-    position2 = glm::vec3(matrix * glm::vec4(position2, 1.0));
-    auto up = glm::vec3(-0.324013, 0.895396, -0.305421);
-    camera->setTarget(glm::vec3(matrix * glm::vec4(bbox.center, 1.0)));
-    //camera->lookAt(position, glm::vec3(matrix * glm::vec4(bbox.center, 1.0)), camera->upDirection());
-    auto view = glm::lookAt(position, glm::vec3(matrix * glm::vec4(bbox.center, 1.0)), up);
-    LOG("GLM View: ", glm::to_string(view));
-    
-    //camera->resetRotation();
-    camera->setOrientation(glm::quat_cast(view));    
-    camera->setPosition(glm::vec3(-view[3][0], -view[3][1], -view[3][2]));
-    LOG("After: ", glm::to_string(camera->viewMatrix()));
-
-    
-    glm::mat4 projection = {2.187500, 0.000000, 0.000000, 0.000000, 0.000000, 3.888889, 0.000000, 0.000000, 0.000000, 0.000000, -1.002002, -1.000000, 0.000000, 0.000000, -20.020020, 0.000000};
-    
-    LOG("New proj: ", glm::to_string(projection));
-    
-    glm::mat4 mview = {0.139576, -0.129800, 0.981657, 0.000000, -0.115715, 0.982441, 0.146354, 0.000000, -0.983417, -0.134020, 0.122105, 0.000000, 0.000000, -0.000000, -1501.399536, 1.000000};
-    
-    LOG("New proj: ", glm::to_string(mview));
-    
-    camera->setProjectionMatrix(projection);
-    camera->setViewMatrix(mview);
-    
+    alignCameraToModel(mMainScene->camera(), mMainScene->models()[0]);
     
     mMainScene->setProjCameraNeedUpdate(true);
     mMainScene->setViewCameraNeedUpdate(true);
+}
+
+void GLRenderer::alignCameraToModel(Camera *camera, Model3D * model)
+{
+    //camera->setAspectWidth(1280);
+    //camera->setAspectHeight(720);
+    //camera->setAspectRatio(static_cast<double>(1280) / static_cast<double>(720));
+    //camera->setFieldOfViewX(49.134);
+    //camera->setFieldOfViewY(28.841);
+    //camera->setFieldOfView(49.134);
+    //camera->setFocalLength(35);
+
+    auto matrix = model->modelMatrix();
+    auto bbox = model->mesh()->boundingBox();
+    auto widthZ = glm::length(matrix * glm::vec4(bbox.max, 1.0) - matrix * glm::vec4(bbox.min, 1.0));//(matrix * glm::vec4(bbox.max, 1.0)).z - (matrix * glm::vec4(bbox.min, 1.0)).z;
+
+    camera->setFarPlane(widthZ * 20);
+    camera->setNearPlane(0.0999);
+
+    auto glmPerspective = glm::perspective(glm::radians(camera->fieldOfViewY()), camera->aspectRatio(), camera->nearPlane(), camera->farPlane());
+    camera->setProjectionMatrix(glmPerspective);
+
+    LOG("Matrix: ", glm::to_string(matrix));
+
+    auto distance = bbox.height() / (2.0 / tan(glm::radians(camera->fieldOfViewY()) / 2.0));
+    auto distance2 = glm::length(bbox.max - bbox.center) / glm::tan(glm::radians(camera->fieldOfViewY()) / 2.0);
+
+    auto position2 = glm::vec3(matrix * glm::vec4(bbox.center, 1.0)) - glm::abs(distance2) * glm::vec3(0.0f, 0.0f, -1.0f);
+    position2 = glm::vec3(matrix * glm::vec4(position2, 1.0));
+
+    auto up = glm::vec3(0, 1, 0);
+    auto view = glm::lookAt(position2, glm::vec3(matrix * glm::vec4(bbox.center, 1.0)), up);
+    LOG("GLM View: ", glm::to_string(view));
+
+    camera->setOrientation(glm::quat_cast(view));
+    camera->setTarget(glm::vec3(matrix * glm::vec4(bbox.center, 1.0)));
+    camera->setPosition(glm::vec3(-view[3][0], -view[3][1], -view[3][2]));
+    camera->setUp(up);
+
+    LOG("After: ", glm::to_string(camera->viewMatrix()));
 }
 
 void GLRenderer::insertMarkTool()
@@ -1542,7 +1544,7 @@ void GLRenderer::updateControlPointText(const std::vector<std::tuple<std::string
         LOG("GLRenderer::Update Control Point Text:: Resize: ", mWindowWidth);
         mFontScene->clearScene();
         
-        auto textMesh = mFontManager->generateMeshText("arial.ttf","Alpha Version 0.6", 20, 30);
+        auto textMesh = mFontManager->generateMeshText("arial.ttf","Alpha Version 0.6.1", 20, 30);
         auto fontMeshMat = mManager->material("FontTex");
         auto fontModel = new Model3D(textMesh->name(), textMesh, { fontMeshMat });
         mFontScene->insertModel(fontModel);
