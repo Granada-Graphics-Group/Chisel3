@@ -63,6 +63,8 @@ public:
     void insertMaterialInstance(std::string material, Model3D* model);
     
     void clearScene();
+    void clearCameras();
+    bool removeCamera(Camera* camera);
 
     Mesh* findMesh(std::string meshName) const;
     Material* findMaterial(std::string materialName) const;
@@ -123,6 +125,8 @@ public:
     void invalidateScene(){ invalidateSceneFromMesh(0); }
     void invalidateSceneFromMesh(unsigned int index);
     
+    void setOrientation(const glm::quat& orientation);
+    void setPosition(const glm::vec3& position);
     void rotate(float angle, const glm::vec3 & axis);
     void translate(const glm::vec3 &v);
     

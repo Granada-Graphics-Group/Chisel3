@@ -90,7 +90,9 @@ void Cylinder::resize(float bottomRadius, float topRadius, float height)
             indices.push_back(a); indices.push_back(b); indices.push_back(d);
             indices.push_back(b); indices.push_back(c); indices.push_back(d);
         }
-        
+    
+    clearBuffers();
+
     updateData(GLBuffer::Vertex, 0, vertices.size() * sizeof(GLfloat), vertices.data());
     updateData(GLBuffer::Color, 0, colors.size() * sizeof(GLfloat), colors.data());    
     updateData(GLBuffer::Normal, 0, normals.size() * sizeof(GLfloat), normals.data());
@@ -99,9 +101,8 @@ void Cylinder::resize(float bottomRadius, float topRadius, float height)
     
     if(!mOpeness)
     {
-        uint32_t initIndex = indices.size() / (3 * sizeof(float));
-        generateCap(true, initIndex);
-        generateCap(false, initIndex);
+        generateCap(true, buffer(GLBuffer::Vertex).size() / (3 * sizeof(float)));
+        generateCap(false, buffer(GLBuffer::Vertex).size() / (3 * sizeof(float)));
     }
     
     std::vector<GLuint> subMeshIndexes = { static_cast<GLuint>(buffer(GLBuffer::Index).size() / sizeof(uint32_t)) };
@@ -167,13 +168,13 @@ void Cylinder::generateCap(bool isTop, uint32_t initIndex)
     for(int i = 0; i < (mRadialSlices - 1); i++)
     {
         indices.push_back(initIndex);
-        indices.push_back(initIndex  + i + 1);
         indices.push_back(initIndex + i + 2);
+        indices.push_back(initIndex  + i + 1);
     }
 
     indices.push_back(initIndex);
-    indices.push_back(static_cast<GLuint>(initIndex + vertices.size()/3) - 1);
     indices.push_back(initIndex + 1);
+    indices.push_back(static_cast<GLuint>(initIndex + vertices.size()/3) - 1);
     
     updateData(GLBuffer::Vertex, buffer(GLBuffer::Vertex).size(), vertices.size() * sizeof(GLfloat), vertices.data());
     updateData(GLBuffer::Color, buffer(GLBuffer::Color).size(), colors.size() * sizeof(GLfloat), colors.data());    

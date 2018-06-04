@@ -72,7 +72,7 @@ void main(void)
         LightDir = -EyePosition.xyz;
                 
         PlaneNormal = planeNormal.xyz;
-        PlanePoint = planePoint.xyz;     
+        PlanePoint = (worldToCameraMatrix * planePoint).xyz;     
 
         //gl_Position = cameraToClipMatrix * EyePosition;
         //gl_Position = cameraToClipMatrix * arrayMat[index1].modelMatrix[index2] * vec4(in_CoordTextura, -3.0, 1.0);

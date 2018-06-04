@@ -235,6 +235,23 @@ void Mesh::clearUpdatedBuffers()
     mUpdatedBuffers.clear();
 }
 
+void Mesh::clearBuffers()
+{
+    for (std::size_t i = 0; i < mBufferData.size(); ++i)
+        clearBuffer(static_cast<int>(i));
+}
+
+
+void Mesh::clearBuffer(const int buffer)
+{
+    if (buffer < static_cast<int>(mBufferData[buffer].size()))
+    {
+        mBufferData[buffer].clear();
+        mBufferUpdateSize[buffer] = 0;
+        mBufferUpdateOffset[buffer] = 0;
+        mBufferUpdateSizeState[buffer] = SizeState::Equal;
+    }
+}
 
 void Mesh::updateData(const int buffer, GLintptr offset, GLsizeiptr size, const GLvoid* data)
 {

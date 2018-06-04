@@ -390,13 +390,16 @@ void GLRenderer::setSliceMode(bool slice)
     if(slice)
     {
         mMode = Mode::Slice;
-        
-        mProjTech->addTarget(mSlicePlaneTarget);
-        useSliceVersionShaders(true);
-        updateSlicePlaneUniformData();
-        
+
         auto model = mMainScene->models()[0];
-        
+
+        if (!mSliced)
+        {
+            mSlicePlaneScene->setOrientation(glm::inverse(mCamera->orientation()));
+            mSlicePlaneScene->setPosition(glm::vec3(model->modelMatrix() * glm::vec4(model->mesh()->boundingBox().center, 1.0)));
+            updateSlicePlaneUniformData();
+        }
+                
         if(model->mesh()->indexBuffer2Used())
         {
             std::vector<uint32_t> subMeshes = {static_cast<unsigned int>(model->mesh()->buffer(GLBuffer::Index).size() / sizeof(uint32_t))};
@@ -404,6 +407,9 @@ void GLRenderer::setSliceMode(bool slice)
             model->mesh()->useIndexBuffer2(false);
             mMainScene->setMeshDirty(model->mesh());
         }
+
+        mProjTech->addTarget(mSlicePlaneTarget);
+        useSliceVersionShaders(true);
     }
     else
     {
@@ -419,6 +425,8 @@ void GLRenderer::alignMainCameraToModel()
     
     mMainScene->setProjCameraNeedUpdate(true);
     mMainScene->setViewCameraNeedUpdate(true);
+
+    updateSlicePlaneUniformData();
 }
 
 void GLRenderer::alignCameraToModel(Camera *camera, Model3D * model)
@@ -444,10 +452,10 @@ void GLRenderer::alignCameraToModel(Camera *camera, Model3D * model)
     LOG("Matrix: ", glm::to_string(matrix));
 
     auto distance = bbox.height() / (2.0 / tan(glm::radians(camera->fieldOfViewY()) / 2.0));
-    auto distance2 = glm::length(bbox.max - bbox.center) / glm::tan(glm::radians(camera->fieldOfViewY()) / 2.0);
+    auto distance2 = glm::length(matrix * glm::vec4(bbox.max, 1.0) - matrix * glm::vec4(bbox.center, 1.0)) / glm::tan(glm::radians(camera->fieldOfViewY()) / 2.0);
 
     auto position2 = glm::vec3(matrix * glm::vec4(bbox.center, 1.0)) - glm::abs(distance2) * glm::vec3(0.0f, 0.0f, -1.0f);
-    position2 = glm::vec3(matrix * glm::vec4(position2, 1.0));
+    //position2 = glm::vec3(matrix * glm::vec4(position2, 1.0));
 
     auto up = glm::vec3(0, 1, 0);
     auto view = glm::lookAt(position2, glm::vec3(matrix * glm::vec4(bbox.center, 1.0)), up);
@@ -878,10 +886,10 @@ void GLRenderer::resize(int width, int height)
         
         auto newPerspective = glm::perspective(glm::radians(mCamera->fieldOfViewY()), mCamera->aspectRatio(), mCamera->nearPlane(), mCamera->farPlane());        
         mCamera->setProjectionMatrix(newPerspective);
-        mSlicePlaneScene->camera()->setProjectionMatrix(newPerspective);
+        //mSlicePlaneScene->camera()->setProjectionMatrix(newPerspective);
         
         mMainScene->setProjCameraNeedUpdate(true);
-        mSlicePlaneScene->setProjCameraNeedUpdate(true);
+        //mSlicePlaneScene->setProjCameraNeedUpdate(true);
         
         mResized = true;
     }
@@ -990,7 +998,7 @@ void GLRenderer::planeIntersectObject(Model3D* plane, Model3D* model)
     auto viewMatrix = mCamera->viewMatrix();
     
     auto planeNormal = glm::vec3(mPlaneNormal);
-    auto planePoint = glm::vec3(mPlanePoint);
+    auto planePoint = glm::vec3(viewMatrix * mPlanePoint);
     
     std::vector<uint32_t> newMeshIndices;
     
@@ -1044,10 +1052,7 @@ void GLRenderer::useSliceVersionShaders(bool use)
 }
 
 void GLRenderer::clearSlice()
-{           
-    mProjTech->removeTarget(mSlicePlaneTarget);
-    useSliceVersionShaders(false);
-    
+{               
     auto model = mMainScene->models()[0];
 
     if(model->mesh()->indexBuffer2Used())
@@ -1062,6 +1067,9 @@ void GLRenderer::clearSlice()
         model->setModelMatrix(glm::mat4{1.0});
     
     updateSlicePlaneUniformData();
+
+    mProjTech->removeTarget(mSlicePlaneTarget);
+    useSliceVersionShaders(false);
 }
 
 void GLRenderer::onMousePosition(double xPos, double yPos)
@@ -1100,8 +1108,13 @@ void GLRenderer::onMousePosition(double xPos, double yPos)
 //             sliceModel->rotate(glm::radians(deltaX / 5.0), glm::vec3{0.0, 1.0, 0.0});
 //             sliceModel->rotate(glm::radians(deltaY / 5.0), glm::vec3{1.0, 0.0, 0.0});
             
-               mSlicePlaneScene->rotate(glm::radians(deltaX / 5.0), glm::vec3{0.0, 1.0, 0.0}); 
-               mSlicePlaneScene->rotate(glm::radians(deltaY / 5.0), glm::vec3{1.0, 0.0, 0.0});
+            auto mat = glm::mat4_cast(mCamera->orientation());
+            mat = glm::inverse(mat);
+            auto up = mat * glm::vec4(0.0, 1.0, 0.0, 1.0);
+            auto right = mat * glm::vec4(1.0, 0.0, 0.0, 1.0);
+
+               mSlicePlaneScene->rotate(glm::radians(deltaX / 5.0), glm::vec3(up)); 
+               mSlicePlaneScene->rotate(glm::radians(deltaY / 5.0), glm::vec3(right));
             
 //             sliceModel->rotateRelativeY(static_cast<float>(glm::radians(deltaX / 5.0)));
 //             sliceModel->rotateRelativeX(static_cast<float>(glm::radians(deltaY / 5.0)));
@@ -1113,9 +1126,8 @@ void GLRenderer::onMousePosition(double xPos, double yPos)
     if (mMode == Mode::Mark || mMode == Mode::Erase)
     {
         auto brushModel = mPPScene->findModel3D("BrushModel");
-        auto mat = glm::translate(glm::mat4(1.0), glm::vec3(xPos - brushModel->mesh()->width()/2.0, mWindowHeight - yPos - brushModel->mesh()->height()/2.0, 0.0));
-
-        brushModel->setModelMatrix(mat);
+        brushModel->setPosition({xPos - brushModel->mesh()->width() / 2.0, mWindowHeight - yPos - brushModel->mesh()->height() / 2.0, 0.0});
+        
         mPPScene->setModelDirty("BrushModel");
     }
     
@@ -1129,9 +1141,14 @@ void GLRenderer::onMousePosition(double xPos, double yPos)
 //         auto sliceModel = mSlicePlaneScene->models()[0];
 //         sliceModel->rotate(glm::radians(deltaX / 5.0), glm::vec3{0.0, 1.0, 0.0});
 //         sliceModel->rotate(glm::radians(deltaY / 5.0), glm::vec3{1.0, 0.0, 0.0});
-        mSlicePlaneScene->rotate(glm::radians(deltaX / 5.0), glm::vec3{0.0, 1.0, 0.0}); 
-        mSlicePlaneScene->rotate(glm::radians(deltaY / 5.0), glm::vec3{1.0, 0.0, 0.0});
-        
+        //if (mMode == Mode::Slice)
+        //{
+        //    mSlicePlaneScene->rotate(glm::radians(deltaX / 5.0), glm::vec3{ 0.0, 1.0, 0.0 });
+        //    mSlicePlaneScene->rotate(glm::radians(deltaY / 5.0), glm::vec3{ 1.0, 0.0, 0.0 });
+
+        //            updateSlicePlaneUniformData();
+        //}
+
         updateSlicePlaneUniformData();
     }
     
@@ -1194,7 +1211,7 @@ void GLRenderer::onMousePosition(double xPos, double yPos)
 /*        LOG("width/10.0: ", width / 15.0, " ViewCenterZ: ", viewCenter.z, ", StepSize: ", stepSize, ", deltaX: ", deltaX, ", deltaX/10.0: ", deltaX / 10.0); */       
         
         mCamera->translateRelative(deltaX/20.0 * stepSize, deltaY/20.0 * stepSize, 0.0);
-        mSlicePlaneScene->camera()->translateRelative(deltaX/20.0 * stepSize, deltaY/20.0 * stepSize, 0.0);
+        //mSlicePlaneScene->camera()->translateRelative(deltaX/20.0 * stepSize, deltaY/20.0 * stepSize, 0.0);
         
         updateSlicePlaneUniformData();
 //         mCamera->translateRelative(amount.x, amount.y, 0.0);
@@ -1228,7 +1245,7 @@ void GLRenderer::onMouseWheel(double xOffset, double yOffset)
         {
             mCamera->translate({ 0.0, 0.0, yOffset/10.0 * stepSize });
             //mSlicePlaneScene->camera()->translate({ 0.0, 0.0, yOffset/10.0 * stepSize });
-            mSlicePlaneScene->camera()->setPosition(mCamera->position());
+            //mSlicePlaneScene->camera()->setPosition(mCamera->position());
 
             updateSlicePlaneUniformData();
 
@@ -1236,9 +1253,11 @@ void GLRenderer::onMouseWheel(double xOffset, double yOffset)
         }
         else
         {
-            auto axis = glm::vec3(mPlaneNormal.x, mPlaneNormal.y, mPlaneNormal.z);
-            auto viewAxis = mSlicePlaneScene->camera()->viewMatrix() * glm::vec4(axis, 1.0);
-            axis = glm::normalize(viewAxis);
+            auto planeMatrix = glm::mat4_cast(mSlicePlaneScene->models()[2]->orientation());
+            auto axis = planeMatrix * glm::vec4(0, 0, -1, 1.0);
+            //auto axis = glm::vec3(mPlaneNormal.x, mPlaneNormal.y, mPlaneNormal.z);
+            //auto viewAxis = mSlicePlaneScene->camera()->viewMatrix() * glm::vec4(axis, 1.0);
+            //axis = glm::normalize(viewAxis);
 //                 auto max = mMainScene->camera()->viewMatrix() * model->modelMatrix() * glm::vec4(bbox.max, 1.0);
 //                 auto min =  mMainScene->camera()->viewMatrix() * model->modelMatrix() * glm::vec4(bbox.min, 1.0);
 //                 auto newPoint = glm::translate(mSlicePlaneScene->camera()->viewMatrix(), glm::vec3(axis)) * mSlicePlaneScene->models()[0]->modelMatrix() * glm::vec4(0.0, 0.0, 0.0, 1.0);
@@ -1783,9 +1802,8 @@ void GLRenderer::swapScene(Scene3D* oldScene, Scene3D* newScene)
     texModelScene->setName("texModelScene");
     mMainScene->updateCamera(mNormOrthoCamera.get());
     
-    auto sliceCamera = mSlicePlaneScene->camera();
-    *sliceCamera = *mCamera;
-    sliceCamera->resetRotation();
+    mSlicePlaneScene->clearCameras();
+    mSlicePlaneScene->insertCamera(mCamera);
     
     auto modelBBox = mMainScene->models()[0]->mesh()->boundingBox();
     auto diagonal = glm::length(glm::vec3(mMainScene->models()[0]->modelMatrix() * glm::vec4(modelBBox.max - modelBBox.min, 1.0)));    
@@ -1807,17 +1825,12 @@ void GLRenderer::swapScene(Scene3D* oldScene, Scene3D* newScene)
     mat = glm::translate(mat, {0, diagonal/4 + diagonal/60, 0});
     arrowHeadModel->applyTransform(mat, 0, false);
         
-    if(mMode == Mode::Slice)
-        updateSlicePlaneUniformData();
-    else if(mSliced && mMode != Mode::Slice)
-    {
-        mSliced = false;
-        mProjPass->sceneMaterial()->setShader(mManager->shaderProgram("ProjectiveTex"));
-        slicePlaneModel->setModelMatrix(glm::mat4(1.0));
-        arrowHeadModel->setModelMatrix(glm::mat4(1.0));
-        arrowTorsoModel->setModelMatrix(glm::mat4(1.0));
-        updateSlicePlaneUniformData();
-    }
+    mSliced = false;
+    mProjPass->sceneMaterial()->setShader(mManager->shaderProgram("ProjectiveTex"));
+    slicePlaneModel->setModelMatrix(glm::mat4(1.0));
+    arrowHeadModel->setModelMatrix(glm::mat4(1.0));
+    arrowTorsoModel->setModelMatrix(glm::mat4(1.0));
+    updateSlicePlaneUniformData();
         
     mProjPass->setScene(mMainScene);
 
@@ -1941,7 +1954,7 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         auto diagonal = glm::length(glm::vec3(mMainScene->models()[0]->modelMatrix() * glm::vec4(modelBBox.max - modelBBox.min, 1.0)));
         auto slicePlaneMesh = mManager->createQuad("SlicePlaneModel", {-diagonal/2.0, -diagonal/2.0}, {diagonal, diagonal}, {0.5, 0.5, 0.5, 0.3});
         auto slicePlaneModel = new Model3D("SlicePlaneModel", slicePlaneMesh, {mManager->material("Dummy")});
-        auto arrowTorsoMesh = mManager->createCylinder("ArrowTorso", diagonal/120, diagonal/120, diagonal/4, 20, 1, true, {0.8, 0.0, 0.0, 1.0}); 
+        auto arrowTorsoMesh = mManager->createCylinder("ArrowTorso", diagonal/120, diagonal/120, diagonal/4, 20, 1, false, {0.8, 0.0, 0.0, 1.0}); 
         auto arrowHeadMesh = mManager->createCylinder("ArrowHead", diagonal/40, 0, diagonal/25, 20, 1, false, {0.8, 0.0, 0.0, 1.0});
         auto arrowTorsoModel = new Model3D("ArrowTorso", arrowTorsoMesh, {mManager->material("Dummy")});
         auto arrowHeadModel = new Model3D("ArrowHead", arrowHeadMesh, {mManager->material("Dummy")});
@@ -1956,14 +1969,13 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         
         mat = glm::mat4(1.0);
         mat = glm::rotate(mat, glm::radians(-90.0f), glm::vec3(1, 0, 0));        
-        mat = glm::translate(mat, {0, diagonal/4 + diagonal/60, 0});
+        mat = glm::translate(mat, {0, diagonal/4 + diagonal/50, 0});
         arrowHeadModel->applyTransform(mat, 0, true);
 //         arrowHeadModel->translate(0, 165, 0);
 //         arrowHeadModel->rotate(glm::radians(-90.0), glm::vec3(1, 0, 0));
         
-        auto sliceCamera = new Camera(*mCamera);
-        sliceCamera->resetRotation();
-        mSlicePlaneScene = new Scene3D("SlicePlaneScene", {sliceCamera}, {arrowHeadModel, arrowTorsoModel, slicePlaneModel});
+        mSlicePlaneScene = new Scene3D("SlicePlaneScene", {mCamera}, {arrowHeadModel, arrowTorsoModel, slicePlaneModel});
+
         auto slicePlaneMaterial = mManager->createMaterial("SlicePlane", "SlicePlane");
         auto slicePlanePass = mManager->createRenderPass("SlicePlanePass", mSlicePlaneScene, slicePlaneMaterial);
         slicePlanePass->setAutoClear(false);
@@ -2585,8 +2597,8 @@ void GLRenderer::updateTransientUniformData(RenderTarget* target)
 void GLRenderer::updateSlicePlaneUniformData()
 {
     auto planeMatrix = mSlicePlaneScene->models()[2]->modelMatrix();
-    mPlanePoint = mSlicePlaneScene->camera()->viewMatrix() * planeMatrix * glm::vec4(glm::vec3(0, 0, 0), 1.0);
-    mPlaneNormal = glm::vec4(glm::mat3(planeMatrix) * glm::vec3(0, 0, -1), 1.0);
+    mPlanePoint = planeMatrix * glm::vec4(glm::vec3(0, 0, 0), 1.0);
+    mPlaneNormal = glm::vec4(glm::mat3(glm::inverse(glm::transpose(mCamera->viewMatrix() * planeMatrix))) * glm::vec3(0, 0, -1), 1.0);
     
 //     LOG("updateSlicePlaneUniformData Slice Matrix: ", glm::to_string(planeMatrix));
 //     LOG("updateSlicePlaneUniformData Slice Normal: ", glm::to_string(mPlaneNormal));

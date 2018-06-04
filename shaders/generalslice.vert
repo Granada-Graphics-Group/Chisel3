@@ -67,7 +67,7 @@ void main(void)
     
     Posic = (modelViewMatrix * vec4(in_Posicion, 1.0)).xyz;
     PlaneNormal = planeNormal.xyz;
-    PlanePoint = planePoint.xyz;
+    PlanePoint = (worldToCameraMatrix * planePoint).xyz;
         
     Normal = mat3(transpose(inverse(modelViewMatrix))) * in_Normal;        
     ProjTexCoord = projectorCameraMatrix * viewPosition;

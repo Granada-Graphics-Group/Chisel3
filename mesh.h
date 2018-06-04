@@ -174,6 +174,8 @@ public:
     void generateAdjacencyInformation();    
 
     void clearUpdatedBuffers();
+    void clearBuffers();
+    void clearBuffer(const int buffer);
     void updateData(const int buffer, GLintptr offset, GLsizeiptr size, const GLvoid* data);
     void updateVertexData(const std::vector<GLfloat>& newData, int offset = 0);
     void updateNormalData(const std::vector< GLfloat >& newData, int offset = 0);

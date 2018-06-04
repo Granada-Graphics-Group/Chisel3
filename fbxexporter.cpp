@@ -142,7 +142,7 @@ void FBXExporter::populateFBXScene(FbxScene* fbxScene, Model3D* model, Camera* c
     auto eulerAngles = glm::degrees(glm::eulerAngles(orientation));
     node->LclRotation.Set({ eulerAngles.x, eulerAngles.y, eulerAngles.z });
 
-    auto position = model->position();
+    auto position = glm::mat4_cast(camera->orientation()) * glm::vec4(model->position(), 1.0);
     node->LclTranslation.Set({ position.x, position.y, position.z });
 
     auto scale = model->scale();
@@ -210,7 +210,7 @@ void FBXExporter::populateFBXScene(fbxsdk::FbxScene* fbxScene, Model3D* model, c
         auto eulerAngles = glm::degrees(glm::eulerAngles(orientation));
         node->LclRotation.Set({eulerAngles.x, eulerAngles.y, eulerAngles.z});
 
-        auto position = model->position();
+        auto position = glm::mat4_cast(camera->orientation()) * glm::vec4(model->position(), 1.0);
         node->LclTranslation.Set({position.x, position.y, position.z});
 
         auto scale = model->scale();

@@ -33,10 +33,13 @@ public:
     
     glm::quat orientation() const { return mOrientation; }
     glm::vec3 position() const { return mPosition; }
-    glm::vec3 scale() const;
+    glm::vec3 scale() const { return mScale; };
     const glm::mat4& modelMatrix();
     
-    void setMesh(Mesh *mesh){ mMesh = mesh; }    
+    void setMesh(Mesh *mesh){ mMesh = mesh; }  
+    void setOrientation(const glm::quat& orientation);
+    void setPosition(const glm::vec3& position);
+    void setScale(const glm::vec3& scale);
     void setModelMatrix(glm::mat4 matrix);
     void insertMaterial(Material *material){ mMaterials.push_back(material); };
     
@@ -78,6 +81,7 @@ private:
     
     glm::vec3 mPosition = {0.0f, 0.0f, 0.0f};    // Location in world coordinates.
     glm::quat mOrientation = glm::quat_cast(glm::mat4(1.0));                      // Orientation of basis vectors specified in world coordinates.
+    glm::vec3 mScale = {1.0f, 1.0f, 1.0f};
     glm::vec3 mTarget;
 
     glm::vec3 mLeft = {-1.0f, 0.0f, 0.0f};       // Model's left direction vector, given in world coordinates.

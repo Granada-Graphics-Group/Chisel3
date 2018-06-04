@@ -54,7 +54,7 @@ void main(void)
         EyePosition = worldToCameraMatrix * arrayMat[index1].modelMatrix[index2] * vec4(in_Posicion, 1.0);
                 
         PlaneNormal = planeNormal.xyz;
-        PlanePoint = planePoint.xyz;        
+        PlanePoint = (worldToCameraMatrix * planePoint).xyz;        
 
         gl_Position = cameraToClipMatrix * EyePosition;
 }

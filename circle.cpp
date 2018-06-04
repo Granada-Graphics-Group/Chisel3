@@ -57,13 +57,13 @@ void Circle::changeDimensions(float radius, int slices)
     for(int i = 0; i < (mSlices - 1); i++)
     {
         indices.push_back(0);
-        indices.push_back(i + 1);
         indices.push_back(i + 2);
+        indices.push_back(i + 1);
     }
 
     indices.push_back(0);
-    indices.push_back(static_cast<GLuint>(vertices.size()/3) - 1);
     indices.push_back(1);
+    indices.push_back(static_cast<GLuint>(vertices.size()/3) - 1);
     
     std::vector<GLuint> subMeshIndexes = { static_cast<GLuint>(indices.size()) };
     

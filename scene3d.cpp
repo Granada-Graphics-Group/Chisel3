@@ -220,6 +220,24 @@ void Scene3D::clearScene()
     mModelCountChanged = true;
 }
 
+void Scene3D::clearCameras()
+{
+    mCameras.clear();
+}
+
+bool Scene3D::removeCamera(Camera * camera)
+{
+    auto search = std::find_if(begin(mCameras), end(mCameras), [&camera](Camera* currentCamera) { return (currentCamera == camera) ? true : false; });
+
+    if (search != end(mCameras))
+    {
+        mCameras.erase(search);
+        return true;
+    }
+    
+    return false;
+}
+
 Mesh* Scene3D::findMesh(std::string meshName) const
 {
     for(auto mesh: mMeshes)
@@ -440,6 +458,18 @@ void Scene3D::invalidateSceneFromMesh(unsigned int index)
         
         mRenderer->setSceneDirty(mIndex);
     }    
+}
+
+void Scene3D::setOrientation(const glm::quat & orientation)
+{
+    for (const auto& model : mModels)
+        model->setOrientation(orientation);
+}
+
+void Scene3D::setPosition(const glm::vec3 & position)
+{
+    for (const auto& model : mModels)
+        model->setPosition(position);
 }
 
 void Scene3D::rotate(float angle, const glm::vec3& axis)

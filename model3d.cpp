@@ -3,6 +3,8 @@
 #include "material.h"
 #include "scene3d.h"
 
+#include <glm/gtx/matrix_decompose.hpp>
+
 #include <algorithm>
 #include <string>
 #include <iostream>
@@ -49,41 +51,59 @@ std::array<int, 3> Model3D::sceneIndex(Scene3D* scene) const
     return (search != end(mScenes)) ? std::array<int, 3>{mMesh->sceneIndex(scene), mMaterials[0]->sceneIndex(scene), (*search).second} : std::array<int, 3>{-1, -1, -1};
 }
 
-glm::vec3 Model3D::scale() const
-{
-    auto scaleX = glm::length(glm::vec3(mMatrix[0]));
-    auto scaleY = glm::length(glm::vec3(mMatrix[1]));
-    auto scaleZ = glm::length(glm::vec3(mMatrix[2]));
-    
-    return {scaleX, scaleY, scaleZ};
-}
-
-
 const glm::mat4 & Model3D::modelMatrix()
 {
     if (mComposeMatrix) 
     {
-        // Compute inverse rotation q
-        glm::quat q = mOrientation;
-        mMatrix = glm::mat4_cast(q);
-
-        // Translate by inverse eyePosition.
-        glm::vec3 v = mPosition;
-        glm::mat4 m = mMatrix;
-        mMatrix = glm::translate(glm::mat4(1.0f), v);
-        mMatrix = (glm::mat4_cast(q) * mMatrix);// * glm::translate(glm::mat4(1.0f), glm::vec3(-40.0, 0.0, 0.0));
-
-
+        mMatrix = glm::translate(glm::mat4(1.0f), mPosition) * glm::mat4_cast(mOrientation) * glm::scale(mScale);
         mComposeMatrix = false;
     }    
     return mMatrix;    
 }
 
+void Model3D::setOrientation(const glm::quat & orientation)
+{
+    mOrientation = orientation;
+    mComposeMatrix = true;
+
+    for (auto scene : mScenes)
+        (scene.first)->setModelDirty(this);
+}
+
+void Model3D::setPosition(const glm::vec3 & position)
+{
+    mPosition = position;
+    mComposeMatrix = true;
+
+    for (auto scene : mScenes)
+        (scene.first)->setModelDirty(this);
+}
+
+void Model3D::setScale(const glm::vec3 & scale)
+{
+    mScale = scale;
+    mComposeMatrix = true;
+
+    for (auto scene : mScenes)
+        (scene.first)->setModelDirty(this);
+}
+
 void Model3D::setModelMatrix(glm::mat4 matrix)
 {
     mMatrix = matrix;
-    mOrientation = glm::quat_cast(mMatrix);
-    mPosition = glm::vec3(mMatrix[3]);
+
+    glm::vec3 scale;
+    glm::quat rotation;
+    glm::vec3 translation;
+    glm::vec3 skew;
+    glm::vec4 perspective;
+    glm::decompose(matrix, scale, rotation, translation, skew, perspective);
+
+    mOrientation = glm::conjugate(rotation);
+    mPosition = translation;
+    mScale = scale;
+
+    //mComposeMatrix = true;
     
     for(auto scene : mScenes)
         (scene.first)->setModelDirty(this);
