@@ -22,7 +22,6 @@ include_directories(QtUI lib/headers lib/headers/pugixml-1.6/src)
 target_include_directories(QtUI PUBLIC ${Chisel_SOURCE_DIR} lib/headers)
 target_include_directories(OpParser PUBLIC ${Chisel_SOURCE_DIR} lib/headers)
 
-
 if(UNIX)
     link_directories(lib/linux)
 else()    
@@ -53,21 +52,16 @@ set(Chisel_SRCS  lib/headers/pugixml-1.6/src/pugixml.cpp
 set(SQLite3SRCS sqlite3/sqlite3.c)
 
 add_executable(Chisel ${Chisel_SRCS} ${SQLite3SRCS} QtUI/resources.qrc)
-if(UNIX)
-    target_include_directories(Chisel PRIVATE ${QtUI_BINARY_DIR})
-else()
-    target_include_directories(Chisel PRIVATE ${QtUI_BINARY_DIR}/QtUI_autogen/include)
-endif()
 
+target_compile_definitions(Chisel PUBLIC GLM_ENABLE_EXPERIMENTAL)
 target_link_libraries(Chisel ${OPENGL_gl_LIBRARY} QtUI OpParser Qt5::Svg)
 if(UNIX)
+    target_include_directories(Chisel PRIVATE ${QtUI_BINARY_DIR})
     target_link_libraries(Chisel freetype GLEW m dl pthread debug fbxsdkd optimized fbxsdk)    
 else()
-    target_compile_definitions(Chisel PUBLIC NOMINMAX FBXSDK_SHARED)
+    target_include_directories(Chisel PRIVATE ${QtUI_BINARY_DIR}/QtUI_autogen/include)  
+    target_compile_definitions(Chisel PUBLIC NOMINMAX FBXSDK_SHARED)    
     target_link_libraries(Chisel glew32 debug libfbxsdkd debug freetype265d optimized libfbxsdk optimized freetype265)
 endif()
-
-
-add_dependencies(Chisel QtUI OpParser)
 
 install(TARGETS Chisel RUNTIME DESTINATION bin)

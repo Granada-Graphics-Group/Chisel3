@@ -98,7 +98,7 @@ public:
     Camera* createCamera(std::string name);
     Camera* createCamera(std::string name, Model3D* model);
     
-    RenderPass* createRenderPass(std::string name, Scene3D* scene, Material* sceneMaterial, std::vector<BlendingState> blendingStates = {BlendingState()}, bool depthTest = true, GLenum depthFunc = GL_LESS);
+    RenderPass* createRenderPass(std::string name, Scene3D* scene, Material* sceneMaterial, std::vector<BlendingState> blendingStates = {BlendingState()}, bool depthTest = true, GLenum depthFunc = GL_GREATER);
     RenderTarget* createRenderTarget(std::string name, ResourceManager* manager, std::array< GLint, int(4) > viewport, const std::vector< RenderPass* >& passes = {}, bool defaultTarget = false, GLuint defaultTargetID = 0);
     RenderTarget* createRenderTarget(std::string name, ResourceManager* manager, std::array< GLint, int(4) > viewport, const std::vector< RenderPass* >& passes, const std::vector< Texture* >& colorTargets, bool defaultTarget, GLuint defaultTargetID = 0) { return createRenderTarget(name, manager, viewport, passes, colorTargets, nullptr, defaultTarget, defaultTargetID);}
     RenderTarget* createRenderTarget(std::string name, ResourceManager* manager, std::array< GLint, int(4) > viewport, const std::vector< RenderPass* >& passes, const std::vector< Texture* >& colorTargets, Texture* depthTarget, bool defaultTarget, GLuint defaultTargetID = 0);

@@ -43,7 +43,7 @@ void main()
             float depth = texture(ArrayTexture[paintIndices.x], vec3(CoordST, paintIndices.y)).x;
             float depthOffset = texture(ArrayTexture[paintIndices.x], vec3(CoordST + offset, paintIndices.y)).x;
             
-            if(depth == 1.0 && depthOffset != 1.0)
+            if(depth == 0.0 && depthOffset != 0.0)
                 FragColor = vec4(1.0);
         }
     //FragColor = vec4(1.0, 0.0, 0.0, 1.0);

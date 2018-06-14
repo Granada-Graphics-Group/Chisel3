@@ -30,7 +30,7 @@ uniform sampler2DArray ArrayTexture[20];
 
 void main()
 {
-    FragColor = EyePosition.z * 0.98;
+    FragColor = EyePosition.z;
 //     vec4 baseColor = texture(ArrayTexture[TexArrayIndex.x], vec3(vec2(CoordST.x, CoordST.y), TexArrayIndex.y));
 //     vec4 layerColor = texture(PPTextures[1], CoordST);
 //     

@@ -5,6 +5,7 @@
 #include "scene3d.h"
 #include "model3d.h"
 #include "mesh.h"
+#include "glutils.h"
 
 
 namespace
@@ -691,10 +692,8 @@ void FBXLoader::extractCamera(FbxCamera* fbxCamera, Camera* camera)
     camera->setFarPlane(fbxCamera->FarPlane.Get());
     camera->setNearPlane(fbxCamera->NearPlane.Get());
     
-    auto aspectRatio = static_cast<double>(1280)/static_cast<double>(720);
-    auto glmPerspective = glm::perspective(glm::radians(camera->fieldOfViewY()), aspectRatio, camera->nearPlane(), camera->farPlane());
-    //auto glmPerspective = glm::perspectiveFov(glm::radians(camera->fieldOfView()), 1280.0, 720.0, camera->nearPlane(), camera->farPlane());
-    //camera->setProjectionMatrix(glmPerspective);
+    auto glmPerspective = MakeInfReversedZProjRH(glm::radians(camera->fieldOfViewY()), camera->aspectRatio(), camera->nearPlane());
+    camera->setProjectionMatrix(glmPerspective);
     LOG("- Proyection Matrix GLM: ", glm::to_string(glmPerspective));
 
     glm::dvec3 up = glm::make_vec3(fbxCamera->UpVector.Get().Buffer());    
@@ -710,46 +709,28 @@ void FBXLoader::extractCamera(FbxCamera* fbxCamera, Camera* camera)
     glm::dmat4 localTransform = glm::make_mat4(static_cast<double *>(fbxCamera->GetNode()->EvaluateLocalTransform()));
     auto matCamera = glm::mat4(localTransform * geomTransform) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), { 0.0, 1.0, 0.0 });
 
-    //auto modelBBox = mScene3D->models()[0]->mesh()->boundingBox();
-    //auto diagonal = glm::length(glm::vec3(mScene3D->models()[0]->modelMatrix() * glm::vec4(modelBBox.max - modelBBox.min, 1.0)));
-    //auto cameraMesh = mResourceManager->createCylinder("CameraMesh", diagonal / 40, 0, diagonal / 25, 20, 1, false, { 0.8, 0.0, 0.0, 1.0 });
-    //auto cameraModel = mResourceManager->createModel("CameraModel");
-    //cameraModel->setMesh(cameraMesh);
-    //cameraModel->setModelMatrix(matCamera);
-    //cameraModel->insertMaterial(mScene3D->models()[0]->material(0));
-
-    //mScene3D->insertModel(cameraModel);
-
-
     auto dirVec = glm::normalize(glm::dvec3(matCamera[2][0], matCamera[2][1], matCamera[2][2]));
     center = position + 1.0 * dirVec;
-
       
     LOG("- Up ", glm::to_string(up));
     LOG("- Position ", glm::to_string(position));
     LOG("- Center ", glm::to_string(center));
     LOG("- Width ", fbxCamera->AspectWidth.Get(), ", Height ", fbxCamera->AspectHeight.Get(), ", Ratio ", fbxCamera->PixelAspectRatio.Get());
     
-    glm::mat4 cameraView = glm::mat4(glm::lookAt(position, center, up));// * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), { 0.0, 1.0, 0.0 });
+    glm::mat4 cameraView = glm::mat4(glm::lookAt(position, center, up));
     LOG("- View Matrix ",  glm::to_string(cameraView));
     
     glm::quat quat = glm::quat_cast(cameraView);
-//     quat.x *= -1.0f;
-//     quat.y *= -1.0f;
-//     quat.z *= -1.0f;
-    
     glm::mat4 mat = glm::translate(glm::mat4_cast(quat), glm::vec3(-position));
     
     LOG("- Other View Matrix: ", glm::to_string(mat));
 
     glm::vec3 alternatePos(-cameraView[3][0], -cameraView[3][1], -cameraView[3][2]);
 
-    //camera->setViewMatrix(cameraView);
     camera->setPosition(alternatePos);
     //camera->setForward(glm::vec3(position - center));
     camera->setUp(glm::vec3(up));
-    camera->setOrientation(quat);    
-    //camera->lookAt(glm::vec3(position), glm::vec3(center), glm::vec3(up));
+    camera->setOrientation(quat);
 }
 
 void FBXLoader::extractLights()

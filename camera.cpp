@@ -216,19 +216,8 @@ const glm::mat4& Camera::viewMatrix()
 {
     if (recalcViewMatrix) 
     {
-        // Compute inverse rotation q
-        glm::quat q = mOrientation;
-//         q.x *= -1.0f;
-//         q.y *= -1.0f;
-//         q.z *= -1.0f;
-        mViewMatrix = glm::mat4_cast(q);
-
-        // Translate by inverse eyePosition.
-        glm::vec3 v = -1.0f * mEyePosition;
-        glm::mat4 m = mViewMatrix;
-        mViewMatrix = glm::translate(glm::mat4(1.0f), v);
-        mViewMatrix = (mViewMatrix * glm::mat4_cast(q));// * glm::translate(glm::mat4(1.0f), glm::vec3(-40.0, 0.0, 0.0));
-        //mViewMatrix[3] = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3];
+        mViewMatrix = glm::translate(glm::mat4(1.0f), -1.0f * mEyePosition);
+        mViewMatrix = mViewMatrix * glm::mat4_cast(mOrientation);
 
         recalcViewMatrix = false;
     }

@@ -43,7 +43,7 @@ Texture* FontManager::loadFont(std::string fontPath, std::string fontName, unsig
     
     Texture* fontTextute = mManager->createTexture(fontName, GL_TEXTURE_2D, GL_R8, 1024, 1024, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, false);    
     std::vector<Glyph> glyphData;    
-    glm::ivec2 texturePosition;
+    glm::ivec2 texturePosition{0, 0};
     
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     
@@ -92,7 +92,7 @@ Mesh* FontManager::generateMeshText(std::string fontName, std::string text, int 
     auto fontData = font.mGlyphData;
     auto fontTexture = font.mTexture;
     int scale = 1;
-    glm::vec4 color;
+    glm::vec4 color{0, 0, 0, 0};
     std::vector<GLfloat> vertices;
     std::vector<GLfloat> colors;
     std::vector<GLfloat> normals;

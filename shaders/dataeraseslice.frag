@@ -39,16 +39,13 @@ void main()
     
     if(distance < 0)
     {
-        vec3 projPos3D = Pos3D.xyz/Pos3D.w * 0.5 + 0.5;
-
-        float prePassDepth = texture(ArrayTexture[depthIndices.x], vec3(projPos3D.xy, depthIndices.y)).x;
-        prePassDepth *= 0.999998;
-
-        float depthDiff = projPos3D.z - prePassDepth;
+        vec3 projPos3D = Pos3D.xyz/Pos3D.w;
+        vec2 projCoord = ProjTexCoord.xy/ProjTexCoord.w; 
         
-        vec2 projCoord = ProjTexCoord.xy/ProjTexCoord.w;    
-
-        if(depthDiff < mix(0.001, 0.000005, prePassDepth) /*&& dot(normalize(Normal), normalize(LightDir)) >= 0.0*/ && 
+        float prePassDepth = texture(ArrayTexture[depthIndices.x], vec3(projPos3D.xy * 0.5 + 0.5, depthIndices.y)).x * 0.999;
+        float depthDiff = projPos3D.z - prePassDepth;
+            
+        if(depthDiff >= 0 && dot(normalize(Normal), normalize(LightDir)) >= 0.0 && 
             ProjTexCoord.q >= 0 && Pos3D.q >= 0 &&
             projCoord.x >= 0.0 && projCoord.y >= 0.0 && projCoord.x <= 1.0 && projCoord.y <= 1.0)
         {        

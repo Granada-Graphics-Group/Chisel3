@@ -25,7 +25,7 @@ public:
     RenderPass(std::string name, Scene3D* scene) :  RenderPass(name, scene, nullptr) {};
     RenderPass(std::string name, Scene3D* scene, Material* sceneMaterial): RenderPass(name, scene, sceneMaterial, {BlendingState()}) {};
     RenderPass(std::string name, Scene3D* scene, Material* sceneMaterial, std::vector<BlendingState> blendingStates): RenderPass(name, scene, sceneMaterial, blendingStates, true) {};
-    RenderPass(std::string name, Scene3D* scene, Material* sceneMaterial, std::vector<BlendingState> blendingStates, bool depthTest): RenderPass(name, scene, sceneMaterial, blendingStates, depthTest, GL_LESS) {};
+    RenderPass(std::string name, Scene3D* scene, Material* sceneMaterial, std::vector<BlendingState> blendingStates, bool depthTest): RenderPass(name, scene, sceneMaterial, blendingStates, depthTest, GL_GREATER) {};
     RenderPass(std::string name, Scene3D* scene, Material* sceneMaterial, std::vector<BlendingState> blendingStates, bool depthTest, GLenum depthFunc);
     ~RenderPass();
     
@@ -46,7 +46,7 @@ public:
     bool disableBlending(GLint indexBuffer);
     
     void disableDepthTest(){ mDepthTest = false; }
-    void enableDepthTest(GLenum depthFunc = GL_LESS){ mDepthTest = true; mDepthFunc = depthFunc; }
+    void enableDepthTest(GLenum depthFunc = GL_GREATER){ mDepthTest = true; mDepthFunc = depthFunc; }
     
     void setScene(Scene3D* scene){ mScene = scene; }
     
@@ -71,7 +71,7 @@ private:
     
     std::vector<BlendingState> mBlendingStates;
     bool mDepthTest = true;
-    GLenum mDepthFunc = GL_LESS;
+    GLenum mDepthFunc = GL_GREATER;
     
     bool mAutoclear = true;
     bool mAutoClearColor = true;

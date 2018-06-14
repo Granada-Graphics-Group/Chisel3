@@ -138,9 +138,16 @@ GLRenderer::GLRenderer(unsigned int windowWidth, unsigned int windowHeight, Reso
         LOG_ERR("OpenGL: Sparse Textures not supported");
         exit(-1);
     }
-
+        
     mManager->initGLResourceData();
     mBlendingStates.resize(mManager->glConstants().maxColorAttachments, false);
+    
+    glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+    glClearDepth(0.0);    
+    
+    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGBA8, mWindowWidth, mWindowHeight, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+    auto FBODepthTexture = mManager->createTexture("DefaultFBODepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);    
+    mFBO = std::make_unique<FBObject>(GL_FRAMEBUFFER, std::vector<Texture*>{FBOColorTexture}, FBODepthTexture);    
 }
 
 GLRenderer::~GLRenderer()
@@ -163,7 +170,7 @@ void GLRenderer::init(GLuint defaultFB)
         appDirPath.cdUp();
     QString path(appDirPath.absolutePath() + "/shaders");    
     mManager->loadEffects(path.toStdString(), {"*.xml"});
-    
+        
     glClearColor(0.0, 0.0, 0.0, 0.0);                    
            
     mUniformBuffers.resize(GLUniBuffer::Count);
@@ -182,16 +189,16 @@ void GLRenderer::init(GLuint defaultFB)
 
     // Camera
     
-    mOrthoCamera = std::make_unique<Camera>("orthoCamera", glm::ortho(0.0f, static_cast<float>(mWindowWidth), 0.0f, static_cast<float>(mWindowHeight), -1.0f, 1000.0f));
-    auto proyectorCamera = new Camera("proyectorCamera", glm::ortho(0.0f, 1.0f, 0.0f, 1.0f, -5.0f, 1000.0f));
-    mNormOrthoCamera = std::make_unique<Camera>("paintTexCamera", glm::ortho(0.0f, 1.0f, 0.0f, 1.0f, -5.0f, 1000.0f));
+    mOrthoCamera = std::make_unique<Camera>("orthoCamera", glm::orthoZO(0.0f, static_cast<float>(mWindowWidth), 0.0f, static_cast<float>(mWindowHeight), 1000.0f, -1.0f));
+    auto proyectorCamera = new Camera("proyectorCamera", glm::orthoZO(0.0f, 1.0f, 0.0f, 1.0f, 1000.0f, -5.0f));
+    mNormOrthoCamera = std::make_unique<Camera>("paintTexCamera", glm::orthoZO(0.0f, 1.0f, 0.0f, 1.0f, 1000.0f, -5.0f));
 
     mUniformBuffers[GLUniBuffer::Frame] = std::make_unique<UniformBufferObject>(4 * sizeof(glm::mat4) + 10 * sizeof(glm::vec4), nullptr);    
     mUniformBuffers[GLUniBuffer::Frame]->bindToIndexedBufferTarget(0, 0, mUniformBuffers[GLUniBuffer::Frame]->capacity());    
     mUniformBuffers[GLUniBuffer::Frame]->update(2 * sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(proyectorCamera->projectionMatrix()));
     mUniformBuffers[GLUniBuffer::Frame]->update(3 * sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(mNormOrthoCamera->projectionMatrix()));
     
-    
+                  
     auto dummyMaterial = mManager->createMaterial("Dummy");    
     auto brushDisk = mManager->createDisk("BrushDisk", 38, 40, 60);
     auto brushCircle = mManager->createCircle("BrushCircle", { 0.5, 0.5, 0.0 }, 0.5, 60);
@@ -206,7 +213,7 @@ void GLRenderer::init(GLuint defaultFB)
     auto brushMat = mManager->createMaterial("BrushMat", "PaintTool");
     auto brushPass = mManager->createRenderPass("BrushPass", mPPScene, brushMat);
     brushPass->setAutoClear(false);
-    mBrushToolTarget = mManager->createRenderTarget("BrushToolTarget", mManager, viewport, {brushPass}, true, defaultFB);
+    mBrushToolTarget = mManager->createRenderTarget("BrushToolTarget", mManager, viewport, {brushPass}, true, mFBO->id());
 
     auto brushTexPass = mManager->createRenderPass("BrushTexPass", brushTexScene, brushMat);
     auto brushShapeTextureTarget = mManager->createRenderTarget("BrushTexTarget", mManager, {0, 0, 1024, 1024}, {brushTexPass}, false);
@@ -219,7 +226,7 @@ void GLRenderer::init(GLuint defaultFB)
     auto fontTexture = mFontManager->loadFont(appDirPath.absolutePath().toStdString() + "/fonts/", "arial.ttf", 24);
     auto fontMeshMat = mManager->createMaterial("FontTex");
     fontMeshMat->setDiffuseTexture(fontTexture);
-    auto fontMesh = mFontManager->generateMeshText("arial.ttf","Alpha Version 0.6.1", 20, 30);
+    auto fontMesh = mFontManager->generateMeshText("arial.ttf","Alpha Version 0.6.3", 20, 30);
     auto fontModel = new Model3D("FontModel", fontMesh, { fontMeshMat });
     mFontScene = new Scene3D("FontScene", {mOrthoCamera.get()}, {fontModel});
     mFontScene->setRenderer(this);
@@ -227,7 +234,7 @@ void GLRenderer::init(GLuint defaultFB)
     auto fontPass = mManager->createRenderPass("FontPass", mFontScene, fontMat);
     fontPass->setAutoClear(false);
     fontPass->enableBlending(0);
-    auto fontTarget = mManager->createRenderTarget("FontTarget", mManager, viewport, {fontPass}, true, defaultFB);
+    auto fontTarget = mManager->createRenderTarget("FontTarget", mManager, viewport, {fontPass}, true, mFBO->id());
                   
     mBrushShapeTexture = brushShapeTextureTarget->colorTexOutputs()[0];//  mBrushTex = brushTexTarget->colorOutputs()[0].get();
         
@@ -431,34 +438,27 @@ void GLRenderer::alignMainCameraToModel()
 
 void GLRenderer::alignCameraToModel(Camera *camera, Model3D * model)
 {
-    //camera->setAspectWidth(1280);
-    //camera->setAspectHeight(720);
-    //camera->setAspectRatio(static_cast<double>(1280) / static_cast<double>(720));
-    //camera->setFieldOfViewX(49.134);
-    //camera->setFieldOfViewY(28.841);
-    //camera->setFieldOfView(49.134);
-    //camera->setFocalLength(35);
-
     auto matrix = model->modelMatrix();
     auto bbox = model->mesh()->boundingBox();
-    auto widthZ = glm::length(matrix * glm::vec4(bbox.max, 1.0) - matrix * glm::vec4(bbox.min, 1.0));//(matrix * glm::vec4(bbox.max, 1.0)).z - (matrix * glm::vec4(bbox.min, 1.0)).z;
+    auto bboxMax = matrix * glm::vec4(bbox.max, 1.0);
+    auto bboxMin = matrix * glm::vec4(bbox.min, 1.0);
+    auto bboxCenter = matrix * glm::vec4(bbox.center, 1.0);
+    auto widthZ = glm::length(bboxMax - bboxMin);
 
     camera->setFarPlane(widthZ * 20);
     camera->setNearPlane(0.0999);
 
-    auto glmPerspective = glm::perspective(glm::radians(camera->fieldOfViewY()), camera->aspectRatio(), camera->nearPlane(), camera->farPlane());
+    auto glmPerspective = MakeInfReversedZProjRH(glm::radians(camera->fieldOfViewY()), camera->aspectRatio(), camera->nearPlane());
     camera->setProjectionMatrix(glmPerspective);
 
     LOG("Matrix: ", glm::to_string(matrix));
 
-    auto distance = bbox.height() / (2.0 / tan(glm::radians(camera->fieldOfViewY()) / 2.0));
-    auto distance2 = glm::length(matrix * glm::vec4(bbox.max, 1.0) - matrix * glm::vec4(bbox.center, 1.0)) / glm::tan(glm::radians(camera->fieldOfViewY()) / 2.0);
-
-    auto position2 = glm::vec3(matrix * glm::vec4(bbox.center, 1.0)) - glm::abs(distance2) * glm::vec3(0.0f, 0.0f, -1.0f);
-    //position2 = glm::vec3(matrix * glm::vec4(position2, 1.0));
+    //auto distance = bbox.height() / (2.0 / tan(glm::radians(camera->fieldOfViewY()) / 2.0));
+    auto distance = glm::length(bboxMax - bboxCenter) / glm::tan(glm::radians(camera->fieldOfViewY()) / 2.0);
+    auto position = glm::vec3(bboxCenter) - glm::abs(distance) * glm::vec3(0.0f, 0.0f, -1.0f);
 
     auto up = glm::vec3(0, 1, 0);
-    auto view = glm::lookAt(position2, glm::vec3(matrix * glm::vec4(bbox.center, 1.0)), up);
+    auto view = glm::lookAt(position, glm::vec3(bboxCenter), up);
     LOG("GLM View: ", glm::to_string(view));
 
     camera->setOrientation(glm::quat_cast(view));
@@ -529,7 +529,7 @@ using clock_type = typename std::conditional< std::chrono::high_resolution_clock
                                               std::chrono::steady_clock >::type ;
 
 void GLRenderer::render()
-{  
+{    
         update();
         
         processComputeJobs();
@@ -570,7 +570,7 @@ void GLRenderer::render()
                     //LOG("Pass: ", pass->name());
                                         
                     bool depthTest = pass->isDepthTestEnabled(); 
-                    if(!depthTest) LOG("Pass: ", pass->name(), " disabled depth test");
+                    
                     if(depthTest != mDepthState)
                     {
                         (depthTest) ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
@@ -846,6 +846,11 @@ void GLRenderer::render()
         }
         else
             frameCounter++;
+        
+    glBlitNamedFramebuffer( mFBO->id(), mDefaultFBIndex,
+                            0, 0, mWindowWidth, mWindowHeight,
+                            0, 0, mWindowWidth, mWindowHeight,
+                            GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 void GLRenderer::resize(int width, int height)
@@ -866,7 +871,7 @@ void GLRenderer::resize(int width, int height)
         mOrthoCamera->setAspectWidth(width);
         mOrthoCamera->setAspectRatio(newAspectRatio);
 
-        auto newOrtho = glm::ortho(0.0f, static_cast<float>(mWindowWidth), 0.0f, static_cast<float>(mWindowHeight), -1.0f, 1000.0f);
+        auto newOrtho = glm::orthoZO(0.0f, static_cast<float>(mWindowWidth), 0.0f, static_cast<float>(mWindowHeight), 1000.0f, -1.0f);
         mOrthoCamera->setProjectionMatrix(newOrtho);
 
         mFontScene->setProjCameraNeedUpdate(true);
@@ -884,7 +889,7 @@ void GLRenderer::resize(int width, int height)
         mCamera->setAspectWidth(width);
         mCamera->setAspectRatio(newAspectRatio);
         
-        auto newPerspective = glm::perspective(glm::radians(mCamera->fieldOfViewY()), mCamera->aspectRatio(), mCamera->nearPlane(), mCamera->farPlane());        
+        auto newPerspective = MakeInfReversedZProjRH(glm::radians(mCamera->fieldOfViewY()), mCamera->aspectRatio(), mCamera->nearPlane());
         mCamera->setProjectionMatrix(newPerspective);
         //mSlicePlaneScene->camera()->setProjectionMatrix(newPerspective);
         
@@ -893,6 +898,14 @@ void GLRenderer::resize(int width, int height)
         
         mResized = true;
     }
+    
+    mManager->deleteTexture(mFBO->colorAttachment(0));
+    mManager->deleteTexture(mFBO->depthAttachment());
+
+    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGBA8, mWindowWidth, mWindowHeight, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+    auto FBODepthTexture = mManager->createTexture("DefaultFBODepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);    
+    mFBO->setcolorAttachment(FBOColorTexture, 0);
+    mFBO->setDepthAttachment(FBODepthTexture);    
 }
 
 
@@ -1352,6 +1365,9 @@ void GLRenderer::updateInstanceMatrixBuffer()
 void GLRenderer::updateSizeDependentResources()
 {
     mResized = false;
+    
+    mManager->deleteTexture(mFBO->colorAttachment(0));
+    mManager->deleteTexture(mFBO->depthAttachment());
 
     mManager->deleteTexture(mReadFBTexture);
     mManager->deleteTexture(mReadFBTextureI);
@@ -1361,12 +1377,17 @@ void GLRenderer::updateSizeDependentResources()
     mManager->deleteTexture(const_cast<Texture*>(mDepthTarget->depthTexOutput()));
     //mManager->deleteTextureArray(mDepthTextArray);
 
-    mDepthTextArray = mManager->createTextureArray(4, {}, GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT32, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, 8, false);
+    //mDepthTextArray = mManager->createTextureArray(5, {}, GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, 8, false);
     mReadFBTextureUI = mManager->createTexture("readFBTextureUI", GL_TEXTURE_2D, GL_RG32UI, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
     mReadFBTextureI = mManager->createTexture("readFBTextureI", GL_TEXTURE_2D, GL_RG32I, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
     mReadFBTexture = mManager->createTexture("readFBTexture", GL_TEXTURE_2D, GL_RG32F, mWindowWidth, mWindowHeight, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+
+    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGBA8, mWindowWidth, mWindowHeight, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+    auto FBODepthTexture = mManager->createTexture("DefaultFBODepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);    
+    mFBO->setcolorAttachment(FBOColorTexture, 0);
+    mFBO->setDepthAttachment(FBODepthTexture);
     
-    auto depthTex = mManager->createTexture("DepthTargetDepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, true);
+    auto depthTex = mManager->createTexture("DepthTargetDepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, true);
     mDepthTarget->setDepthTexture(depthTex);
     
     mPaintTexTarget->setDepthInputIndices({depthTex->textureArrayIndex(), depthTex->textureArrayLayerIndex()});
@@ -1563,7 +1584,7 @@ void GLRenderer::updateControlPointText(const std::vector<std::tuple<std::string
         LOG("GLRenderer::Update Control Point Text:: Resize: ", mWindowWidth);
         mFontScene->clearScene();
         
-        auto textMesh = mFontManager->generateMeshText("arial.ttf","Alpha Version 0.6.1", 20, 30);
+        auto textMesh = mFontManager->generateMeshText("arial.ttf","Alpha Version 0.6.3", 20, 30);
         auto fontMeshMat = mManager->material("FontTex");
         auto fontModel = new Model3D(textMesh->name(), textMesh, { fontMeshMat });
         mFontScene->insertModel(fontModel);
@@ -1883,7 +1904,6 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mReadFBTextureUI = mManager->createTexture("readFBTextureUI", GL_TEXTURE_2D, GL_RG32UI, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, 2048, 2048, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mLockTexture = mManager->createTexture("LockPerPixel", GL_TEXTURE_2D, GL_R32UI, 2048, 2048, GL_RED_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, false);
-        mDepthTextArray = mManager->createTextureArray(4, {}, GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT32, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, 8, false);
         
         auto quad = mManager->createQuad("PPQuad", {0.0, 0.0}, {2048, 2048});
         auto ppQuadModel = new Model3D("ppModel", quad, {mManager->material("Dummy")});
@@ -1901,7 +1921,7 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         auto depthMat = mManager->createMaterial("DepthMat", "Depth");
         auto depthPass = mManager->createRenderPass("DepthPass", mMainScene, depthMat);
         auto depthColor = mManager->createTexture("DepthCTargetDepth", GL_TEXTURE_2D, GL_R32F, viewport[2], viewport[3], GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, true);
-        auto depthTex = mManager->createTexture("DepthTargetDepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32, viewport[2], viewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, true);
+        auto depthTex = mManager->createTexture("DepthTargetDepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, viewport[2], viewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, true);
         mDepthTarget = mManager->createRenderTarget("DepthTarget", mManager, viewport, { depthPass }, {}, depthTex, false);
 
         auto paintTexMat = mManager->createMaterial("PaintTexMat", "ColorPainting");
@@ -1916,7 +1936,7 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
                 
         auto projMat = mManager->createMaterial("projMat", "ProjectiveTex");
         mProjPass = mManager->createRenderPass("projPass", mMainScene, projMat);
-        mProjTarget = mManager->createRenderTarget("projTarget", mManager, viewport, {mProjPass}, true, mDefaultFBIndex);
+        mProjTarget = mManager->createRenderTarget("projTarget", mManager, viewport, {mProjPass}, true, mFBO->id());
         
         auto readFBMat = mManager->createMaterial("readFBMat", "DataReading");
         mReadFBPass = mManager->createRenderPass("readFBPass", mMainScene, readFBMat);
@@ -1937,7 +1957,7 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         auto viewTexMat = mManager->createMaterial("ViewTexMat", "ViewTex");
         auto viewTexPass = mManager->createRenderPass("viewTexPass", ppScene, viewTexMat);
         viewTexPass->setAutoClear(false);
-        auto viewTexTarget = mManager->createRenderTarget("vieTexTarget", mManager, { 0, 0, 512, 512 }, { viewTexPass }, true, mDefaultFBIndex);    
+        auto viewTexTarget = mManager->createRenderTarget("vieTexTarget", mManager, { 0, 0, 512, 512 }, { viewTexPass }, true, mFBO->id());
         mViewTexTech = mManager->createRenderTechnique("viewTexTech", {viewTexTarget});
 
         auto areaPerPixelMat = mManager->createMaterial("AreaPerPixel", "AreaPerPixel");
@@ -1980,7 +2000,7 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         auto slicePlanePass = mManager->createRenderPass("SlicePlanePass", mSlicePlaneScene, slicePlaneMaterial);
         slicePlanePass->setAutoClear(false);
         slicePlanePass->enableBlending(0);
-        mSlicePlaneTarget = mManager->createRenderTarget("SlicePlaneTarget", mManager, viewport, {slicePlanePass}, true, mDefaultFBIndex);        
+        mSlicePlaneTarget = mManager->createRenderTarget("SlicePlaneTarget", mManager, viewport, {slicePlanePass}, true, mFBO->id());
         
 
         mDepthTech = mManager->createRenderTechnique("DepthPrePassTechnique", {mDepthTarget}, 1);
@@ -2360,8 +2380,7 @@ void GLRenderer::updateGenericUniformData()
         for(const auto dirtyArray: mManager->dirtyTextureArrays())
         {
             LOG("1A Dirty Tex Array id: ", dirtyArray->id(), ", index: ", dirtyArray->index(), ", sampler: ", static_cast<int>(dirtyArray->samplerType()), ", textureUnit: ", dirtyArray->textureUnit());
-            glActiveTexture(GL_TEXTURE0 + dirtyArray->textureUnit());
-            glBindTexture(dirtyArray->target(), dirtyArray->id());            
+            glBindTextureUnit(dirtyArray->textureUnit(), dirtyArray->id());
         }
         
         mManager->clearDirtyTextureArrays();

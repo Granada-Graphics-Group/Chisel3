@@ -280,7 +280,7 @@ private:
     std::vector<GLint> mSceneOverrideTexArrayIndexBufferCache;
     
     GLuint mDefaultFBIndex = 0;
-    std::vector<FBObject *> mRenderTargets;    
+    std::unique_ptr<FBObject> mFBO;    
     
     bool mDrawIndCommandsNeedUpdate = true;
     std::vector<DrawElementsIndirectCommand> mDrawIndirectCommands;
@@ -296,33 +296,33 @@ private:
     std::vector<RenderTechnique *> mRenderQueue;
     std::vector<ComputeJob *> mComputeQueue;
     
-    RenderTechnique* mDepthTech;
-    RenderTechnique* mSeamMaskTech;
-    RenderTechnique* mNormalTech;
-    RenderTechnique* mPaintTexTech;
-    RenderTechnique* mEraseTexTech;
-    RenderTechnique* mReadFBTech;
-    RenderTechnique* mProjTech;
-    RenderTechnique* mUITech;
-    RenderTechnique* mAreaPerPixelTech;
-    RenderTechnique* mViewTexTech;
-    RenderTechnique* mBrushShapeTech;
-    RenderTarget* mDepthTarget;
-    RenderTarget* mDepthTexTarget;
-    RenderTarget* mSeamMaskTarget;
-    RenderTarget* mPaintTexTarget;
-    RenderTarget* mDilationTarget;
-    RenderTarget* mReadFBTarget;
-    RenderTarget* mEraseTexTarget;
-    RenderTarget* mEraseDilationTarget;
-    RenderTarget* mBrushToolTarget;
-    RenderTarget* mProjTarget;
-    RenderTarget* mSlicePlaneTarget;
-    RenderPass* mProjPass;
-    RenderPass* mPaintTexPass;
-    RenderPass* mDilationPass;
-    RenderPass* mReadFBPass;
-    RenderPass* mEraseTexPass;
+    RenderTechnique* mDepthTech = nullptr;
+    RenderTechnique* mSeamMaskTech = nullptr;
+    RenderTechnique* mNormalTech = nullptr;
+    RenderTechnique* mPaintTexTech = nullptr;
+    RenderTechnique* mEraseTexTech = nullptr;
+    RenderTechnique* mReadFBTech = nullptr;
+    RenderTechnique* mProjTech = nullptr;
+    RenderTechnique* mUITech = nullptr;
+    RenderTechnique* mAreaPerPixelTech = nullptr;
+    RenderTechnique* mViewTexTech = nullptr;
+    RenderTechnique* mBrushShapeTech = nullptr;
+    RenderTarget* mDepthTarget = nullptr;
+    RenderTarget* mDepthTexTarget = nullptr;
+    RenderTarget* mSeamMaskTarget = nullptr;
+    RenderTarget* mPaintTexTarget = nullptr;
+    RenderTarget* mDilationTarget = nullptr;
+    RenderTarget* mReadFBTarget = nullptr;
+    RenderTarget* mEraseTexTarget = nullptr;
+    RenderTarget* mEraseDilationTarget = nullptr;
+    RenderTarget* mBrushToolTarget = nullptr;
+    RenderTarget* mProjTarget = nullptr;
+    RenderTarget* mSlicePlaneTarget = nullptr;
+    RenderPass* mProjPass = nullptr;
+    RenderPass* mPaintTexPass = nullptr;
+    RenderPass* mDilationPass = nullptr;
+    RenderPass* mReadFBPass = nullptr;
+    RenderPass* mEraseTexPass = nullptr;
     
     Texture *mSeamMaskTexture = nullptr;
     Texture *mDepthTexTexture = nullptr;
@@ -334,7 +334,6 @@ private:
     Texture *mReadFBTextureUI = nullptr;
     Texture *mAreaPerPixelTexture = nullptr;
     Texture *mLockTexture = nullptr;
-    TextureArray* mDepthTextArray = nullptr;
     std::deque<GLLayer> mLayers;
     
     bool mPaintingDataNeedUpdate = false;
