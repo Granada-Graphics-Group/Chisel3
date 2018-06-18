@@ -40,7 +40,7 @@ set (OPPARSER_SRCS  OLexer.cpp
 add_library(OpParser ${OPPARSER_SRCS} translator.cpp)
 target_include_directories(OpParser PUBLIC ${OPPARSER_HDRS})
 target_include_directories(OpParser INTERFACE ${OPPARSER_HDRS} ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(OpParser PUBLIC ANTLR4CPP_STATIC GLM_ENABLE_EXPERIMENTAL)
+target_compile_definitions(OpParser PUBLIC ANTLR4CPP_STATIC GLM_ENABLE_EXPERIMENTAL GLM_FORCE_CTOR_INIT)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)

@@ -467,7 +467,6 @@ namespace detail
 			char const * LiteralStr = literal<T, std::numeric_limits<T>::is_iec559>::value();
 			std::string FormatStr(detail::format("%sdualquat((%s, {%s, %s, %s}), (%s, {%s, %s, %s}))",
 				PrefixStr,
-				LiteralStr, LiteralStr, LiteralStr, LiteralStr,
 				LiteralStr, LiteralStr, LiteralStr, LiteralStr));
 
 			return detail::format(FormatStr.c_str(),

@@ -43,7 +43,7 @@ RenderTarget::RenderTarget(std::string name, ResourceManager* manager, std::arra
         if(depthTarget == nullptr)
         {
             std::string textureName = mName + "Depth";
-            mDepthTexture = mResourceManager->createTexture(textureName, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);                
+            mDepthTexture = mResourceManager->createTexture(textureName, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);                
         }
     }
     else
@@ -114,7 +114,7 @@ void RenderTarget::attachColorTexturesToFBO(bool updateDepthTexture)
             if(updateDepthTexture)
             {
                 mResourceManager->deleteTexture(mDepthTexture);
-                mDepthTexture = mResourceManager->createTexture(mName + "Depth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);
+                mDepthTexture = mResourceManager->createTexture(mName + "Depth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);
             }
             
             mFBO->setDepthAttachment(mDepthTexture);
@@ -207,7 +207,7 @@ void RenderTarget::createTextureTargets(RenderPass* pass)
     if(depth)
     {
         std::string textureName = mName + "Depth";
-        mDepthTexture = mResourceManager->createTexture(textureName, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);
+        mDepthTexture = mResourceManager->createTexture(textureName, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);
         //mResourceManager->insertTexture(mDepthTexture);                
     }
     

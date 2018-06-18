@@ -145,7 +145,8 @@ GLRenderer::GLRenderer(unsigned int windowWidth, unsigned int windowHeight, Reso
     glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
     glClearDepth(0.0);    
     
-    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGBA8, mWindowWidth, mWindowHeight, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+    mManager->createTextureArray(5, {}, GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, 8, false);
+    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGB8, mWindowWidth, mWindowHeight, GL_RGB, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, true);
     auto FBODepthTexture = mManager->createTexture("DefaultFBODepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);    
     mFBO = std::make_unique<FBObject>(GL_FRAMEBUFFER, std::vector<Texture*>{FBOColorTexture}, FBODepthTexture);    
 }
@@ -902,7 +903,8 @@ void GLRenderer::resize(int width, int height)
     mManager->deleteTexture(mFBO->colorAttachment(0));
     mManager->deleteTexture(mFBO->depthAttachment());
 
-    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGBA8, mWindowWidth, mWindowHeight, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+    mManager->createTextureArray(5, {}, GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, 8, false);
+    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGBA8, mWindowWidth, mWindowHeight, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, true);
     auto FBODepthTexture = mManager->createTexture("DefaultFBODepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);    
     mFBO->setcolorAttachment(FBOColorTexture, 0);
     mFBO->setDepthAttachment(FBODepthTexture);    
@@ -1377,12 +1379,12 @@ void GLRenderer::updateSizeDependentResources()
     mManager->deleteTexture(const_cast<Texture*>(mDepthTarget->depthTexOutput()));
     //mManager->deleteTextureArray(mDepthTextArray);
 
-    //mDepthTextArray = mManager->createTextureArray(5, {}, GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, 8, false);
+    mManager->createTextureArray(5, {}, GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, 8, false);
     mReadFBTextureUI = mManager->createTexture("readFBTextureUI", GL_TEXTURE_2D, GL_RG32UI, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
     mReadFBTextureI = mManager->createTexture("readFBTextureI", GL_TEXTURE_2D, GL_RG32I, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
     mReadFBTexture = mManager->createTexture("readFBTexture", GL_TEXTURE_2D, GL_RG32F, mWindowWidth, mWindowHeight, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
 
-    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGBA8, mWindowWidth, mWindowHeight, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+    auto FBOColorTexture = mManager->createTexture("DefaultFBOColor", GL_TEXTURE_2D, GL_RGB8, mWindowWidth, mWindowHeight, GL_RGB, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, true);
     auto FBODepthTexture = mManager->createTexture("DefaultFBODepth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mWindowWidth, mWindowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);    
     mFBO->setcolorAttachment(FBOColorTexture, 0);
     mFBO->setDepthAttachment(FBODepthTexture);

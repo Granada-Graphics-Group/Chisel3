@@ -53,7 +53,7 @@ set(SQLite3SRCS sqlite3/sqlite3.c)
 
 add_executable(Chisel ${Chisel_SRCS} ${SQLite3SRCS} QtUI/resources.qrc)
 
-target_compile_definitions(Chisel PUBLIC GLM_ENABLE_EXPERIMENTAL)
+target_compile_definitions(Chisel PUBLIC GLM_ENABLE_EXPERIMENTAL GLM_FORCE_CTOR_INIT)
 target_link_libraries(Chisel ${OPENGL_gl_LIBRARY} QtUI OpParser Qt5::Svg)
 if(UNIX)
     target_include_directories(Chisel PRIVATE ${QtUI_BINARY_DIR})

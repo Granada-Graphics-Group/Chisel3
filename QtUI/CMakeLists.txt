@@ -41,6 +41,6 @@ set(QtUI_SRCS   mainwindow.cpp
     )
 
 add_library(QtUI ${QtUI_SRCS})
-target_compile_definitions(QtUI PUBLIC GLM_ENABLE_EXPERIMENTAL)
+target_compile_definitions(QtUI PUBLIC GLM_ENABLE_EXPERIMENTAL GLM_FORCE_CTOR_INIT)
 target_link_libraries(QtUI Qt5::Core Qt5::Gui Qt5::Widgets Qt5::OpenGL Qt5::Sql Qt5::Charts)
 target_include_directories(QtUI INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/QtUI_autogen/include)

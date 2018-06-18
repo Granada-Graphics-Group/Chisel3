@@ -66,7 +66,6 @@ void OpenGLWidget::showDataBaseRow(int rowIndex)
     mValueDialog->showRowValue(rowIndex);
     mValueDialog->move(mapToGlobal(mMousePos - QPoint(mValueDialog->width()/2, mValueDialog->height())));        
 }
-
     
 void OpenGLWidget::hideReadValueDialog()
 {
@@ -80,12 +79,12 @@ void OpenGLWidget::mousePressEvent(QMouseEvent* event)
     else if(event->button() == Qt::RightButton)
     {        
         mRenderer->onMouseButtons(1, 1, 0, event->pos().x(), event->pos().y());
-        mValueDialog->hide();
+        hideReadValueDialog();
     }
     else if(event->button() == Qt::MiddleButton)
     {
         mRenderer->onMouseButtons(2, 1, 0, event->pos().x(), event->pos().y());
-        mValueDialog->hide();        
+        hideReadValueDialog();
     }
     
     update();
@@ -117,8 +116,11 @@ void OpenGLWidget::mouseReleaseEvent(QMouseEvent* event)
 
 void OpenGLWidget::wheelEvent(QWheelEvent* event)
 {
-    if(!mUpdatingMarkToolRadius)
+    if (!mUpdatingMarkToolRadius)
+    {
         mRenderer->onMouseWheel(event->angleDelta().rx() / 40, event->angleDelta().ry() / 40);
+        hideReadValueDialog();
+    }
     else
         emit markToolRadiusChanged(event->angleDelta().ry() / 4);
 
