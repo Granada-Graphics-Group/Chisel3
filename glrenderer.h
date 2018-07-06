@@ -318,6 +318,7 @@ private:
     RenderTarget* mBrushToolTarget = nullptr;
     RenderTarget* mProjTarget = nullptr;
     RenderTarget* mSlicePlaneTarget = nullptr;
+    RenderTarget* mAreaPerPixelTarget = nullptr;
     RenderPass* mProjPass = nullptr;
     RenderPass* mPaintTexPass = nullptr;
     RenderPass* mDilationPass = nullptr;

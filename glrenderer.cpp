@@ -1525,24 +1525,31 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
     if(mLayerSize != layer.mValue->dimensions())
     {
         mLayerSize = layer.mValue->dimensions();
-        mManager->deleteTexture(mBrushMaskTexture);
-        
+
+        mManager->deleteTexture(mBrushMaskTexture);        
         mBrushMaskTexture = mManager->createTexture("BrushMaskTexture", GL_TEXTURE_2D, GL_R8, mLayerSize.x, mLayerSize.y, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, false);
         mManager->deleteTexture(mSeamMaskTexture);
         mSeamMaskTexture = mManager->createTexture("SeamMaskTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
         mManager->deleteTexture(mDepthTexTexture);
         mDepthTexTexture = mManager->createTexture("DepthTexTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+        mManager->deleteTexture(mAreaPerPixelTexture);
+        mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, mLayerSize.x, mLayerSize.y, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         
         mSeamMaskTarget->setColorTextures({mSeamMaskTexture});
         mDepthTexTarget->setColorTextures({mDepthTexTexture});
         mSeamMaskTech->settingUP();
+
+        mAreaPerPixelTarget->setColorTextures({mAreaPerPixelTexture});
+        mAreaPerPixelTech->settingUP();
         
         mUniformBuffers[GLUniBuffer::App]->updateCache(sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mSeamMaskTarget->colorTexOutputs()[0]->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
+        mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
 
         mUniformBuffers[GLUniBuffer::App]->updateGPU();
         insertTechnique(mSeamMaskTech, 1);
+        insertTechnique(mAreaPerPixelTech,1);
     }
     
     mPaintTexTarget->setColorTextures({layer.mValue, layer.mMask, mBrushMaskTexture});
@@ -1966,8 +1973,8 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         auto areaPerPixelPass = mManager->createRenderPass("AreaPerPixel", mMainScene, areaPerPixelMat);
         areaPerPixelPass->disableDepthTest();
         //auto dummyTex = mManager->createTexture("dummy", GL_TEXTURE_2D, GL_RGBA8, 2048, 2048, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, true);
-        auto areaPerPixelTarget = mManager->createRenderTarget("AreaPerPixelTarget", mManager, { 0, 0, 2048, 2048 }, { areaPerPixelPass }, {mAreaPerPixelTexture}, nullptr, false);    
-        mAreaPerPixelTech = mManager->createRenderTechnique("AreaPerPixelTech", {areaPerPixelTarget});
+        mAreaPerPixelTarget = mManager->createRenderTarget("AreaPerPixelTarget", mManager, { 0, 0, 2048, 2048 }, { areaPerPixelPass }, {mAreaPerPixelTexture}, nullptr, false);    
+        mAreaPerPixelTech = mManager->createRenderTechnique("AreaPerPixelTech", {mAreaPerPixelTarget});
                 
         mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
         mManager->commitFreeImageUnit(mLockTexture->textureArray());

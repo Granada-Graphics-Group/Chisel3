@@ -1106,7 +1106,7 @@ void ResourceManager::unloadLayer(Layer* layer)
         deleteTexture(layer->maskTexture());
 //         auto type = (layer->discrete()) ? Palette::Type::Discrete : Palette::Type::Linear;
 //         deletePaletteTexture(layer->palette(), type);
-        //deleteTexture(layer->paletteTexture());
+        deleteTexture(layer->paletteTexture());
         mLayers.erase(search);
     }
 }
@@ -1887,6 +1887,8 @@ void ResourceManager::unloadCHiselFile()
     }    
     mLayers.clear();
     
+    mLayerPalettes.clear();
+
     while(mLocalPaletteIndex < mPalettes.size())
     {
         //deleteTexture(mPalettes.back()->texture());

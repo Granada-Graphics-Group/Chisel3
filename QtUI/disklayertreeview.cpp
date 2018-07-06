@@ -43,6 +43,7 @@ void DiskLayerTreeView::updateViewWithModelData()
     setRootIndex(fileModel->index(fileModel->rootPath()));
 
     header()->setStretchLastSection(false);
+    header()->setMinimumSectionSize(7);
     header()->setSectionResizeMode(0, QHeaderView::ResizeMode::Stretch);
     header()->resizeSection(1, 7);       
 

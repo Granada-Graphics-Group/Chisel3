@@ -8,6 +8,19 @@ flat in vec2 FlatCoordST[3];
 flat in vec3 VertexPosition[3];
 flat out float AreaPerPixel;
 
+layout(std140, binding = 10) uniform AppData
+{
+    uvec2 depthIndices;
+    uvec2 seamMaskIndices;
+    uvec2 brushIndices;
+    uvec2 paintIndices;
+    uvec2 brushMaskIndices;
+    uvec2 areaIndices;
+    uvec2 lockIndices;
+};
+
+uniform sampler2DArray ArrayTexture[20];
+
 smooth out vec2 GCoordST;
 
 
@@ -17,9 +30,11 @@ void main()
     float textureLength[3];        
     vec2 coordST[3];    
     
-    coordST[0] = FlatCoordST[0] * 2048;
-    coordST[1] = FlatCoordST[1] * 2048;
-    coordST[2] = FlatCoordST[2] * 2048;
+    ivec3 layerSize = textureSize(ArrayTexture[areaIndices.x], 0);
+
+    coordST[0] = FlatCoordST[0] * layerSize.x;
+    coordST[1] = FlatCoordST[1] * layerSize.x;
+    coordST[2] = FlatCoordST[2] * layerSize.x;
 
 //     realLength[0] = length(VertexPosition[1] - VertexPosition[0]);
 //     realLength[1] = length(VertexPosition[2] - VertexPosition[1]);
