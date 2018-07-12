@@ -720,17 +720,12 @@ bool ResourceManager::deleteTextureArray(TextureArray* texArray)
 
         mBindedTexArrays[{target, samplerKey}][index] = nullptr;
         mTextureUnitPerSampler[{target, samplerKey}][index] = 0;
+
+        auto foundDirtyTextureArray = std::find_if(begin(mDirtyTextureArrays), end(mDirtyTextureArrays), [&](const TextureArray * currentArray) { return (currentArray == texArray) ? true : false; });
         
-//         auto foundBindedTexArray  = std::find_if(begin(mBindedTexArrays[{target, samplerKey}]), end(mBindedTexArrays[{target, samplerKey}]), [&](TextureArray* currentArray){ return (currentArray == texArray) ? true : false;});
-//         
-//         if(foundBindedTexArray != end(mBindedTexArrays[{target, samplerKey}]))                    
-//             mBindedTexArrays[{target, samplerKey}].erase(foundBindedTexArray);
-//             
-//         auto foundTexUnit  = std::find_if(begin(mTextureUnitPerSampler[{target, samplerKey}]), end(mTextureUnitPerSampler[{target, samplerKey}]), [&](GLint currentUnit){ return (currentUnit == texArray->textureUnit()) ? true : false;});
-//         
-//         if(foundTexUnit != end(mTextureUnitPerSampler[{target, samplerKey}]))
-//             mTextureUnitPerSampler[{target, samplerKey}].erase(foundTexUnit);
-        
+        if (foundDirtyTextureArray != end(mDirtyTextureArrays))
+            mDirtyTextureArrays.erase(foundDirtyTextureArray);
+                
         auto found = std::find_if(begin(mGLTexArrays[target][samplerKey][paramKey]), end(mGLTexArrays[target][samplerKey][paramKey]), [&](const std::unique_ptr<TextureArray>& currentArray){ return (currentArray.get() == texArray) ? true : false;});
         
         if(found != end(mGLTexArrays[target][samplerKey][paramKey]))
