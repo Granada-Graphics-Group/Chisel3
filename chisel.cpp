@@ -200,6 +200,8 @@ void Chisel::import3DModel(std::string name, std::string extension, std::string 
 {
     mResourceManager->importScene3D(name, extension, path);
     
+    setCurrentPalette(static_cast<unsigned int>(0));
+    
     mDirtyFlag = true;
 }
 
