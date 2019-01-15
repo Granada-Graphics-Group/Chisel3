@@ -386,6 +386,11 @@ std::vector<int32_t> Renderer::readIntTexture(Texture* texture)
     return mGLRenderer->readIntTexture(texture);
 }
 
+std::vector<half_float::half> Renderer::readHalfFloatTexture(Texture* texture)
+{
+    return mGLRenderer->readHalfFloatTexture(texture);
+}
+
 std::vector<float> Renderer::readFloatTexture(Texture* texture)
 {
     return mGLRenderer->readFloatTexture(texture);

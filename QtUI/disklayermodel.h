@@ -25,6 +25,7 @@ public:
 //     bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const Q_DECL_OVERRIDE;
 //     bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) Q_DECL_OVERRIDE;
     std::vector<std::string> filenames() const;
+    unsigned int layerCount() const;
     
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
 /*    bool insertRows(int row, int count, const QModelIndex& parent = QModelIndex()) Q_DECL_OVERRIDE;

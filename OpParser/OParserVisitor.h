@@ -1,5 +1,5 @@
 
-// Generated from /media/loki/Niflheim/Tesis/CHISel/OpParser/OParser.g4 by ANTLR 4.7
+// Generated from /media/loki/Niflheim/Tesis/github/Chisel3/OpParser/OParser.g4 by ANTLR 4.7
 
 #pragma once
 
@@ -58,6 +58,8 @@ public:
 
     virtual antlrcpp::Any visitAtan2(OParser::Atan2Context *context) = 0;
 
+    virtual antlrcpp::Any visitCeil(OParser::CeilContext *context) = 0;
+
     virtual antlrcpp::Any visitCos(OParser::CosContext *context) = 0;
 
     virtual antlrcpp::Any visitCastToDouble(OParser::CastToDoubleContext *context) = 0;
@@ -69,6 +71,12 @@ public:
     virtual antlrcpp::Any visitExponential2(OParser::Exponential2Context *context) = 0;
 
     virtual antlrcpp::Any visitCastToFloat(OParser::CastToFloatContext *context) = 0;
+
+    virtual antlrcpp::Any visitFloor(OParser::FloorContext *context) = 0;
+
+    virtual antlrcpp::Any visitGraph(OParser::GraphContext *context) = 0;
+
+    virtual antlrcpp::Any visitGraph2(OParser::Graph2Context *context) = 0;
 
     virtual antlrcpp::Any visitIf(OParser::IfContext *context) = 0;
 
@@ -135,6 +143,8 @@ public:
     virtual antlrcpp::Any visitIdentifier(OParser::IdentifierContext *context) = 0;
 
     virtual antlrcpp::Any visitStringConst(OParser::StringConstContext *context) = 0;
+
+    virtual antlrcpp::Any visitNeighborMod(OParser::NeighborModContext *context) = 0;
 
     virtual antlrcpp::Any visitNegOp(OParser::NegOpContext *context) = 0;
 

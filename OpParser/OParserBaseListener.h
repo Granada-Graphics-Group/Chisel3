@@ -1,5 +1,5 @@
 
-// Generated from /media/loki/Niflheim/Tesis/CHISel/OpParser/OParser.g4 by ANTLR 4.7
+// Generated from /media/loki/Niflheim/Tesis/github/Chisel3/OpParser/OParser.g4 by ANTLR 4.7
 
 #pragma once
 
@@ -75,6 +75,9 @@ public:
   virtual void enterAtan2(OParser::Atan2Context * /*ctx*/) override { }
   virtual void exitAtan2(OParser::Atan2Context * /*ctx*/) override { }
 
+  virtual void enterCeil(OParser::CeilContext * /*ctx*/) override { }
+  virtual void exitCeil(OParser::CeilContext * /*ctx*/) override { }
+
   virtual void enterCos(OParser::CosContext * /*ctx*/) override { }
   virtual void exitCos(OParser::CosContext * /*ctx*/) override { }
 
@@ -92,6 +95,15 @@ public:
 
   virtual void enterCastToFloat(OParser::CastToFloatContext * /*ctx*/) override { }
   virtual void exitCastToFloat(OParser::CastToFloatContext * /*ctx*/) override { }
+
+  virtual void enterFloor(OParser::FloorContext * /*ctx*/) override { }
+  virtual void exitFloor(OParser::FloorContext * /*ctx*/) override { }
+
+  virtual void enterGraph(OParser::GraphContext * /*ctx*/) override { }
+  virtual void exitGraph(OParser::GraphContext * /*ctx*/) override { }
+
+  virtual void enterGraph2(OParser::Graph2Context * /*ctx*/) override { }
+  virtual void exitGraph2(OParser::Graph2Context * /*ctx*/) override { }
 
   virtual void enterIf(OParser::IfContext * /*ctx*/) override { }
   virtual void exitIf(OParser::IfContext * /*ctx*/) override { }
@@ -191,6 +203,9 @@ public:
 
   virtual void enterStringConst(OParser::StringConstContext * /*ctx*/) override { }
   virtual void exitStringConst(OParser::StringConstContext * /*ctx*/) override { }
+
+  virtual void enterNeighborMod(OParser::NeighborModContext * /*ctx*/) override { }
+  virtual void exitNeighborMod(OParser::NeighborModContext * /*ctx*/) override { }
 
   virtual void enterNegOp(OParser::NegOpContext * /*ctx*/) override { }
   virtual void exitNegOp(OParser::NegOpContext * /*ctx*/) override { }

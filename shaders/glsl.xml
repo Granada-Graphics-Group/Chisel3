@@ -115,6 +115,24 @@
             <shader type="fragment"   name="areaperpixel.frag"/>
         </shaders>
     </program>
+    <program name="ImmediateNeighbors">
+        <shaders>
+            <shader type="vertex"   name="immediateneighbors.vert"/>
+            <shader type="fragment" name="immediateneighbors.frag"/>
+        </shaders>
+    </program>        
+    <program name="Neighbors">
+        <shaders>
+            <shader type="vertex"   name="neighbors.vert"/>
+            <shader type="fragment" name="neighbors.frag"/>
+        </shaders>
+    </program>
+    <program name="CornerCap">
+        <shaders>
+            <shader type="vertex"   name="cornercap.vert"/>
+            <shader type="fragment" name="cornercap.frag"/>
+        </shaders>
+    </program>    
 <!--        <program name="Intersect">
         <shaders>
             <shader type="computer"   name="intersect.comp"/>

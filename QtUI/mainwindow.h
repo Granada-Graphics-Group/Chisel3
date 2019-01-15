@@ -99,7 +99,8 @@ public slots:
 
     void openChiselProject();
     void import3DModel();
-    void exportChiselModel();    
+    void exportChiselModel();
+    void exportChiselProjectToUnity();
     void saveChiselProject();    
     void saveChiselProjectAs();    
     void closeChisel();
@@ -110,7 +111,7 @@ public slots:
     void openLayerOperationWidget();
     void duplicateLayer();
     void unloadLayer();
-    void eraseLayer();
+    void deleteLayer();
     void renameLayer(const QString& newName);
     void triggerRenameLayer();
     void computeExpression(const QString expression);
@@ -126,7 +127,7 @@ public slots:
     void importPalette();
     void exportPalette();
     void duplicatePalette();
-    void erasePalette();
+    void deletePalette();
     void addPaletteToCollection();
     void applySelectedPaletteToLayer();
     
@@ -135,8 +136,8 @@ public slots:
     void setSpecularPower(float value);
     void toggleVertexColorVisibility(bool checked);
     void selectDefaultModelColor();
-	void selectBackgroundColor();
-	void alignCameraToModel();
+    void selectBackgroundColor();
+    void alignCameraToModel();
 
     void updateMarkToolRadius(int sliderValue);
     void updateMarkToolSlider(float radius);

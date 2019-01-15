@@ -14,6 +14,22 @@ class Material;
 class Model3D;
 class GLRenderer;
 
+enum class Primitive
+{
+    Points = GL_POINTS,
+    LineStrip = GL_LINE_STRIP,
+    LineLoop = GL_LINE_LOOP,
+    Lines = GL_LINES,
+    LineStripAdjacency = GL_LINE_STRIP_ADJACENCY,
+    LinesAdjacency = GL_LINES_ADJACENCY,
+    TriangleStrip = GL_TRIANGLE_STRIP,
+    TriangleFan = GL_TRIANGLE_FAN,
+    Triangles = GL_TRIANGLES,
+    TriangleStripAdjacency = GL_TRIANGLE_STRIP_ADJACENCY,
+    TrianglesAdjacency = GL_TRIANGLES_ADJACENCY, 
+    Patches = GL_PATCHES    
+};
+
 typedef struct 
 {
     unsigned int  mCount;
@@ -134,6 +150,9 @@ public:
     void setLightDirty(unsigned int index) { mDirtyLights.push_back(index); mLightsNeedUpdate = true;}
     void cleanDirtyLights() { mDirtyLights.clear(); mLightsNeedUpdate = false; }
     
+    Primitive primitive() const { return mPrimitive; }
+    void setPrimitive(Primitive primitive) { mPrimitive = primitive; }
+    
     std::vector<DrawElementsIndirectCommand> const & drawCommands() const { return mDrawCommands; }
     std::vector<DrawElementsIndirectCommand> const & drawCommands(std::string material) const { return mDrawCommandsPerMaterial.at(material); }
     std::map<std::string, std::vector<DrawElementsIndirectCommand>> const &materialDrawCommands() const { return mDrawCommandsPerMaterial; }
@@ -176,6 +195,7 @@ private:
         
     std::vector<float> mPerFrameData;
     std::vector<float> mSceneData;
+    Primitive mPrimitive = Primitive::Triangles;
     std::vector<DrawElementsIndirectCommand> mDrawCommands;
     std::map<std::string, std::vector<DrawElementsIndirectCommand>> mDrawCommandsPerMaterial;
     std::vector<std::vector<DrawElementsIndirectCommand>> mDrawCommandsPerMaterial2;

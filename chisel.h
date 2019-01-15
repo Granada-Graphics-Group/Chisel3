@@ -103,7 +103,8 @@ public:
     void loadChiselFile(std::string name, std::string path);
     void saveChiselProject(std::string name = "", std::string path = "");
     void import3DModel(std::string name, std::string extension, std::string path);
-    void exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex, bool segmentModel, bool exportCamera);    
+    void exportChiselModel(std::string filePath, std::string extension, unsigned int layerIndex, bool segmentModel, bool exportCamera);
+    void exportChiseProjectToUnity(std::string name = "", std::string path = "");
     
     bool setDatabase(std::string name);
    
@@ -113,10 +114,11 @@ public:
     void unloadLayer(unsigned int index);
     void unloadLayer(std::string name);
     void unloadTempLayers();
-    void eraseLayer(unsigned int index);
-    void eraseLayer(std::string name);
+    void deleteLayer(unsigned int index);
+    void deleteLayer(std::string name);
     void saveLayer(unsigned int index);
-    void renameLayer(unsigned int index, const std::string& newName);
+    void renameLayer(unsigned int layerIndex, const std::string& newName);
+    void exportLayerAsImage(unsigned int layer, const std::string& pathName);
     void insertActiveLayer(unsigned int index, Layer* layer);
     void addActiveLayer(Layer* layer);
     void propagateNewLayerData();    
@@ -140,8 +142,8 @@ public:
     void importPaletteToLayer(std::string name, std::string path);
     void exportPalette(unsigned int index, std::string name, std::string path); 
     void duplicatePalette(unsigned int index, bool validateName = true);
-    void erasePalette(unsigned int index);
-    void eraseLastPalette();
+    void deletePalette(unsigned int index);
+    void deleteLastPalette();
     void savePalette(unsigned int index);
     void copyPalette(unsigned int sourceIndex, unsigned int destinationIndex);
     void addPalette(Palette* palette);
@@ -159,10 +161,6 @@ public:
     void updateVisibleColumns();
     void setSecondaryVisbleColumn(const std::vector<int>& secondaries);
     std::vector<std::string> computeExpression(const std::string& expression);
-
-    void exportLayerAsImage(std::string pathName, unsigned int layer);
-    template<class T>
-    void exportImage(std::string pathName, Layer* layer, const std::vector<T>& data, const std::vector<glm::byte>& mask);
    
     void updatePaletteTexture();
     void updatePaletteTexture(Layer* layer);

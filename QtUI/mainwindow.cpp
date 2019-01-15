@@ -787,7 +787,7 @@ void MainWindow::saveNewPalette()
 
 void MainWindow::deleteNewPalette()
 {
-    mChisel->eraseLastPalette();
+    mChisel->deleteLastPalette();
     
     mUi->paletteButtonWidget->show();
     mUi->paletteListView->show();
@@ -803,7 +803,7 @@ void MainWindow::savePalette()
     
     mChisel->copyPalette(lastIndex, currentIndex);    
     mChisel->savePalette(currentIndex);
-    mChisel->eraseLastPalette();
+    mChisel->deleteLastPalette();
 
     mUi->paletteListView->update();
 
@@ -815,7 +815,7 @@ void MainWindow::savePalette()
 
 void MainWindow::cancelEdit()
 {
-    mChisel->eraseLastPalette();
+    mChisel->deleteLastPalette();
     
     mUi->paletteButtonWidget->show();
     mUi->paletteListView->show();
@@ -1175,6 +1175,21 @@ void MainWindow::exportChiselModel()
 //     }
 }
 
+void MainWindow::exportChiselProjectToUnity()
+{
+    QFileDialog dialog(this, tr("Export Chisel Project to Unity"), QApplication::applicationDirPath() + "/" + QString::fromStdString(mChisel->chiselName()));    
+    
+    dialog.setAcceptMode(QFileDialog::AcceptSave);    
+    dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    dialog.setOption(QFileDialog::ShowDirsOnly, true);
+    
+    if(dialog.exec())
+    {
+        QFileInfo file(dialog.selectedFiles().first());
+        mChisel->exportChiseProjectToUnity(file.baseName().toStdString(), file.absoluteFilePath().toStdString() + "/");
+    }    
+}
+
 void MainWindow::saveChiselProject()
 {
     mUi->Visualizer->makeCurrent();
@@ -1339,16 +1354,16 @@ void MainWindow::unloadLayer()
         setState(State::ModelLoaded);    
 }
 
-void MainWindow::eraseLayer()
+void MainWindow::deleteLayer()
 {
     mUi->Visualizer->makeCurrent();
     
     if(mUi->layerToolBox->currentIndex() == 1)    
-        mChisel->eraseLayer(mUi->activeLayerTreeView->currentIndex().row());
+        mChisel->deleteLayer(mUi->activeLayerTreeView->currentIndex().row());
     else
     {
        for(const auto& name : mUi->diskLayerTreeView->selectedLayerNames())
-           mChisel->eraseLayer(name);
+           mChisel->deleteLayer(name);
     }
         
     mUi->Visualizer->update();
@@ -1466,10 +1481,10 @@ void MainWindow::loadLayers(const std::vector<std::string>& layerNames)
 void MainWindow::exportLayerAsImage()
 {
     auto defaultFileName = mChisel->currentLayer()->name() + ".png";
-    auto filepath = QFileDialog::getSaveFileName(this, tr("Export Layer"), QApplication::applicationDirPath() + QString::fromStdString(defaultFileName), tr("Images (*.png)"));
+    auto filepath = QFileDialog::getSaveFileName(this, tr("Export Layer"), QApplication::applicationDirPath() + "/" + QString::fromStdString(defaultFileName), tr("Images (*.png)"));
     
     mUi->Visualizer->makeCurrent();    
-    mChisel->exportLayerAsImage(filepath.toStdString(), mUi->activeLayerTreeView->currentIndex().row());
+    mChisel->exportLayerAsImage(mUi->activeLayerTreeView->currentIndex().row(), filepath.toStdString());
 }
 
 void MainWindow::updateLayerResourceFiles()
@@ -1587,7 +1602,7 @@ void MainWindow::importPalette()
                         }
                         else if (dialog.overwritten())
                         {
-                            mChisel->erasePalette(mChisel->palette(selectedPalette.baseName().toStdString())->index());
+                            mChisel->deletePalette(mChisel->palette(selectedPalette.baseName().toStdString())->index());
                             QFile::copy(selectedPalettePath, newPalettePath);                        
                             mChisel->importPalette(selectedPalette.baseName().toStdString(), mChisel->palettesPath());
                         }
@@ -1644,12 +1659,12 @@ void MainWindow::duplicatePalette()
     }
 }
 
-void MainWindow::erasePalette()
+void MainWindow::deletePalette()
 {
     auto index = mUi->paletteListView->currentIndex();
     
     if(index.isValid())
-        mChisel->erasePalette(index.row());    
+        mChisel->deletePalette(index.row());    
 }
 
 void MainWindow::addPaletteToCollection()
@@ -1804,6 +1819,7 @@ void MainWindow::createActions()
     connect(mUi->actionOpen, &QAction::triggered, this, &MainWindow::openChiselProject);
     connect(mUi->actionImport, &QAction::triggered, this, &MainWindow::import3DModel);
     connect(mUi->actionExportModel, &QAction::triggered, this, &MainWindow::exportChiselModel);
+    connect(mUi->actionExportProject, &QAction::triggered, this, &MainWindow::exportChiselProjectToUnity);
     connect(mUi->actionSave, &QAction::triggered, this, &MainWindow::saveChiselProject);
     connect(mUi->actionSaveAs, &QAction::triggered, this, &MainWindow::saveChiselProjectAs);
     connect(mUi->actionExit, &QAction::triggered, this, &MainWindow::close);
@@ -1819,13 +1835,13 @@ void MainWindow::createActions()
     connect(mUi->actionDuplicateLayer, &QAction::triggered, this, &MainWindow::duplicateLayer);
     connect(mUi->actionLoadLayer, &QAction::triggered, this, &MainWindow::loadLayersSlot);
     connect(mUi->actionUnloadLayer, &QAction::triggered, this, &MainWindow::unloadLayer);
-    connect(mUi->actionEraseLayer, &QAction::triggered, this, &MainWindow::eraseLayer);
+    connect(mUi->actionEraseLayer, &QAction::triggered, this, &MainWindow::deleteLayer);
     connect(mUi->actionOperateLayer, &QAction::triggered, this, &MainWindow::openLayerOperationWidget);
     
     connect(mUi->actionCreatePalette, &QAction::triggered, this, &MainWindow::createPalette);
     connect(mUi->actionEditPalette, &QAction::triggered, this, &MainWindow::editPalette);
     connect(mUi->actionDuplicatePalette, &QAction::triggered, this, &MainWindow::duplicatePalette);
-    connect(mUi->actionErasePalette, &QAction::triggered, this, &MainWindow::erasePalette);
+    connect(mUi->actionErasePalette, &QAction::triggered, this, &MainWindow::deletePalette);
     connect(mUi->actionImportPalette, &QAction::triggered, this, &MainWindow::importPalette);
     connect(mUi->actionExportPalette, &QAction::triggered, this, &MainWindow::exportPalette);
     connect(mUi->actionAddPaletteToCollection, &QAction::triggered, this, &MainWindow::addPaletteToCollection);
@@ -1983,6 +1999,7 @@ void MainWindow::setState(MainWindow::State state)
             mUi->actionSave->setDisabled(true);
             mUi->actionSaveAs->setDisabled(true);
             mUi->actionExportModel->setDisabled(true);
+            mUi->actionExportProject->setDisabled(true);
             
             mUi->actionMarkTool->setDisabled(true);
             mUi->actionEraserTool->setDisabled(true);
@@ -2054,6 +2071,7 @@ void MainWindow::setState(MainWindow::State state)
             mUi->actionSave->setEnabled(true);
             mUi->actionSaveAs->setEnabled(true);
             mUi->actionExportModel->setEnabled(true);
+            mUi->actionExportProject->setEnabled(true);
             
             mUi->actionShowVertexColor->setEnabled(true);
             mUi->actionDefaultModelColor->setEnabled(!mUi->actionShowVertexColor->isChecked());
@@ -2110,6 +2128,7 @@ void MainWindow::setState(MainWindow::State state)
             mUi->actionSave->setEnabled(true);
             mUi->actionSaveAs->setEnabled(true);
             mUi->actionExportModel->setEnabled(true);
+            mUi->actionExportProject->setEnabled(true);
 
             mUi->actionEraserTool->setEnabled(true);
             mUi->actionPickerTool->setEnabled(true);
@@ -2160,8 +2179,8 @@ void MainWindow::setState(MainWindow::State state)
             mUi->actionSave->setEnabled(true);
             mUi->actionSaveAs->setEnabled(true);
             mUi->actionExportModel->setEnabled(true);
+            mUi->actionExportProject->setEnabled(true);
             
-
             mUi->actionEraserTool->setEnabled(true);
             mUi->actionPickerTool->setEnabled(true);
             mUi->actionValuePickerTool->setEnabled(true);

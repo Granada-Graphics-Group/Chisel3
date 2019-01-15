@@ -335,9 +335,9 @@ bool Model3D::removeScene(Scene3D* scene)
 
 void Model3D::draw()
 {
-    glBindVertexArray(mMesh->VAO());
-    glDrawElements(GL_TRIANGLES, mMesh->elementCount(), GL_UNSIGNED_INT, nullptr);
-    glBindVertexArray(0);
+//     glBindVertexArray(mMesh->VAO());
+//     glDrawElements(GL_TRIANGLES, mMesh->elementCount(), GL_UNSIGNED_INT, nullptr);
+//     glBindVertexArray(0);
 }
 
 

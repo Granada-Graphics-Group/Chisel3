@@ -29,6 +29,7 @@
 #include "QtUI/palettelistmodel.h"
 #include "QtUI/palettemodel.h"
 
+#include <half.hpp>
 #include <QImage>
 #include <algorithm>
 #include <tuple>
@@ -212,6 +213,11 @@ void Chisel::exportChiselModel(std::string filePath, std::string extension, unsi
     mResourceManager->exportModel(filePath, extension, mRenderer->scene()->models()[0], segmentation, mRenderer->scene()->camera(), exportCamera);
 }
 
+void Chisel::exportChiseProjectToUnity(std::string name, std::string path)
+{
+    mResourceManager->exportChiselProjectToUnity(name, path);
+}
+
 bool Chisel::setDatabase(std::string name)
 {
     mDBConnection->setDatabaseName(QString::fromStdString(name));
@@ -276,7 +282,7 @@ void Chisel::unloadTempLayers()
     mTempLayers.clear();
 }
 
-void Chisel::eraseLayer(unsigned int index)
+void Chisel::deleteLayer(unsigned int index)
 {
     mActiveLayerModel->removeLayers(index, index);
     
@@ -289,12 +295,12 @@ void Chisel::eraseLayer(unsigned int index)
         mCurrentLayer = nullptr;
 }
 
-void Chisel::eraseLayer(std::string name)
+void Chisel::deleteLayer(std::string name)
 {
     auto search = std::find_if(begin(mActiveLayers), end(mActiveLayers), [&](const Layer* currentLayer){ return (name == currentLayer->name()) ? true : false;});
 
     if(search != end(mActiveLayers))
-        eraseLayer(static_cast<unsigned int>(search - begin(mActiveLayers)));
+        deleteLayer(static_cast<unsigned int>(search - begin(mActiveLayers)));
     else
         mResourceManager->deleteDiskLayer(name);
 }
@@ -311,6 +317,11 @@ void Chisel::renameLayer(unsigned int index, const std::string& newName)
     mDiskLayerModel->renameActiveFile(oldName, newName);
     
     mDirtyFlag = true;
+}
+
+void Chisel::exportLayerAsImage(unsigned int layerIndex, const std::string& pathName)
+{
+    mResourceManager->exportLayerAsImage(mActiveLayers[layerIndex], pathName);
 }
 
 void Chisel::insertActiveLayer(unsigned int index, Layer* layer)
@@ -677,7 +688,7 @@ void Chisel::importPaletteToLayer(std::string name, std::string path)
 {
     auto imported = mResourceManager->loadPalette(name, path, true);
     mCurrentLayer->copyPalette(*imported);
-    mResourceManager->eraseLayerPalette(imported);
+    mResourceManager->deleteLayerPalette(imported);
             
     mDirtyFlag = true;    
 }
@@ -694,15 +705,15 @@ void Chisel::duplicatePalette(unsigned int index, bool validateName)
     mDirtyFlag = true;
 }
 
-void Chisel::erasePalette(unsigned int index)
+void Chisel::deletePalette(unsigned int index)
 {
-    mResourceManager->erasePalette(index);
+    mResourceManager->deletePalette(index);
     mPaletteListModel->delPalette(index);  
 }
 
-void Chisel::eraseLastPalette()
+void Chisel::deleteLastPalette()
 {
-    mResourceManager->eraseLastPalette();    
+    mResourceManager->deleteLastPalette();    
     mPaletteListModel->delPalette(mPaletteListModel->rowCount() - 1);
 }
 
@@ -1015,77 +1026,6 @@ std::vector<std::string> Chisel::computeExpression(const std::string& expression
     }
     
     return errorStrings;
-}
-
-void Chisel::exportLayerAsImage(std::string pathName, unsigned int layerIndex)
-{
-    auto layer = mActiveLayers[layerIndex];
-    auto mask = mRenderer->readLayerMask(layerIndex);
-
-    switch(layer->dataTexture()->type())
-    {
-        case GL_BYTE:
-        case GL_UNSIGNED_BYTE:
-        {
-            exportImage<glm::byte>(pathName, layer, mRenderer->readTexture(layer->dataTexture()), mask);
-            break;
-        }
-        case GL_SHORT:
-        {
-            exportImage<int16_t>(pathName, layer, mRenderer->readShortTexture(layer->dataTexture()), mask);
-            break;            
-        }
-        case GL_UNSIGNED_SHORT:
-        {
-            exportImage<uint16_t>(pathName, layer, mRenderer->readUShortTexture(layer->dataTexture()), mask);
-            break;            
-        }
-        case GL_INT:
-        {
-            exportImage<int32_t>(pathName, layer, mRenderer->readIntTexture(layer->dataTexture()), mask);
-            break;            
-        }
-        case GL_UNSIGNED_INT:
-        {
-            exportImage<uint32_t>(pathName, layer, mRenderer->readUIntTexture(layer->dataTexture()), mask);
-            break;            
-        }                
-        case GL_FLOAT:
-        {
-            exportImage<float>(pathName, layer, mRenderer->readFloatTexture(layer->dataTexture()), mask);
-            break;
-        }
-    }    
-}
-
-template<class T>
-void Chisel::exportImage(std::string pathName, Layer* layer, const std::vector<T>& data, const std::vector<glm::byte>& mask)
-{
-    //auto fdata = data;
-    std::vector<unsigned char> pixelData(layer->width() * layer->height() * 4);
-        
-    for (std::size_t texel = 0; texel < mask.size(); ++texel)
-    {
-        if (mask[texel] > 0)
-        {            
-            auto color = layer->palette()->color(data[texel]) * 255;
-            pixelData[4 * texel] = static_cast<unsigned char>(color.r);
-            pixelData[4 * texel + 1] = static_cast<unsigned char>(color.g);
-            pixelData[4 * texel + 2] = static_cast<unsigned char>(color.b);
-            pixelData[4 * texel + 3] = static_cast<unsigned char>(color.a);
-        }
-        else
-        {
-            pixelData[4 * texel] = 0;
-            pixelData[4 * texel + 1] = 0;
-            pixelData[4 * texel + 2] = 0;
-            pixelData[4 * texel + 3] = 0;
-        }
-    }
-    
-    QImage layerImage(pixelData.data(), layer->width(), layer->height(), QImage::Format_RGBA8888);
-    layerImage = layerImage.mirrored(false, true);
-    layerImage.save(pathName.data());    
 }
 
 void Chisel::updatePaletteTexture()

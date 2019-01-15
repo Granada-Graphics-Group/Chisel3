@@ -88,7 +88,7 @@ public:
     bool containRenderTechnique(std::string renderTechnique) const;
     bool containTexture(std::string texture) const;
     
-    Mesh* createMesh(std::string meshName);
+    Mesh* createMesh(std::string meshName);    
     Quad* createQuad(std::string name, glm::vec2 orig, glm::vec2 dimensions, glm::vec4 color = {0.5, 0.5, 0.5, 1.0});
     Disk* createDisk(std::string name, float innerRadius, float outerRadius, int slices);
     Circle* createCircle(std::string name, glm::vec3 center, float radius, int slices);
@@ -97,6 +97,8 @@ public:
     Material* createMaterial(std::string name, std::string shaderName = "");
     Camera* createCamera(std::string name);
     Camera* createCamera(std::string name, Model3D* model);
+    
+    Mesh* copyMesh(const Mesh& sourceMesh, std::string meshName);
     
     RenderPass* createRenderPass(std::string name, Scene3D* scene, Material* sceneMaterial, std::vector<BlendingState> blendingStates = {BlendingState()}, bool depthTest = true, GLenum depthFunc = GL_GREATER);
     RenderTarget* createRenderTarget(std::string name, ResourceManager* manager, std::array< GLint, int(4) > viewport, const std::vector< RenderPass* >& passes = {}, bool defaultTarget = false, GLuint defaultTargetID = 0);
@@ -139,23 +141,28 @@ public:
     Layer* createLayer(std::string name, Layer::Type type, std::pair<int, int> resolution, const std::vector<glm::byte>& data, const std::vector<glm::byte>& mask, Palette* palette = nullptr, bool createPalette = true);
     Layer* createLayerFromTableField(const RegisterLayer* layer, const DataBaseField& field);
     Layer* loadLayer(std::string name, std::string path = "");
-    void saveLayer(Layer *layer, std::string path = "");
+    void saveLayer(Layer* layer, std::string path = "");
+    void saveRawLayer(Layer* layer, std::string path = "");
     Layer* duplicateLayer(Layer* sourceLayer);
     void unloadLayer(Layer* layer);
     void deleteLayer(Layer* layer);
     void deleteDiskLayer(std::string name);
     void renameLayer(Layer* layer, const std::string& newName);
-    std::string layerResourceDir(std::string name);
-    std::vector<std::string> layerResourceFiles(std::string name);    
+    void exportLayerAsImage(Layer* layer, const std::string& pathName);
+    template<class T>
+    void exportImage(std::string pathName, Layer* layer, const std::vector<T>& data, const std::vector<glm::byte>& mask);
+    void exportImage2(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data);    
+    std::string layerResourceDir(std::string name) const;
+    std::vector<std::string> layerResourceFiles(std::string name) const;    
 
     Palette* createPalette(std::string name, Palette::Type type, const std::map<double, glm::vec4>& controlPoints);
     void renamePaletteFile(unsigned int index, std::string newName);
     Palette* duplicatePalette(Palette* palette, bool validateName = true);
     Palette* copyPaletteToCollection(Palette* palette);
-    void erasePalette(unsigned int index);
-    void erasePalette(Palette* palette);
-    void eraseLastPalette();
-    bool eraseLayerPalette(Palette* palette);
+    void deletePalette(unsigned int index);
+    void deletePalette(Palette* palette);
+    void deleteLastPalette();
+    bool deleteLayerPalette(Palette* palette);
     Palette* loadPalette(std::string name, std::string path, bool layerPalette = false);
     void loadPalettes(std::string directoryName);
     void savePalette(unsigned int index, std::string name= "", std::string path = "");
@@ -173,6 +180,7 @@ public:
     void unloadScene3D(std::string name);
     void exportScene(std::string name, std::string extension, std::string path);
     void exportModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t>>& segmentation, Camera* camera, bool exportCamera);
+    void exportChiselProjectToUnity(std::string name, std::string path = "");
     
     std::string chiselName() const { return mCHISelName; }
     std::string defaultChiselPath() const { return mDefaultChiselPath; }
@@ -188,7 +196,7 @@ public:
 private:
     bool renameFile(std::string path, std::string oldName, std::string newName);
     bool copyFile(std::string source, std::string destination);
-    std::vector<std::string> directoryFiles(std::string path);
+    std::vector<std::string> directoryFiles(std::string path) const;
     bool fileExists(std::string path, std::string name) const;
     bool directoryExists(std::string path) const;
     bool isDirectoryEmpty(std::string path) const;

@@ -72,6 +72,20 @@ std::vector<std::string> DiskLayerModel::filenames() const
     return files;
 }
 
+unsigned int DiskLayerModel::layerCount() const
+{
+    unsigned int layerCount = 0;
+    
+    auto rootIndex = index(rootPath());
+    auto elemCount = rowCount(rootIndex);
+    
+    for(int i = 0;  i < elemCount; ++i)
+        if(!isDir(index(i, 0, rootIndex)))
+            layerCount++;
+        
+    return layerCount;
+}
+
 bool DiskLayerModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
     if (index.column() == 0 && role == Qt::EditRole)

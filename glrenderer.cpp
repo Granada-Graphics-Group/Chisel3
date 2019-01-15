@@ -553,7 +553,7 @@ void GLRenderer::render()
                     auto dstData = mCopyValueTexture;
 //                     glCopyImageSubData(srcData->textureArrayId(), srcData->textureArray()->target(), 0, 0, 0, srcData->textureArrayIndex(), dstData->textureArrayId(), dstData->textureArray()->target(), 0, 0, 0, dstData->textureArrayIndex(), srcData->width(), srcData->height(), 1);
 
-                    int Offset = 2;
+                    int Offset = 1;
                     
                     mUniformBuffers[GLUniBuffer::Transient]->updateCache(0, sizeof(glm::uvec2), glm::value_ptr(dstData->textureArrayIndices()));
                     mUniformBuffers[GLUniBuffer::Transient]->updateCache(sizeof(glm::uvec2), sizeof(int), &Offset);
@@ -632,14 +632,14 @@ void GLRenderer::render()
                             auto shader = pass->sceneMaterial()->shader();
                             
                             if(shader->uniform("Offset") >= 0)
-                                glUniform1i(shader->uniform("Offset"), 2 - tech->life()); 
+                                glUniform1i(shader->uniform("Offset"), 1); 
 
                             
                             const auto& drawCommands = scene->drawCommands();
                             
                             glMemoryBarrier(GL_ALL_BARRIER_BITS);
                             //glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, &mDrawIndirectCommands[0], mDrawIndirectCommands.size(), 0 );
-                            glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, &drawCommands[0], drawCommands.size(), 0 );                            
+                            glMultiDrawElementsIndirect(static_cast<GLenum>(scene->primitive()), GL_UNSIGNED_INT, &drawCommands[0], drawCommands.size(), 0 );                            
                             
                             glMemoryBarrier(GL_ALL_BARRIER_BITS);
 //                             glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -753,14 +753,14 @@ void GLRenderer::render()
                     //glGenerateTextureMipmap(mLockTexture->textureArrayId());
                 }
                 
-                if(!target->isDefaultTargetUsed())
-                {
-                    for(auto colorAttachment: fbo->colorAttachments())
-                        if(glIsTexture(colorAttachment->id()))
-                            glGenerateTextureMipmap(colorAttachment->id());
-                        else
-                            glGenerateTextureMipmap(colorAttachment->textureArrayId());
-                }
+//                 if(!target->isDefaultTargetUsed())
+//                 {
+//                     for(auto colorAttachment: fbo->colorAttachments())
+//                         if(glIsTexture(colorAttachment->id()))
+//                             glGenerateTextureMipmap(colorAttachment->id());
+//                         else
+//                             glGenerateTextureMipmap(colorAttachment->textureArrayId());
+//                 }
 
                 //if (target == mDilationTarget)
                 //{
@@ -833,6 +833,19 @@ void GLRenderer::render()
                 mMainScene->updateCamera(mCamera);
                 mMainScene->setProjCameraNeedUpdate(true);
                 mMainScene->setViewCameraNeedUpdate(true);
+                
+                mSeamMaskTexture = mSeamMaskTarget->colorTexOutputs()[0];
+                std::vector<glm::byte> textureData(mSeamMaskTexture->height() * mSeamMaskTexture->width() * sizeOfGLInternalFormat(mSeamMaskTexture->internalFormat())); 
+                glGetTextureSubImage(mSeamMaskTexture->textureArrayId(), 0, 0, 0, mSeamMaskTexture->textureArrayLayerIndex(), mSeamMaskTexture->width(), mSeamMaskTexture->height(), 1, mSeamMaskTexture->format(), mSeamMaskTexture->type(), textureData.size(), textureData.data());
+                
+                QImage layerImage(textureData.data(), mSeamMaskTexture->width(), mSeamMaskTexture->height(), QImage::Format_RGBA8888);
+                layerImage = layerImage.mirrored(false, true);
+                layerImage.save("./seamMask.png");
+            }
+            
+            if(tech == mNeighborsTech)
+            {
+                mManager->exportImage2("./neighbors.png", mNeighborhoodTexture->width(), mNeighborhoodTexture->height(), readFloatTexture(mNeighborhoodTexture));
             }
         }
 
@@ -1534,6 +1547,10 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
         mDepthTexTexture = mManager->createTexture("DepthTexTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
         mManager->deleteTexture(mAreaPerPixelTexture);
         mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, mLayerSize.x, mLayerSize.y, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+        mManager->deleteTexture(mLockTexture);
+        mLockTexture = mManager->createTexture("LockPerPixel", GL_TEXTURE_2D, GL_R32UI, mLayerSize.x, mLayerSize.y, GL_RED_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        mManager->deleteTexture(mNeighborhoodTexture);
+        mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_R16UI, mLayerSize.x, mLayerSize.y, GL_RED_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, false);
         
         mSeamMaskTarget->setColorTextures({mSeamMaskTexture});
         mDepthTexTarget->setColorTextures({mDepthTexTexture});
@@ -1542,13 +1559,26 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
         mAreaPerPixelTarget->setColorTextures({mAreaPerPixelTexture});
         mAreaPerPixelTech->settingUP();
         
+        mImmediateNeighborsTarget->setColorTextures({mNeighborhoodTexture});
+        mImmediateNeighborsTech->settingUP();
+        
+        mNeighborsTarget->setColorTextures({mNeighborhoodTexture});    
+        mNeighborsTech->settingUP();
+        
+        mCornerCapTarget->setColorTextures({mNeighborhoodTexture});
+        mCornerCapTech->settingUP();
+                
         mUniformBuffers[GLUniBuffer::App]->updateCache(sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mSeamMaskTarget->colorTexOutputs()[0]->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
 
         mUniformBuffers[GLUniBuffer::App]->updateGPU();
+
         insertTechnique(mSeamMaskTech, 1);
+        insertTechnique(mNeighborsTech, 1);
+        insertTechnique(mCornerCapTech, 1);
+        insertTechnique(mImmediateNeighborsTech, 1);
         insertTechnique(mAreaPerPixelTech,1);
     }
     
@@ -1682,24 +1712,13 @@ void GLRenderer::computeExpression(const std::vector<std::string>& expression)
 }
 
 void GLRenderer::computeShader(Program* shader, const std::vector<glm::byte>& uniformData)
-{
-    auto compJob = new ComputeJob(shader->name(), shader, {64, 64, 1}, {32, 32, 1});
-
+{    
+    auto layer = mLayers[0];
+    auto compJob = new ComputeJob(shader->name(), shader, {static_cast<uint32_t>(layer.mValue->width()/32), static_cast<uint32_t>(layer.mValue->height()/32), 1}, {32, 32, 1});
+    
     std::vector<GLint> glIndices;
-
-    for(auto index: {
-                0
-            })
-    {
-        if(index > -1)
-        {
-            auto value = mLayers[index].mValue;
-            auto mask = mLayers[index].mMask;
-
-            glIndices.push_back(value->textureArrayLayerIndex());
-            glIndices.push_back(mask->textureArrayLayerIndex());
-        }
-    }
+    glIndices.push_back(layer.mValue->textureArrayLayerIndex());
+    glIndices.push_back(layer.mMask->textureArrayLayerIndex());
     
     compJob->setIndices(glIndices);
     compJob->setMemoryBarriers(GL_ALL_BARRIER_BITS);
@@ -1721,7 +1740,7 @@ std::vector<glm::byte> GLRenderer::readTexture(Texture* texture)
 template<typename T>
 std::vector<T> GLRenderer::readTexture(Texture* texture)
 {    
-    std::vector<T> textureData(texture->height() * texture->width());    
+    std::vector<T> textureData(texture->height() * texture->width() * 2);    
     glGetTextureSubImage(texture->textureArrayId(), 0, 0, 0, texture->textureArrayLayerIndex(), texture->width(), texture->height(), 1, texture->format(), texture->type(), textureData.size() * sizeOfGLType(texture->type()), textureData.data());
     return textureData;    
 }
@@ -1749,6 +1768,11 @@ std::vector<uint32_t> GLRenderer::readUIntTexture(Texture* texture)
 std::vector<int32_t> GLRenderer::readIntTexture(Texture* texture)
 {
     return readTexture<int32_t>(texture);
+}
+
+std::vector<half_float::half> GLRenderer::readHalfFloatTexture(Texture* texture)
+{
+    return readTexture<half_float::half>(texture);
 }
 
 std::vector<float> GLRenderer::readFloatTexture(Texture* texture)
@@ -1827,9 +1851,7 @@ void GLRenderer::swapScene(Scene3D* oldScene, Scene3D* newScene)
     mCameraInitPosition = mCamera->position();
     mMainScene->setViewCameraNeedUpdate(true);
     mMainScene->setProjCameraNeedUpdate(true);
-        
-    auto texModelScene = new Scene3D(*mMainScene);
-    texModelScene->setName("texModelScene");
+
     mMainScene->updateCamera(mNormOrthoCamera.get());
     
     mSlicePlaneScene->clearCameras();
@@ -1870,8 +1892,6 @@ void GLRenderer::swapScene(Scene3D* oldScene, Scene3D* newScene)
     mReadFBPass->setScene(mMainScene);
     mEraseTexTarget->passes().back()->setScene(mMainScene); 
     mAreaPerPixelTech->targets()[0]->passes().back()->setScene(mMainScene);
-//     auto depthTexTarget = mSeamMaskTech->targets()[0];
-//     depthTexTarget->passes().back()->setScene(texModelScene);
 
     mLayerCount = 0;
     mLayers.clear();
@@ -1904,15 +1924,14 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mMainScene->setViewCameraNeedUpdate(true);
         mMainScene->setProjCameraNeedUpdate(true);
                             
-        auto texModelScene = new Scene3D(*mMainScene);
-        texModelScene->setName("texModelScene");
         mMainScene->updateCamera(mNormOrthoCamera.get());
-                
+                        
         mReadFBTexture = mManager->createTexture("readFBTexture", GL_TEXTURE_2D, GL_RG32F, mWindowWidth, mWindowHeight, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mReadFBTextureI = mManager->createTexture("readFBTextureI", GL_TEXTURE_2D, GL_RG32I, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mReadFBTextureUI = mManager->createTexture("readFBTextureUI", GL_TEXTURE_2D, GL_RG32UI, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, 2048, 2048, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mLockTexture = mManager->createTexture("LockPerPixel", GL_TEXTURE_2D, GL_R32UI, 2048, 2048, GL_RED_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
         
         auto quad = mManager->createQuad("PPQuad", {0.0, 0.0}, {2048, 2048});
         auto ppQuadModel = new Model3D("ppModel", quad, {mManager->material("Dummy")});
@@ -1979,6 +1998,30 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
         mManager->commitFreeImageUnit(mLockTexture->textureArray());
         
+        
+        //auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
+        //auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
+        //mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, {mNeighborhoodTexture}, nullptr, false);
+        //mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", {mImmediateNeighborsTarget});
+        //
+        //auto neighborhoodMesh = mManager->copyMesh(*mMainScene->meshes()[0], "neighborhoodMesh");
+        //neighborhoodMesh->generateAdjacencyInformation();
+        //auto neighborhoodModel = new Model3D("neighborhoodModel", neighborhoodMesh, {mManager->material("Dummy")});
+        //auto neighborhoodScene = new Scene3D("neighborhoodScene", {mNormOrthoCamera.get()}, {neighborhoodModel});
+        ////neighborhoodScene->setPrimitive(Primitive::Lines);
+        //
+        //auto neighborsMat = mManager->createMaterial("NeighborsMat", "Neighbors");
+        //auto neighborsPass = mManager->createRenderPass("NeighborsPass", neighborhoodScene, neighborsMat);
+        ////neighborsPass->disableDepthTest();
+        //neighborsPass->setAutoClear(false);
+        //mNeighborsTarget = mManager->createRenderTarget("NeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { neighborsPass }, {mNeighborhoodTexture}, nullptr, false);
+        //mNeighborsTech = mManager->createRenderTechnique("NeighborsTech", {mNeighborsTarget});
+        //
+        //auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
+        //auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
+        //mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, {mNeighborhoodTexture}, nullptr, false);
+        //mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", {mCornerCapTarget});
+        
         auto modelBBox = mMainScene->models()[0]->mesh()->boundingBox();
         auto diagonal = glm::length(glm::vec3(mMainScene->models()[0]->modelMatrix() * glm::vec4(modelBBox.max - modelBBox.min, 1.0)));
         auto slicePlaneMesh = mManager->createQuad("SlicePlaneModel", {-diagonal/2.0, -diagonal/2.0}, {diagonal, diagonal}, {0.5, 0.5, 0.5, 0.3});
@@ -2024,7 +2067,10 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mRenderQueue.clear();
         mScenes.clear();
         
-        insertTechnique(mSeamMaskTech, 1);                     
+        insertTechnique(mSeamMaskTech, 1);
+        //insertTechnique(mNeighborsTech, 1);
+        //insertTechnique(mCornerCapTech, 1);
+        //insertTechnique(mImmediateNeighborsTech, 1);
         insertTechnique(mDepthTech, 1);
         insertTechnique(mProjTech);
         insertTechnique(mAreaPerPixelTech, 1);
@@ -2362,7 +2408,9 @@ void GLRenderer::initAppUniformData()
     mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
     mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
     mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
-    mUniformBuffers[GLUniBuffer::App]->updateCache(6 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mLockTexture->textureArrayIndices()));        
+    mUniformBuffers[GLUniBuffer::App]->updateCache(6 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mLockTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
+
     //mUniformBuffers[GLUniBuffer::App]->updateCache(2 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mPaintTexTarget->colorTexOutputs()[2]->textureArrayIndices()));    
 //     mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDilatedLayerTexture->textureArrayIndices()));    
 

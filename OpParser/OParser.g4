@@ -40,12 +40,16 @@ function        : 'abs' '(' expr ')'                            # abs
                 | 'asin' '(' expr ')'                           # asin
                 | 'atan' '(' expr ')'                           # atan
                 | 'atan' '(' expr ',' expr ')'                  # atan2
+                | 'ceil' '(' expr ')'                           # ceil
                 | 'cos' '(' expr ')'                            # cos
                 | 'double' '(' expr ')'                         # castToDouble
                 | 'eval' '(' expr_list expr ')'                 # eval
                 | 'exp' '(' expr ')'                            # exponential
                 | 'exp' '(' expr ',' expr ')'                   # exponential2
                 | 'float' '(' expr ')'                          # castToFloat
+                | 'floor' '(' expr ')'                          # floor
+                | 'graph' '(' expr (',' expr)+ ')'              # graph 
+                | 'graph2' '(' expr (',' expr)+ ')'             # graph2
                 | 'if' '(' expr ')'                             # if
                 | 'if' '(' expr ',' expr ')'                    # if2
                 | 'if' '(' expr ',' expr ',' expr ')'           # if3
@@ -71,7 +75,7 @@ function        : 'abs' '(' expr ')'                            # abs
                 | 'sin' '(' expr ')'                            # sin
                 | 'sqrt' '(' expr ')'                           # sqrt
                 | 'tan' '(' expr ')'                            # tan
-                | 'xor' '(' expr ')'                            # xor
+                | 'xor' '(' expr ',' expr ')'                    # xor
                 | 'null' '(' ')'                                # null
                 | 'sql' '(' NAME ',' NAME ')'                   # sql
                 ;
@@ -83,6 +87,7 @@ constant        : INT                                           # intConst
                 | DOUBLE                                        # doubleConst
                 | NAME                                          # identifier    
                 | STRING                                        # stringConst
+                | NAME '[' expr ',' expr ']'                    # neighborMod
                 ;
                 
 unitaryOp       : '-'                                           # negOp

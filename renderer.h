@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+#include <half.hpp>
 #include <vector>
 #include <tuple>
 #include <memory>
@@ -105,6 +106,7 @@ public:
     std::vector<int16_t> readShortTexture(Texture* texture);
     std::vector<uint32_t> readUIntTexture(Texture* texture);
     std::vector<int32_t> readIntTexture(Texture* texture);
+    std::vector<half_float::half> readHalfFloatTexture(Texture* texture);
     std::vector<float> readFloatTexture(Texture* texture);
 
     

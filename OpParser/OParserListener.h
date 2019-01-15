@@ -1,5 +1,5 @@
 
-// Generated from /media/loki/Niflheim/Tesis/CHISel/OpParser/OParser.g4 by ANTLR 4.7
+// Generated from /media/loki/Niflheim/Tesis/github/Chisel3/OpParser/OParser.g4 by ANTLR 4.7
 
 #pragma once
 
@@ -73,6 +73,9 @@ public:
   virtual void enterAtan2(OParser::Atan2Context *ctx) = 0;
   virtual void exitAtan2(OParser::Atan2Context *ctx) = 0;
 
+  virtual void enterCeil(OParser::CeilContext *ctx) = 0;
+  virtual void exitCeil(OParser::CeilContext *ctx) = 0;
+
   virtual void enterCos(OParser::CosContext *ctx) = 0;
   virtual void exitCos(OParser::CosContext *ctx) = 0;
 
@@ -90,6 +93,15 @@ public:
 
   virtual void enterCastToFloat(OParser::CastToFloatContext *ctx) = 0;
   virtual void exitCastToFloat(OParser::CastToFloatContext *ctx) = 0;
+
+  virtual void enterFloor(OParser::FloorContext *ctx) = 0;
+  virtual void exitFloor(OParser::FloorContext *ctx) = 0;
+
+  virtual void enterGraph(OParser::GraphContext *ctx) = 0;
+  virtual void exitGraph(OParser::GraphContext *ctx) = 0;
+
+  virtual void enterGraph2(OParser::Graph2Context *ctx) = 0;
+  virtual void exitGraph2(OParser::Graph2Context *ctx) = 0;
 
   virtual void enterIf(OParser::IfContext *ctx) = 0;
   virtual void exitIf(OParser::IfContext *ctx) = 0;
@@ -189,6 +201,9 @@ public:
 
   virtual void enterStringConst(OParser::StringConstContext *ctx) = 0;
   virtual void exitStringConst(OParser::StringConstContext *ctx) = 0;
+
+  virtual void enterNeighborMod(OParser::NeighborModContext *ctx) = 0;
+  virtual void exitNeighborMod(OParser::NeighborModContext *ctx) = 0;
 
   virtual void enterNegOp(OParser::NegOpContext *ctx) = 0;
   virtual void exitNegOp(OParser::NegOpContext *ctx) = 0;

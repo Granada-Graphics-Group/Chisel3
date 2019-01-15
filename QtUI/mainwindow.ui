@@ -55,8 +55,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>98</width>
-         <height>78</height>
+         <width>268</width>
+         <height>673</height>
         </rect>
        </property>
        <attribute name="label">
@@ -144,7 +144,7 @@
          <x>0</x>
          <y>0</y>
          <width>268</width>
-         <height>733</height>
+         <height>673</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -431,8 +431,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>228</width>
-            <height>731</height>
+            <width>223</width>
+            <height>667</height>
            </rect>
           </property>
           <attribute name="label">
@@ -624,8 +624,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>98</width>
-            <height>28</height>
+            <width>223</width>
+            <height>667</height>
            </rect>
           </property>
           <attribute name="label">
@@ -665,7 +665,7 @@
      <x>0</x>
      <y>0</y>
      <width>1848</width>
-     <height>18</height>
+     <height>38</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -674,7 +674,9 @@
     </property>
     <addaction name="actionOpen"/>
     <addaction name="actionImport"/>
+    <addaction name="separator"/>
     <addaction name="actionExportModel"/>
+    <addaction name="actionExportProject"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
     <addaction name="actionSaveAs"/>
@@ -903,7 +905,7 @@
   </action>
   <action name="actionSave">
    <property name="text">
-    <string>&amp;Save</string>
+    <string>&amp;Save project</string>
    </property>
    <property name="toolTip">
     <string>Save Chisel project</string>
@@ -914,7 +916,7 @@
   </action>
   <action name="actionSaveAs">
    <property name="text">
-    <string>Sa&amp;ve as...</string>
+    <string>Sa&amp;ve project as...</string>
    </property>
    <property name="toolTip">
     <string>Save Chisel project as</string>
@@ -1216,7 +1218,15 @@
   </action>
   <action name="actionAlignCameraToModel">
    <property name="text">
-    <string>Align camera to model</string>
+    <string>&amp;Align camera to model</string>
+   </property>
+  </action>
+  <action name="actionExportProject">
+   <property name="text">
+    <string>Export &amp;Project...</string>
+   </property>
+   <property name="toolTip">
+    <string>Export Project</string>
    </property>
   </action>
  </widget>

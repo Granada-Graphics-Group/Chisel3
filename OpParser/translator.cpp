@@ -71,7 +71,7 @@ void Translator::exitDef(OParser::DefContext* ctx)
         
         if(search == end(layers))    
         {
-            auto newLayer = mChisel->resourceManager()->createLayer(targetLayerName, info.type, {2048, 2048}, {}, {}, palette);
+            auto newLayer = mChisel->resourceManager()->createLayer(targetLayerName, info.type, info.resolution, {}, {}, palette);
             mNewLayers.push_back(newLayer);
             targetLayer = newLayer;
             mChisel->resourceManager()->commitFreeImageUnit(targetLayer->dataTexture()->textureArray());
@@ -134,7 +134,7 @@ void Translator::exitUnitaryExp(OpLanguage::OParser::UnitaryExpContext* ctx)
                      
     mSourceString +=    "if(" + info.mask + ")\n" +
                         "{\n" +                    
-                        "    " + unaryData + " = " + ctx->unitaryOp()->toString() + info.data + "; \n" + 
+                        "    " + unaryData + " = " + ctx->unitaryOp()->getText() + info.data + "; \n" + 
                         "    " + unaryMask + " = true;\n" +
                         "}\n" +                    
                         "else\n" +
@@ -446,6 +446,27 @@ void Translator::exitAtan2(OpLanguage::OParser::Atan2Context* ctx)
     mDataCount++; mMaskCount++;        
 }
 
+void Translator::exitCeil(OpLanguage::OParser::CeilContext* ctx)
+{
+    auto ceilMask = "expMask" + std::to_string(mMaskCount);
+    auto ceilData = "expData" + std::to_string(mDataCount);
+    auto info = nodeInfo(ctx->expr());
+    
+    mSourceString += "bool " + ceilMask + ";\n" +
+                     toGLSLType(info.type) + " " + ceilData + ";\n";
+                     
+    mSourceString +=    "if(" + info.mask + ")\n" +
+                        "{\n" +                    
+                        "    " + ceilData + " = ceil(" + info.data + "); \n" + 
+                        "    " + ceilMask + " = true;\n" +
+                        "}\n" +                    
+                        "else\n" +
+                        "    " + ceilMask + " = false;\n";
+                        
+    setNodeInfo(ctx, {ceilData, ceilMask, info.type, info.resolution});
+    mDataCount++; mMaskCount++;      
+}
+
 void Translator::exitCos(OpLanguage::OParser::CosContext* ctx)
 {
     auto cosMask = "cosMask" + std::to_string(mMaskCount);
@@ -521,6 +542,36 @@ void Translator::exitCastToFloat(OpLanguage::OParser::CastToFloatContext* ctx)
     mDataCount++; mMaskCount++;
 }
 
+void Translator::exitFloor(OpLanguage::OParser::FloorContext* ctx)
+{
+    auto floorMask = "expMask" + std::to_string(mMaskCount);
+    auto floorData = "expData" + std::to_string(mDataCount);
+    auto info = nodeInfo(ctx->expr());
+    
+    mSourceString += "bool " + floorMask + ";\n" +
+                     toGLSLType(info.type) + " " + floorData + ";\n";
+                     
+    mSourceString +=    "if(" + info.mask + ")\n" +
+                        "{\n" +                    
+                        "    " + floorData + " = floor(" + info.data + "); \n" + 
+                        "    " + floorMask + " = true;\n" +
+                        "}\n" +                    
+                        "else\n" +
+                        "    " + floorMask + " = false;\n";
+                        
+    setNodeInfo(ctx, {floorData, floorMask, info.type, info.resolution});
+    mDataCount++; mMaskCount++;        
+}
+
+void Translator::exitGraph(OpLanguage::OParser::GraphContext* ctx)
+{
+    
+}
+
+void Translator::exitGraph2(OpLanguage::OParser::Graph2Context* ctx)
+{
+    
+}
 
 void Translator::exitIf(OParser::IfContext* ctx)
 {
@@ -956,10 +1007,52 @@ void Translator::exitRound(OpLanguage::OParser::RoundContext* ctx)
 
 void Translator::exitRound2(OpLanguage::OParser::Round2Context* ctx)
 {
+    auto roundMask = "roundMask" + std::to_string(mMaskCount);
+    auto roundData = "roundData" + std::to_string(mDataCount);
+    auto infoA = nodeInfo(ctx->expr(0));
+    auto infoB = nodeInfo(ctx->expr(1));
+    
+    mSourceString += "bool " + roundMask + ";\n" +
+                     "int " + roundData + ";\n";
+                     
+    mSourceString +=    "if(" + infoA.mask + " && " + infoB.mask + " )\n" +
+                        "{\n" +                    
+                        "    float numRoundTo = 1.0 / " + infoB.data + ";\n"
+                        "    " + roundData + " = int(round(" + infoA.data + " * numRoundTo) / numRoundTo);\n" + 
+                        "    " + roundMask + " = true;\n" +
+                        "}\n" +                    
+                        "else\n" +
+                        "    " + roundMask + " = false;\n";
+                        
+    setNodeInfo(ctx, {roundData, roundMask, Layer::Type::Int32, infoA.resolution});
+    mDataCount++; mMaskCount++;      
 }
 
 void Translator::exitRound3(OpLanguage::OParser::Round3Context* ctx)
 {
+    auto roundMask = "roundMask" + std::to_string(mMaskCount);
+    auto roundData = "roundData" + std::to_string(mDataCount);
+    auto infoA = nodeInfo(ctx->expr(0));
+    auto infoB = nodeInfo(ctx->expr(1));
+    auto infoC = nodeInfo(ctx->expr(2));
+    
+    mSourceString += "bool " + roundMask + ";\n" +
+                     "int " + roundData + ";\n";
+                     
+    mSourceString +=    "if(" + infoA.mask + " && " + infoB.mask + " )\n" +
+                        "{\n" +
+                        "    float num = " + infoA.data + " - " + infoC.data + ";\n"
+                        "    num /= " + infoB.data + ";\n"
+                        "    num = floor(num + 0.5f);\n"
+                        "    num *⁼ " + infoB.data + ";\n"
+                        "    num += " + infoA.data + ";\n";
+                        "    " + roundMask + " = true;\n" +
+                        "}\n" +                    
+                        "else\n" +
+                        "    " + roundMask + " = false;\n";
+                        
+    setNodeInfo(ctx, {roundData, roundMask, Layer::Type::Int32, infoA.resolution});
+    mDataCount++; mMaskCount++;     
 }
 
 void Translator::exitSin(OpLanguage::OParser::SinContext* ctx)
@@ -1026,6 +1119,28 @@ void Translator::exitTan(OpLanguage::OParser::TanContext* ctx)
     mDataCount++; mMaskCount++;    
 }
 
+void Translator::exitXor(OParser::XorContext* ctx)
+{
+    auto xorMask = "xorMask" + std::to_string(mMaskCount);
+    auto xorData = "xorData" + std::to_string(mDataCount);
+
+    auto infoA = nodeInfo(ctx->expr(0));
+    auto infoB = nodeInfo(ctx->expr(1));
+
+    mSourceString += "bool " + xorMask + ";\n" +
+                     "bool " + xorData + ";\n";
+
+    mSourceString += "if(" + infoA.mask + " && " + infoB.mask + ")\n" +
+       "{\n" +
+       "    " + xorData + " =  " + infoA.data + " ^^ " + infoB.data + "; \n" +
+       "    " + xorMask + " = true;\n" +
+       "}\n" +
+       "else\n" +
+       "    " + xorMask + " = false;\n";
+
+    setNodeInfo(ctx, { xorData, xorMask, Layer::Type::Int8, { 0, 0 } });
+    mDataCount++; mMaskCount++;
+}
 
 void Translator::exitNull(OParser::NullContext* ctx)
 {
@@ -1124,6 +1239,70 @@ void Translator::exitIntConst(OParser::IntConstContext* ctx)
 void Translator::exitFloatConst(OParser::FloatConstContext* ctx)
 {
     setNodeInfo(ctx, {ctx->getText(), "true", Layer::Type::Float32, {0, 0}});
+}
+
+void Translator::exitNeighborMod(OpLanguage::OParser::NeighborModContext* ctx)
+{
+    auto infoA = nodeInfo(ctx->expr(0));
+    auto infoB = nodeInfo(ctx->expr(1));    
+    
+    const auto& layers = mChisel->resourceManager()->layers();
+    auto search = std::find_if(begin(layers), end(layers), [&](Layer *layer){ return (ctx->NAME()->getText() == layer->name()) ? true : false;});
+        
+    if(search != end(layers))
+    {
+        mChisel->resourceManager()->commitFreeImageUnit((*search)->dataTexture()->textureArray());
+        mChisel->resourceManager()->commitFreeImageUnit((*search)->maskTexture()->textureArray());
+        std::string dataImageName = "Data" + std::to_string( (*search)->dataTexture()->textureArray()->imageUnit());        
+        std::string maskImageName = "Mask" + std::to_string( (*search)->maskTexture()->textureArray()->imageUnit());
+        
+        updateImageDeclarations(dataImageName, maskImageName, *search);
+
+//         auto paramA = infoA.data;
+//         auto paramB = infoB.data;
+//         std::replace(std::begin(paramA), std::end(paramA), '-', '_');
+//         std::replace(std::begin(paramB), std::end(paramB), '-', '_');
+        
+        auto neighborModName = ctx->NAME()->getText() + infoA.data + "_" + infoB.data;        
+        auto neighborModCoords = ctx->NAME()->getText() + infoA.data + "_" + infoB.data + "Coords";//"(pixelCoords + ivec2(" + infoA.data + ", " + infoB.data + "))"; 
+        auto parsedSearch = std::find_if(begin(mIdentifiers), end(mIdentifiers), [&](const std::string& id){ return (neighborModName == id) ? true : false;});
+        
+        if(parsedSearch == end(mIdentifiers))
+        { 
+            mDeclarationCode += "    " + toGLSLType((*search)->type()) + " " + neighborModName + "Data = 0;\n"
+                                "    float " + neighborModName + "Mask = 0;\n";
+                                
+            mSourceString +=    "ivec2 " + neighborModCoords + " = pixelCoords + ivec2(" + infoA.data + ", " + infoB.data + ");\n\n"
+                                "if(" + infoA.mask + " && " + infoB.mask + ")\n"
+                                "{\n"
+                                "    if(" + neighborModCoords + ".x >= 0 && " + neighborModCoords + ".y >= 0 && " + neighborModCoords + ".x <= " + std::to_string((*search)->resolution().first) + " && " + neighborModCoords + ".y <= " + std::to_string((*search)->resolution().second) + ")\n"
+                                "    {\n"
+                                "        " + neighborModName + "Data = imageLoad(" + dataImageName + ", ivec3(" + neighborModCoords + ", " + std::to_string((*search)->dataTexture()->textureArrayLayerIndex()) + ")).x;\n"
+                                "        " + neighborModName + "Mask = imageLoad(" + maskImageName + ", ivec3(" + neighborModCoords + ", " + std::to_string((*search)->maskTexture()->textureArrayLayerIndex()) + ")).x;\n"
+                                "    }\n"
+                                "}\n";                                
+//                                 "    else\n"
+//                                 "    {\n"
+//                                 "        " + neighborModName + "Data = 0;\n"
+//                                 "        " + neighborModName + "Mask = 0;\n"
+//                                 "    }\n"
+//                                 "}\n"
+//                                 "else\n"
+//                                 "{\n"
+//                                 "    " + neighborModName + "Data = 0;\n"
+//                                 "    " + neighborModName + "Mask = 0;\n"
+
+            mIdentifiers.push_back(neighborModName);            
+        }
+
+        setNodeInfo(ctx, {neighborModName + "Data", neighborModName + "Mask > 0", (*search)->type(), (*search)->resolution()});
+    }
+    else
+    {
+        auto token = ctx->NAME()->getSymbol();
+        mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
+        mSemanticErrorMessages += "line " + std::to_string(token->getLine()) + " : position " + std::to_string(token->getCharPositionInLine()) + ": " + ctx->getText() + " is not a valid layer\n";
+    }    
 }
 
 

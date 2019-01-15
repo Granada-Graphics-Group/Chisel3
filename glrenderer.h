@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
+#include <half.hpp>
 #include <map>
 #include <deque>
 #include <set>
@@ -167,6 +168,7 @@ public:
     std::vector<int16_t> readShortTexture(Texture* texture);
     std::vector<uint32_t> readUIntTexture(Texture* texture);
     std::vector<int32_t> readIntTexture(Texture* texture);
+    std::vector<half_float::half> readHalfFloatTexture(Texture* texture);
     std::vector<float> readFloatTexture(Texture* texture);
     std::vector<glm::byte> readLayerData(unsigned int layerIndex);
     std::vector<glm::byte> readLayerMask(unsigned int layerIndex);
@@ -307,6 +309,9 @@ private:
     RenderTechnique* mAreaPerPixelTech = nullptr;
     RenderTechnique* mViewTexTech = nullptr;
     RenderTechnique* mBrushShapeTech = nullptr;
+    RenderTechnique* mImmediateNeighborsTech = nullptr;
+    RenderTechnique* mNeighborsTech = nullptr;
+    RenderTechnique* mCornerCapTech = nullptr;
     RenderTarget* mDepthTarget = nullptr;
     RenderTarget* mDepthTexTarget = nullptr;
     RenderTarget* mSeamMaskTarget = nullptr;
@@ -319,6 +324,9 @@ private:
     RenderTarget* mProjTarget = nullptr;
     RenderTarget* mSlicePlaneTarget = nullptr;
     RenderTarget* mAreaPerPixelTarget = nullptr;
+    RenderTarget* mImmediateNeighborsTarget = nullptr;
+    RenderTarget* mNeighborsTarget = nullptr;
+    RenderTarget* mCornerCapTarget = nullptr;
     RenderPass* mProjPass = nullptr;
     RenderPass* mPaintTexPass = nullptr;
     RenderPass* mDilationPass = nullptr;
@@ -335,6 +343,7 @@ private:
     Texture *mReadFBTextureUI = nullptr;
     Texture *mAreaPerPixelTexture = nullptr;
     Texture *mLockTexture = nullptr;
+    Texture *mNeighborhoodTexture = nullptr;
     std::deque<GLLayer> mLayers;
     
     bool mPaintingDataNeedUpdate = false;

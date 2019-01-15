@@ -1,5 +1,5 @@
 
-// Generated from /media/loki/Niflheim/Tesis/CHISel/OpParser/OParser.g4 by ANTLR 4.7
+// Generated from /media/loki/Niflheim/Tesis/github/Chisel3/OpParser/OParser.g4 by ANTLR 4.7
 
 #pragma once
 
@@ -93,6 +93,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitCeil(OParser::CeilContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitCos(OParser::CosContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -114,6 +118,18 @@ public:
   }
 
   virtual antlrcpp::Any visitCastToFloat(OParser::CastToFloatContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitFloor(OParser::FloorContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitGraph(OParser::GraphContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitGraph2(OParser::Graph2Context *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -246,6 +262,10 @@ public:
   }
 
   virtual antlrcpp::Any visitStringConst(OParser::StringConstContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitNeighborMod(OParser::NeighborModContext *ctx) override {
     return visitChildren(ctx);
   }
 

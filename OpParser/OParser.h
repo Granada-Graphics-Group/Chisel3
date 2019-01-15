@@ -1,5 +1,5 @@
 
-// Generated from /media/loki/Niflheim/Tesis/CHISel/OpParser/OParser.g4 by ANTLR 4.7
+// Generated from /media/loki/Niflheim/Tesis/github/Chisel3/OpParser/OParser.g4 by ANTLR 4.7
 
 #pragma once
 
@@ -13,18 +13,19 @@ namespace OpLanguage {
 class  OParser : public antlr4::Parser {
 public:
   enum {
-    BKNL = 1, SHARP = 2, OPENPAR = 3, CLOSEPAR = 4, ASSIGN = 5, COLON = 6, 
-    SEMICOLON = 7, COMMA = 8, NEGSUB = 9, COMPLEMENT = 10, EXPONENT = 11, 
-    MODULUS = 12, DIV = 13, MULT = 14, ADD = 15, LSHIFT = 16, RSHIFT = 17, 
-    RSHIFTU = 18, GREATER = 19, GREATEREQUAL = 20, LESS = 21, LESSEQUEAL = 22, 
-    EQUAL = 23, NEQUAL = 24, BITAND = 25, BITOR = 26, LAND = 27, LANDONE = 28, 
-    LOR = 29, LORONE = 30, LNOT = 31, COND = 32, ABS = 33, ACOS = 34, ASIN = 35, 
-    ATAN = 36, COS = 37, DOUBLECAST = 38, EVAL = 39, EXPFUNC = 40, FLOATCAST = 41, 
-    IF = 42, INTCAST = 43, ISNULL = 44, LOG = 45, MAX = 46, MEDIAN = 47, 
-    MIN = 48, MODE = 49, NMAX = 50, NMEDIAN = 51, NMIN = 52, NMODE = 53, 
-    NOT = 54, POW = 55, RAND = 56, ROUND = 57, SIN = 58, SQRT = 59, TAN = 60, 
-    XOR = 61, NULLV = 62, SQL = 63, FLOAT = 64, DOUBLE = 65, INT = 66, NAME = 67, 
-    STRING = 68, WS = 69
+    BKNL = 1, SHARP = 2, OPENPAR = 3, CLOSEPAR = 4, OPENBRACK = 5, CLOSEBRACK = 6, 
+    ASSIGN = 7, COLON = 8, SEMICOLON = 9, COMMA = 10, NEGSUB = 11, COMPLEMENT = 12, 
+    EXPONENT = 13, MODULUS = 14, DIV = 15, MULT = 16, ADD = 17, LSHIFT = 18, 
+    RSHIFT = 19, RSHIFTU = 20, GREATER = 21, GREATEREQUAL = 22, LESS = 23, 
+    LESSEQUEAL = 24, EQUAL = 25, NEQUAL = 26, BITAND = 27, BITOR = 28, LAND = 29, 
+    LANDONE = 30, LOR = 31, LORONE = 32, LNOT = 33, COND = 34, ABS = 35, 
+    ACOS = 36, ASIN = 37, ATAN = 38, CEIL = 39, COS = 40, DOUBLECAST = 41, 
+    EVAL = 42, EXPFUNC = 43, FLOATCAST = 44, FLOOR = 45, GRAPH = 46, GRAPH2 = 47, 
+    IF = 48, INTCAST = 49, ISNULL = 50, LOG = 51, MAX = 52, MEDIAN = 53, 
+    MIN = 54, MODE = 55, NMAX = 56, NMEDIAN = 57, NMIN = 58, NMODE = 59, 
+    NOT = 60, POW = 61, RAND = 62, ROUND = 63, SIN = 64, SQRT = 65, TAN = 66, 
+    XOR = 67, NULLV = 68, SQL = 69, FLOAT = 70, DOUBLE = 71, INT = 72, NAME = 73, 
+    STRING = 74, WS = 75
   };
 
   enum {
@@ -376,6 +377,18 @@ public:
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  Graph2Context : public FunctionContext {
+  public:
+    Graph2Context(FunctionContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  MinContext : public FunctionContext {
   public:
     MinContext(FunctionContext *ctx);
@@ -437,6 +450,18 @@ public:
   class  XorContext : public FunctionContext {
   public:
     XorContext(FunctionContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  FloorContext : public FunctionContext {
+  public:
+    FloorContext(FunctionContext *ctx);
 
     ExprContext *expr();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -531,6 +556,29 @@ public:
     AcosContext(FunctionContext *ctx);
 
     ExprContext *expr();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  CeilContext : public FunctionContext {
+  public:
+    CeilContext(FunctionContext *ctx);
+
+    ExprContext *expr();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  GraphContext : public FunctionContext {
+  public:
+    GraphContext(FunctionContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
@@ -767,6 +815,19 @@ public:
     IntConstContext(ConstantContext *ctx);
 
     antlr4::tree::TerminalNode *INT();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  NeighborModContext : public ConstantContext {
+  public:
+    NeighborModContext(ConstantContext *ctx);
+
+    antlr4::tree::TerminalNode *NAME();
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 

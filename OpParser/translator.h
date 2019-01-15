@@ -44,6 +44,7 @@ public:
     void exitAsin(OpLanguage::OParser::AsinContext* ctx) override;
     void exitAtan(OpLanguage::OParser::AtanContext* ctx) override;
     void exitAtan2(OpLanguage::OParser::Atan2Context* ctx) override;
+    void exitCeil(OpLanguage::OParser::CeilContext * ctx) override;
     void exitCos(OpLanguage::OParser::CosContext* ctx) override;
     void exitExponential(OpLanguage::OParser::ExponentialContext* ctx) override;
     void exitExponential2(OpLanguage::OParser::Exponential2Context* ctx) override;
@@ -53,6 +54,9 @@ public:
     void exitIf3(OpLanguage::OParser::If3Context* ctx) override;
     void exitIf4(OpLanguage::OParser::If4Context* ctx) override;
     void exitCastToInt(OpLanguage::OParser::CastToIntContext* ctx) override;
+    void exitFloor(OpLanguage::OParser::FloorContext * ctx) override;
+    void exitGraph(OpLanguage::OParser::GraphContext * ctx) override;
+    void exitGraph2(OpLanguage::OParser::Graph2Context * ctx) override;
     void exitIsNull(OpLanguage::OParser::IsNullContext* ctx) override;
     void exitLog(OpLanguage::OParser::LogContext* ctx) override;
     void exitLog2(OpLanguage::OParser::Log2Context* ctx) override;
@@ -68,12 +72,14 @@ public:
     void exitSin(OpLanguage::OParser::SinContext* ctx) override;
     void exitSqrt(OpLanguage::OParser::SqrtContext* ctx) override;
     void exitTan(OpLanguage::OParser::TanContext* ctx) override;
+    void exitXor(OpLanguage::OParser::XorContext* ctx) override;
     void exitNull(OpLanguage::OParser::NullContext* ctx) override;
     void exitSql(OpLanguage::OParser::SqlContext * ctx) override;
     
     void exitIdentifier(OpLanguage::OParser::IdentifierContext* ctx) override;    
     void exitIntConst(OpLanguage::OParser::IntConstContext* ctx) override;
     void exitFloatConst(OpLanguage::OParser::FloatConstContext* ctx) override;
+    void exitNeighborMod(OpLanguage::OParser::NeighborModContext * ctx) override;
     
     NodeInfo nodeInfo(antlr4::tree::ParseTree* node){ return mNodeInfos.get(node); }
     void setNodeInfo(antlr4::tree::ParseTree* node, const NodeInfo& glslString){ mNodeInfos.put(node, glslString); }

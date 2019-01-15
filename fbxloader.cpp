@@ -247,9 +247,7 @@ void FBXLoader::extractNode(FbxNode* node)
                     Mesh * mesh = mResourceManager->createMesh(meshName);
                     extractMesh(fbxMesh, mesh);
                     //mResourceManager->insertMesh(meshName, mesh);
-                    model->setMesh(mesh);
-                    
-                    mesh->setVAO();                
+                    model->setMesh(mesh);                
                 }
                 else
                     model->setMesh(mResourceManager->mesh(meshName));

@@ -332,6 +332,20 @@ Camera* ResourceManager::createCamera(std::string name, Model3D* model)
     return camera;
 }
 
+Mesh* ResourceManager::copyMesh(const Mesh& sourceMesh, std::string meshName)
+{
+    if(!containMesh(meshName))
+    {    
+        mMeshes[meshName] = std::make_unique<Mesh>(sourceMesh);
+        auto copyMesh = mMeshes[meshName].get();
+        copyMesh->setName(meshName);
+        return copyMesh;
+    }
+    else
+        return nullptr;
+}
+
+
 RenderPass * ResourceManager::createRenderPass(std::string name, Scene3D* scene, Material* sceneMaterial, std::vector<BlendingState> blendingStates, bool depthTest, GLenum depthFunc)
 {
     if(!containRenderPass(name))
@@ -1016,10 +1030,11 @@ Layer* ResourceManager::loadLayer(std::string name, std::string path)
             auto registerLayer = dynamic_cast<RegisterLayer *>(newLayer);
             registerLayer->setPrimaryColumn(primaryColumn);
             registerLayer->setSecondaryColumns(secondaryColumns);
-            registerLayer->copySchema(schema);
-            registerLayer->setDirty(false);
+            registerLayer->copySchema(schema);            
         }
         newLayer->setOpacity(opacity);
+        
+        newLayer->setDirty(false);
     }
     
     return newLayer;
@@ -1038,13 +1053,52 @@ void ResourceManager::saveLayer(Layer* layer, std::string path)
     
     std::ofstream output(absoluteFileName, std::ios::binary);
     cereal::PortableBinaryOutputArchive archive(output);
-    archive(layer->type(), layer->resolution(), layer->opacity(), layer->palette()->name(), data, mask);
+    archive(layer->type(), layer->resolution(), layer->opacity(), layer->palette()->name(), data, mask);    
     
     if(layer->type() == Layer::Type::Register)
     {
         auto registerLayer = dynamic_cast<RegisterLayer *>(layer);
         archive(*registerLayer->tableSchema(), registerLayer->primaryColumn(), registerLayer->secondaryColumns());
-    }
+    }    
+}
+
+void ResourceManager::saveRawLayer(Layer* layer, std::string path)
+{
+    auto data = mRenderer->readTexture(layer->dataTexture());
+    auto mask = mRenderer->readTexture(layer->maskTexture());
+
+    auto absolutePath = ((path.length() > 0) ? path : mCHISelPath + mStdPaths[LAYER]);    
+    if(!directoryExists(absolutePath))
+        createDirectory(absolutePath);
+    
+    std::string absoluteFileName = absolutePath + layer->name() + mFileExtensions[LAYER];
+
+    std::ofstream outputRaw(absoluteFileName, std::ios::binary);
+    auto type = static_cast<int>(layer->type());
+    auto resolution = layer->resolution();
+    outputRaw.write(reinterpret_cast<const char *>(&type), sizeof(type));
+    outputRaw.write(reinterpret_cast<const char *>(&resolution.first), sizeof(resolution.first));
+    outputRaw.write(reinterpret_cast<const char *>(&resolution.second), sizeof(resolution.second));
+    auto dataSize = static_cast<uint64_t>(data.size());
+    outputRaw.write(reinterpret_cast<const char *>(&dataSize), sizeof(dataSize));
+    outputRaw.write(reinterpret_cast<const char *>(data.data()), data.size());
+    auto maskSize = static_cast<uint64_t>(mask.size());
+    outputRaw.write(reinterpret_cast<const char *>(&maskSize), sizeof(maskSize));
+    outputRaw.write(reinterpret_cast<const char *>(mask.data()), mask.size());
+
+    if(layer->type() ==Layer::Type::Register)
+    {
+        auto registerLayer = dynamic_cast<RegisterLayer *>(layer);
+
+        auto numFields = static_cast<uint64_t>(registerLayer->tableSchema()->fields().size());
+        outputRaw.write(reinterpret_cast<const char *>(&numFields), sizeof(numFields));
+
+        for(auto fields : registerLayer->tableSchema()->fields())
+        {
+            auto fieldType = fields.mType;
+            outputRaw.write(reinterpret_cast<const char *>(&fieldType), sizeof(fieldType));
+        }
+    }                
 }
 
 Layer* ResourceManager::duplicateLayer(Layer* sourceLayer)
@@ -1099,9 +1153,8 @@ void ResourceManager::unloadLayer(Layer* layer)
         //LOG("Delete layer texture palette: ", layer->paletteTexture()->textureArrayId(), ", ", layer->paletteTexture()->textureArrayLayerIndex());
         deleteTexture(layer->dataTexture());                
         deleteTexture(layer->maskTexture());
-//         auto type = (layer->discrete()) ? Palette::Type::Discrete : Palette::Type::Linear;
-//         deletePaletteTexture(layer->palette(), type);
         deleteTexture(layer->paletteTexture());
+        
         mLayers.erase(search);
     }
 }
@@ -1117,13 +1170,18 @@ void ResourceManager::deleteLayer(Layer* layer)
         deleteDirectory(mCHISelPath + mStdPaths[RESOURCES] + layer->name());
     }
     
+    deleteLayerPalette(layer->palette());
+    
     unloadLayer(layer);        
 }
 
 void ResourceManager::deleteDiskLayer(std::string name)
 {
-    auto filePath = mCHISelPath + mStdPaths[LAYER] + name + mFileExtensions[LAYER];    
-    std::remove(filePath.c_str());
+    auto layerFilePath = mCHISelPath + mStdPaths[LAYER] + name + mFileExtensions[LAYER];
+    auto paletteFilePath = mCHISelPath + mStdPaths[PALETTE] + name + mFileExtensions[PALETTE];
+    
+    std::remove(paletteFilePath.c_str());
+    std::remove(layerFilePath.c_str());
     
     if(fileExists(mCHISelPath + mStdPaths[DB], chiselName() + mFileExtensions[DB]))        
     {
@@ -1134,10 +1192,10 @@ void ResourceManager::deleteDiskLayer(std::string name)
             mChisel->setDatabase(filepath);
         }
         
-        mSQLiteDatabaseManager->deleteTable(name);        
+        mSQLiteDatabaseManager->deleteTable(name);
+        deleteDirectory(mCHISelPath + mStdPaths[RESOURCES] + name);        
     }
 }
-
 
 void ResourceManager::renameLayer(Layer * layer, const std::string& newName)
 {
@@ -1152,12 +1210,109 @@ void ResourceManager::renameLayer(Layer * layer, const std::string& newName)
     renameTexture(layer->paletteTexture(), newName + ".Palette");
 }
 
-std::string ResourceManager::layerResourceDir(std::string name)
+void ResourceManager::exportLayerAsImage(Layer* layer, const std::string& pathName)
+{
+    auto mask = mRenderer->readTexture(layer->maskTexture());
+    
+    switch(layer->dataTexture()->type())
+    {
+        case GL_BYTE:
+        case GL_UNSIGNED_BYTE:
+        {
+            exportImage<glm::byte>(pathName, layer, mRenderer->readTexture(layer->dataTexture()), mask);
+            break;
+        }
+        case GL_SHORT:
+        {
+            exportImage<int16_t>(pathName, layer, mRenderer->readShortTexture(layer->dataTexture()), mask);
+            break;            
+        }
+        case GL_UNSIGNED_SHORT:
+        {
+            exportImage<uint16_t>(pathName, layer, mRenderer->readUShortTexture(layer->dataTexture()), mask);
+            break;            
+        }
+        case GL_INT:
+        {
+            exportImage<int32_t>(pathName, layer, mRenderer->readIntTexture(layer->dataTexture()), mask);
+            break;            
+        }
+        case GL_UNSIGNED_INT:
+        {
+            exportImage<uint32_t>(pathName, layer, mRenderer->readUIntTexture(layer->dataTexture()), mask);
+            break;            
+        }
+        case GL_HALF_FLOAT:
+        {
+            exportImage<half_float::half>(pathName, layer, mRenderer->readHalfFloatTexture(layer->dataTexture()), mask);
+            break;
+        }
+        case GL_FLOAT:
+        {
+            exportImage<float>(pathName, layer, mRenderer->readFloatTexture(layer->dataTexture()), mask);
+            break;
+        }
+    }      
+}
+
+template<class T>
+void ResourceManager::exportImage(std::string pathName, Layer* layer, const std::vector<T>& data, const std::vector<glm::byte>& mask)
+{
+    std::vector<unsigned char> pixelData(layer->width() * layer->height() * 4);
+        
+    for (std::size_t texel = 0; texel < mask.size(); ++texel)
+    {
+        if (mask[texel] > 0)
+        {            
+            auto color = layer->palette()->color(data[texel]) * 255;
+            pixelData[4 * texel] = static_cast<unsigned char>(color.r);
+            pixelData[4 * texel + 1] = static_cast<unsigned char>(color.g);
+            pixelData[4 * texel + 2] = static_cast<unsigned char>(color.b);
+            pixelData[4 * texel + 3] = static_cast<unsigned char>(color.a);
+        }
+        else
+        {
+            pixelData[4 * texel] = 0;
+            pixelData[4 * texel + 1] = 0;
+            pixelData[4 * texel + 2] = 0;
+            pixelData[4 * texel + 3] = 0;
+        }
+    }
+    
+    QImage layerImage(pixelData.data(), layer->width(), layer->height(), QImage::Format_RGBA8888);
+    layerImage = layerImage.mirrored(false, true);
+    layerImage.save(pathName.data());    
+}
+
+void ResourceManager::exportImage2(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data)
+{
+    std::vector<unsigned char> pixelData(width * height * 4);
+        
+    for (std::size_t texel = 0; texel < data.size(); texel+=2)
+    {        
+        if(data[texel] != 0)
+        {
+            glm::uvec2 texelIndex(texel /(2 * height), (texel/2) % width);
+            LOG("Texel[", texelIndex.x, ", ", texelIndex.y, "] -> [", data[texel], ", ", data[texel + 1], "] -> [", static_cast<uint32_t>(data[texel] * 2048), ", ", static_cast<uint32_t>(data[texel + 1] * 2048),"] -> [", static_cast<uint32_t>(data[texel] * 4096), ", ", static_cast<uint32_t>(data[texel + 1] * 4096),"]");
+            pixelData[4 * texel/2] = static_cast<unsigned char>(255);
+            pixelData[4 * texel/2 + 1] = static_cast<unsigned char>(0);
+            pixelData[4 * texel/2 + 2] = static_cast<unsigned char>(0);
+            pixelData[4 * texel/2 + 3] = static_cast<unsigned char>(255);
+        }
+    }
+    
+    QImage layerImage(pixelData.data(), width, height, QImage::Format_RGBA8888);
+    layerImage = layerImage.mirrored(false, true);
+    layerImage.save(pathName.data());    
+}
+
+
+std::string ResourceManager::layerResourceDir(std::string name) const
 {
     return mCHISelPath + mStdPaths[RESOURCES] + name;
 }
 
-std::vector<std::string> ResourceManager::layerResourceFiles(std::string name)
+std::vector<std::string> ResourceManager::layerResourceFiles(std::string name) const
 {
     return directoryFiles(mCHISelPath + mStdPaths[RESOURCES] + name);
 }
@@ -1250,7 +1405,7 @@ Palette* ResourceManager::copyPaletteToCollection(Palette* palette)
     return newPalette;
 }
 
-void ResourceManager::erasePalette(unsigned int index)
+void ResourceManager::deletePalette(unsigned int index)
 {
     if (index < mPalettes.size())
     {
@@ -1261,7 +1416,7 @@ void ResourceManager::erasePalette(unsigned int index)
     }
 }
 
-void ResourceManager::erasePalette(Palette* palette)
+void ResourceManager::deletePalette(Palette* palette)
 {
     auto search = std::find_if(begin(mPalettes), end(mPalettes), [&](const std::unique_ptr<Palette>& currentPalette){ return (palette->name() == currentPalette->name()) ? true : false;});
     
@@ -1274,7 +1429,7 @@ void ResourceManager::erasePalette(Palette* palette)
     }        
 }
 
-void ResourceManager::eraseLastPalette()
+void ResourceManager::deleteLastPalette()
 {
     if (mPalettes.size())
     {
@@ -1285,12 +1440,15 @@ void ResourceManager::eraseLastPalette()
     }
 }
 
-bool ResourceManager::eraseLayerPalette(Palette* palette)
+bool ResourceManager::deleteLayerPalette(Palette* palette)
 {
     auto search = std::find_if(begin(mLayerPalettes), end(mLayerPalettes), [&](const std::unique_ptr<Palette>& currentPalette){ return (palette == currentPalette.get()) ? true : false;});
     
     if(search != end(mLayerPalettes))
     {     
+        auto filePath = mCHISelPath + mStdPaths[PALETTE] + palette->name() + mFileExtensions[PALETTE];    
+        std::remove(filePath.c_str()); 
+        
         mLayerPalettes.erase(search);
         return true;
     }
@@ -1706,6 +1864,29 @@ void ResourceManager::exportModel(std::string filePath, std::string extension, M
     }
 }
 
+void ResourceManager::exportChiselProjectToUnity(std::string name, std::string path)
+{
+    if(path.length() > 0 && name.length() > 0)
+    {
+        createDirectory(path);
+        
+        exportModel(path + name, "fbx", mRenderer->scene()->models()[0], {}, mRenderer->scene()->camera(), false);
+            
+        copyFile(mCHISelPath + mStdPaths[DB] + mCHISelName + mFileExtensions[DB], path + mStdPaths[DB] + name + mFileExtensions[DB]);
+        
+        if(directoryExists(mCHISelPath + mStdPaths[RESOURCES]))
+            copyDirectory(mCHISelPath + mStdPaths[RESOURCES], path + mStdPaths[RESOURCES], false);                
+                    
+        createDirectory(path + mStdPaths[LAYER]);
+        createDirectory(path + "textures");
+                        
+        for(const auto& layer: mChisel->layers())
+        {
+            saveRawLayer(layer, path + mStdPaths[LAYER]);
+            exportLayerAsImage(layer, path + "textures/" + layer->name() + ".png");
+        }              
+    }        
+}
 
 
 void ResourceManager::setDefaultChiselPath(std::string path)
@@ -1815,12 +1996,14 @@ void ResourceManager::saveChiselProject(std::string name, std::string path)
         archive(cereal::make_nvp("databaseName", mCHISelName));
     else
         archive(cereal::make_nvp("databaseName", std::string("")));
-    
-    auto oldDatabase = oldPath + mStdPaths[DB] + oldName + mFileExtensions[DB];
-    auto newDatabase = mCHISelPath + mStdPaths[DB] + mCHISelName + mFileExtensions[DB];
-    
+        
     if(newPath)
+    {
         copyFile(oldPath + mStdPaths[DB] + oldName + mFileExtensions[DB], mCHISelPath + mStdPaths[DB] + mCHISelName + mFileExtensions[DB]);
+        
+        if(directoryExists(oldPath + mStdPaths[RESOURCES]))
+            copyDirectory(oldPath + mStdPaths[RESOURCES], mCHISelPath + mStdPaths[RESOURCES], false);
+    }
             
     archive(cereal::make_nvp("layerPath", mStdPaths[LAYER]));
     if(!directoryExists(mCHISelPath + mStdPaths[LAYER]))
@@ -1858,15 +2041,6 @@ void ResourceManager::saveChiselProject(std::string name, std::string path)
         }        
     }
     
-//     for(auto i = mLocalPaletteIndex; i < mPalettes.size(); ++i)
-//     {
-//         paletteNames.push_back(mPalettes[i]->name());
-//         if(mPalettes[i]->isDiskDirty() || newPath)
-//         {
-//             mPalettes[i]->setDiskDirty(false);
-//             savePalette(mPalettes[i]->index());
-//         }
-//     }
     archive(CEREAL_NVP(paletteNames));
 }
 
@@ -1911,7 +2085,7 @@ bool ResourceManager::copyFile(std::string source, std::string destination)
     return QFile::copy(QString::fromStdString(source), QString::fromStdString(destination));
 }
 
-std::vector<std::string> ResourceManager::directoryFiles(std::string path)
+std::vector<std::string> ResourceManager::directoryFiles(std::string path) const
 {
     QDir dir(QString::fromStdString(path));
     std::vector<std::string> files;
@@ -2192,7 +2366,8 @@ std::array< GLenum, int(2) > ResourceManager::getFormatAndType(GLenum internalFo
         {
             formatType[1] = GL_BYTE;
             break;
-        }        
+        }
+        case GL_R8UI:
         case GL_R8:
         case GL_RG8UI:            
         case GL_RG8:

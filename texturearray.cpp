@@ -3,6 +3,7 @@
 #include "logger.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <half.hpp>
 #include <numeric>
 #include <iostream>
 #include <array>
@@ -113,7 +114,7 @@ TextureArray::TextureArray(unsigned int index, unsigned int layerCount, std::vec
     if(mAFLevel > 0)
         glTextureParameteri(mId, GL_TEXTURE_MAX_ANISOTROPY_EXT, mAFLevel);   
 
-    glGenerateTextureMipmap(mId);
+    //glGenerateTextureMipmap(mId);
 }
 
 TextureArray::~TextureArray()
@@ -174,17 +175,41 @@ void TextureArray::clear(glm::vec4 color, const std::list<unsigned int>& layers,
         {
             switch(mType)                        
             {
+                case GL_HALF_FLOAT:
+                {
+                    std::array<half_float::half, 4> clearColor = { static_cast<half_float::half>(color.r * 255), static_cast<half_float::half>(color.g * 255), static_cast<half_float::half>(color.b * 255), static_cast<half_float::half>(color.a * 255)};
+                    glClearTexSubImage(mId, 0, 0, 0, layers.front(), mWidth, mHeight, layers.size(), mFormat, mType, clearColor.data());
+                    break;
+                }
                 case GL_FLOAT:
                 {
                     glClearTexSubImage(mId, 0, 0, 0, layers.front(), mWidth, mHeight, layers.size(), mFormat, mType, glm::value_ptr(color));
                     break;                    
                 }
+                case GL_BYTE:
+                {
+                    std::array<int8_t, 4> clearColor = { static_cast<int8_t>(color.r * 255), static_cast<int8_t>(color.g * 255), static_cast<int8_t>(color.b * 255), static_cast<int8_t>(color.a * 255)};
+                    glClearTexSubImage(mId, 0, 0, 0, layers.front(), mWidth, mHeight, layers.size(), mFormat, mType, clearColor.data());
+                    break;
+                }                                
                 case GL_UNSIGNED_BYTE:
                 {
                     std::array<GLubyte, 4> clearColor = { static_cast<GLubyte>(color.r * 255), static_cast<GLubyte>(color.g * 255), static_cast<GLubyte>(color.b * 255), static_cast<GLubyte>(color.a * 255)};
                     glClearTexSubImage(mId, 0, 0, 0, layers.front(), mWidth, mHeight, layers.size(), mFormat, mType, clearColor.data());
                     break;
                 }
+                case GL_SHORT:
+                {
+                    std::array<int16_t, 4> clearColor = { static_cast<int16_t>(color.r * 255), static_cast<int16_t>(color.g * 255), static_cast<int16_t>(color.b * 255), static_cast<int16_t>(color.a * 255)};
+                    glClearTexSubImage(mId, 0, 0, 0, layers.front(), mWidth, mHeight, layers.size(), mFormat, mType, clearColor.data());
+                    break;                                        
+                }
+                case GL_UNSIGNED_SHORT:
+                {
+                    std::array<uint16_t, 4> clearColor = { static_cast<uint16_t>(color.r * 255), static_cast<uint16_t>(color.g * 255), static_cast<uint16_t>(color.b * 255), static_cast<uint16_t>(color.a * 255)};
+                    glClearTexSubImage(mId, 0, 0, 0, layers.front(), mWidth, mHeight, layers.size(), mFormat, mType, clearColor.data());
+                    break;                    
+                }                
                 case GL_INT:
                 {
                     std::array<GLint, 4> clearColor = { static_cast<GLint>(color.r * 255), static_cast<GLint>(color.g * 255), static_cast<GLint>(color.b * 255), static_cast<GLint>(color.a * 255)};

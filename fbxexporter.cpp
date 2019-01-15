@@ -71,7 +71,7 @@ void FBXExporter::exportModelToFile(std::string filepath, Model3D* model, const 
         populateFBXScene(mFbxScene, model, camera);
 
 
-	if (exportCamera) addCamera(mFbxScene, camera);
+    if (exportCamera) addCamera(mFbxScene, camera);
 
     auto mExporter = FbxExporter::Create(mManager, "");
     mExporter->SetFileExportVersion(FBX_2014_00_COMPATIBLE);
@@ -206,7 +206,7 @@ void FBXExporter::populateFBXScene(fbxsdk::FbxScene* fbxScene, Model3D* model, c
         auto node = FbxNode::Create(fbxScene, pair.first.c_str());
         node->SetNodeAttribute(fbxMesh);
 
-		auto orientation = camera->orientation() * model->orientation();
+        auto orientation = camera->orientation() * model->orientation();
         auto eulerAngles = glm::degrees(glm::eulerAngles(orientation));
         node->LclRotation.Set({eulerAngles.x, eulerAngles.y, eulerAngles.z});
 
