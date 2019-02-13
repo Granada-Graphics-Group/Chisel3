@@ -1559,14 +1559,14 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
         mAreaPerPixelTarget->setColorTextures({mAreaPerPixelTexture});
         mAreaPerPixelTech->settingUP();
         
-        mImmediateNeighborsTarget->setColorTextures({mNeighborhoodTexture});
-        mImmediateNeighborsTech->settingUP();
-        
-        mNeighborsTarget->setColorTextures({mNeighborhoodTexture});    
-        mNeighborsTech->settingUP();
-        
-        mCornerCapTarget->setColorTextures({mNeighborhoodTexture});
-        mCornerCapTech->settingUP();
+        //mImmediateNeighborsTarget->setColorTextures({mNeighborhoodTexture});
+        //mImmediateNeighborsTech->settingUP();
+        //
+        //mNeighborsTarget->setColorTextures({mNeighborhoodTexture});    
+        //mNeighborsTech->settingUP();
+        //
+        //mCornerCapTarget->setColorTextures({mNeighborhoodTexture});
+        //mCornerCapTech->settingUP();
                 
         mUniformBuffers[GLUniBuffer::App]->updateCache(sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mSeamMaskTarget->colorTexOutputs()[0]->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
@@ -1576,9 +1576,9 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
         mUniformBuffers[GLUniBuffer::App]->updateGPU();
 
         insertTechnique(mSeamMaskTech, 1);
-        insertTechnique(mNeighborsTech, 1);
-        insertTechnique(mCornerCapTech, 1);
-        insertTechnique(mImmediateNeighborsTech, 1);
+        //insertTechnique(mNeighborsTech, 1);
+        //insertTechnique(mCornerCapTech, 1);
+        //insertTechnique(mImmediateNeighborsTech, 1);
         insertTechnique(mAreaPerPixelTech,1);
     }
     
