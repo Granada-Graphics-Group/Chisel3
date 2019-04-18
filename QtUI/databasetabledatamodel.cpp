@@ -114,6 +114,23 @@ void DataBaseTableDataModel::setDataBaseTable(const std::string& name)
     auto tableName = QString::fromStdString(name);
     
     mUsedIds.clear();
+    auto available = QSqlDatabase::isDriverAvailable("QSQLITE");
+    auto valid = database().isValid();
+    auto open = database().isOpen();
+    auto err = database().isOpenError();
+    auto last = database().lastError();
+    auto dbname = database().databaseName();
+    auto conname = database().connectionName();
+    
+    if(open)
+    {
+        auto tables = database().tables(QSql::SystemTables);
+        auto views = database().tables(QSql::Views);
+        auto all = database().tables(QSql::AllTables);
+        auto nnn = database().tables(QSql::Tables);
+        
+        auto tsize = tables.size();
+    }
     
     if(!database().tables().contains(tableName))
         createTable();

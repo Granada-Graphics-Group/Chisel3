@@ -40,7 +40,12 @@ RenderTarget::RenderTarget(std::string name, ResourceManager* manager, std::arra
     {
         attachColorTexturesToFBO();
         
-        if(depthTarget == nullptr)
+        auto enableDepth = false;
+        for(const auto& pass : passes)
+            if(pass->isDepthTestEnabled())
+                enableDepth = true;
+        
+        if(enableDepth && depthTarget == nullptr)
         {
             std::string textureName = mName + "Depth";
             mDepthTexture = mResourceManager->createTexture(textureName, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);                
@@ -138,6 +143,16 @@ void RenderTarget::attachColorTexturesToFBO(bool updateDepthTexture)
     }
 }
 
+
+void RenderTarget::updateUniformData(GLintptr offset, GLsizeiptr size, const GLvoid* data)
+{
+    const glm::byte *byteData = reinterpret_cast<const glm::byte *>(data);
+    
+    if((size + offset) > mUniformData.size())
+        mUniformData.resize(size + offset);
+    
+    std::copy(byteData, byteData + size, begin(mUniformData) + offset);    
+}
 
 //*** Private Methods ***//
 void RenderTarget::createTextureTargets()

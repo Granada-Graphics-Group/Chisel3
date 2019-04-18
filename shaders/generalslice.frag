@@ -1,4 +1,5 @@
-#version 430
+#version 450
+#extension GL_ARB_bindless_texture : require
 
 smooth in vec2 CoordST;
 flat in ivec2 TexArrayIndex;
@@ -52,6 +53,7 @@ layout(std140, binding = 12) uniform PerMaterialData
 
 layout(location = 0) out vec4 FragColor;
 
+layout(bindless_sampler) uniform;
 uniform sampler2DArray ArrayTexture[20];
 uniform isampler2DArray iArrayTexture[3];
 uniform usampler2DArray uArrayTexture[3];

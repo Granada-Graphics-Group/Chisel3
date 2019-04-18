@@ -136,6 +136,11 @@ public:
     std::vector<std::array<float, 2>> computeLayerValueArea(unsigned int index);
     void updateTableAreaFields(unsigned int index);
     
+    Layer* computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost);
+    Layer* computeDistanceFieldLayer(unsigned int index, double distance);    
+    std::array<Layer*, 3> computeNormalLayer(const std::pair<int, int> layerResolution);
+    Layer* computeOrientationLayer(const std::pair<int, int> layerResolution, glm::vec3 reference);
+    
     void createPalette(std::string name);
     void editPalette(unsigned int index);
     void importPalette(std::string name, std::string path);
@@ -176,7 +181,7 @@ public:
     void setDefaultModelColor(glm::vec4 color);
     void setSpecularColor(glm::vec3 color);
     void setSpecularPower(float power);
-	void alignMainCameraToModel();
+    void alignMainCameraToModel();
     
     void onMouseButtons(MouseButton button, MouseAction action, int mods, double xPos, double yPos);
     void onMousePosition(double xPos, double yPos);

@@ -128,6 +128,8 @@ public:
     void sliceModelWithPlane();
     
     void render();
+    void updateRenderQueue();
+    
     void resize(int width, int height);
     void onMouseButtons(int button, int action, int mods, double xPos, double yPos);
     void onMousePosition(double xPos, double yPos);
@@ -151,6 +153,7 @@ public:
     void updateTechniqueDataWithLayer(const GLLayer& layer);
     void setCurrentPaletteTexture(Texture* palette);
     void eraseLayer(unsigned int layerIndex);
+    void padLayerTextures(uint32_t layerIndex);
     void setCurrentPaintingValue(float value);
     void updateControlPointText(const std::vector<std::tuple<std::string, int, int>>& data);
     void updatePaletteTexture(unsigned int index, const std::array<float, 4096 * 4>& data, std::pair<float, float> range);
@@ -159,6 +162,8 @@ public:
     void setOpacity(unsigned int layerIndex, float opacity);
     void computeExpression(const std::vector<std::string>& expression);
     void computeShader(Program* shader, const std::vector<glm::byte>& uniformData = {});
+    
+    void computeLayerOperation(unsigned int layerOperation, const std::vector<glm::byte>& uniformData = {});
     
     std::vector<glm::byte> readTexture(Texture* texture);
     template<typename T>
@@ -174,6 +179,7 @@ public:
     std::vector<glm::byte> readLayerMask(unsigned int layerIndex);
     
     void insertTechnique(RenderTechnique* tech, int life = 0);
+    void removeTechnique(RenderTechnique* tech);
     void insertComputeJob(ComputeJob* tech, int life = 0);
     void insertScene(Scene3D* scene);
     void removeScene(Scene3D* scene);
@@ -212,7 +218,7 @@ private:
     void updateGenericUniformData();
     void updateSceneUniformData(Scene3D* scene, bool forceUpdate = false);
     void updateMaterialUniformData();
-    void updateTransientUniformData(RenderTarget* target);
+    void updateRenderTargetUniformData(RenderTarget* target);
     void updateSlicePlaneUniformData();
     void updateMeshData(Scene3D* scene);
 
@@ -302,6 +308,7 @@ private:
     RenderTechnique* mSeamMaskTech = nullptr;
     RenderTechnique* mNormalTech = nullptr;
     RenderTechnique* mPaintTexTech = nullptr;
+    RenderTechnique* mCustomPaddingTech = nullptr;
     RenderTechnique* mEraseTexTech = nullptr;
     RenderTechnique* mReadFBTech = nullptr;
     RenderTechnique* mProjTech = nullptr;
@@ -310,13 +317,18 @@ private:
     RenderTechnique* mViewTexTech = nullptr;
     RenderTechnique* mBrushShapeTech = nullptr;
     RenderTechnique* mImmediateNeighborsTech = nullptr;
+    RenderTechnique* mEdgesToOutlineTech = nullptr;
+    RenderTechnique* mNeighborEdgesTech = nullptr;
     RenderTechnique* mNeighborsTech = nullptr;
     RenderTechnique* mCornerCapTech = nullptr;
+    RenderTechnique* mLayerOperationTech;
+    
     RenderTarget* mDepthTarget = nullptr;
     RenderTarget* mDepthTexTarget = nullptr;
     RenderTarget* mSeamMaskTarget = nullptr;
     RenderTarget* mPaintTexTarget = nullptr;
     RenderTarget* mDilationTarget = nullptr;
+    RenderTarget* mCustomPaddingTarget = nullptr;
     RenderTarget* mReadFBTarget = nullptr;
     RenderTarget* mEraseTexTarget = nullptr;
     RenderTarget* mEraseDilationTarget = nullptr;
@@ -325,6 +337,8 @@ private:
     RenderTarget* mSlicePlaneTarget = nullptr;
     RenderTarget* mAreaPerPixelTarget = nullptr;
     RenderTarget* mImmediateNeighborsTarget = nullptr;
+    RenderTarget* mNeighborEdgesTarget = nullptr;
+    RenderTarget* mEdgesToOutlineTarget = nullptr;
     RenderTarget* mNeighborsTarget = nullptr;
     RenderTarget* mCornerCapTarget = nullptr;
     RenderPass* mProjPass = nullptr;
@@ -333,17 +347,19 @@ private:
     RenderPass* mReadFBPass = nullptr;
     RenderPass* mEraseTexPass = nullptr;
     
-    Texture *mSeamMaskTexture = nullptr;
-    Texture *mDepthTexTexture = nullptr;
-    Texture *mBrushMaskTexture = nullptr;
-    Texture *mCopyValueTexture = nullptr;
-    Texture *mDilatedLayerTexture = nullptr;
-    Texture *mReadFBTexture = nullptr;
-    Texture *mReadFBTextureI = nullptr;
-    Texture *mReadFBTextureUI = nullptr;
-    Texture *mAreaPerPixelTexture = nullptr;
-    Texture *mLockTexture = nullptr;
-    Texture *mNeighborhoodTexture = nullptr;
+    Texture* mSeamMaskTexture = nullptr;
+    Texture* mDepthTexTexture = nullptr;
+    Texture* mBrushMaskTexture = nullptr;
+    Texture* mCopyValueTexture = nullptr;
+    Texture* mDilatedLayerTexture = nullptr;
+    Texture* mReadFBTexture = nullptr;
+    Texture* mReadFBTextureI = nullptr;
+    Texture* mReadFBTextureUI = nullptr;
+    Texture* mAreaPerPixelTexture = nullptr;
+    Texture* mDummyTex = nullptr;
+    Texture* mTempNeighborhoodTexture = nullptr; 
+    Texture* mNeighborhoodTexture = nullptr;
+    Texture* mNeighborEdgesTexture = nullptr;
     std::deque<GLLayer> mLayers;
     
     bool mPaintingDataNeedUpdate = false;

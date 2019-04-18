@@ -212,7 +212,7 @@ void OpenGLWidget::paintGL()
 
 void OpenGLWidget::leaveEvent(QEvent* event)
 {
-    LOG("OpenGLWidget Leave Event");
+    //-LOG("OpenGLWidget Leave Event");
 
     if(hasMouseTracking())
     {
@@ -226,7 +226,7 @@ void OpenGLWidget::leaveEvent(QEvent* event)
 
 void OpenGLWidget::enterEvent(QEvent* event)
 {
-    LOG("OpenGLWidget Enter Event");
+    //-LOG("OpenGLWidget Enter Event");
 
     if(!mRenderer->isRenderModeActive())
     {

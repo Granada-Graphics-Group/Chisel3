@@ -157,7 +157,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
     auto coordinates = paletteYCoordinates();
     
-    if(mCurrentPaletteValueWidget != nullptr)
+    if(mCurrentPaletteValueWidget != nullptr && mCurrentPaletteValueWidget->isVisible())
         mCurrentPaletteValueWidget->setCoordinates(locPos.x(), range);
 
     if(mDataBaseEditorWidget != nullptr && mDataBaseEditorWidget->isVisible())
@@ -202,7 +202,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 
             auto coordinates = paletteYCoordinates();
             
-            if(mCurrentPaletteValueWidget != nullptr)
+            if(mCurrentPaletteValueWidget != nullptr && mCurrentPaletteValueWidget->isVisible())
                 mCurrentPaletteValueWidget->setCoordinates(locPos.x(), range);
 
             if(mDataBaseEditorWidget != nullptr && mDataBaseEditorWidget->isVisible())
@@ -761,6 +761,29 @@ void MainWindow::createHistogram()
     mHistogramDialog->show();
 }
 
+void MainWindow::computeDistanceField()
+{
+    auto index = mUi->activeLayerTreeView->currentIndex();
+    
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeDistanceFieldLayer(index.row(), 1.0);
+}
+
+
+void MainWindow::computeNormals()
+{
+    mUi->Visualizer->makeCurrent();
+    
+    mChisel->computeNormalLayer({2048, 2048});    
+}
+
+void MainWindow::computeOrientation()
+{
+    mUi->Visualizer->makeCurrent();
+    
+    mChisel->computeOrientationLayer({2048, 2048}, {0, 0, 1});    
+}
+
 void MainWindow::updateLayerToolBoxState(int index)
 {
     if(index == 0)
@@ -1166,13 +1189,6 @@ void MainWindow::exportChiselModel()
     FBXExporterDialog dialog(mChisel.get(), this);
     
     dialog.exec();
-//     auto filepath = QFileDialog::getSaveFileName(this, tr("Save Chisel Model As"), QApplication::applicationDirPath() + "/" + QString::fromStdString(mChisel->chiselName()), tr("FBX (*.fbx)"));
-//     
-//     if(filepath.size())
-//     {
-//         QFileInfo file(filepath);
-//         mChisel->exportChiselModel(file.absoluteFilePath().toStdString(), file.suffix().toStdString(), mUi->activeLayerTreeView->currentIndex().row());
-//     }
 }
 
 void MainWindow::exportChiselProjectToUnity()
@@ -1827,8 +1843,8 @@ void MainWindow::createActions()
     connect(mUi->actionEditLightingParameters, &QAction::triggered, this, &MainWindow::editLightingParameters);
     connect(mUi->actionShowVertexColor, &QAction::toggled, this, &MainWindow::toggleVertexColorVisibility);
     connect(mUi->actionDefaultModelColor, &QAction::triggered, this, &MainWindow::selectDefaultModelColor);
-	connect(mUi->actionBackgroundColor, &QAction::triggered, this, &MainWindow::selectBackgroundColor);
-	connect(mUi->actionAlignCameraToModel, &QAction::triggered, this, &MainWindow::alignCameraToModel);
+    connect(mUi->actionBackgroundColor, &QAction::triggered, this, &MainWindow::selectBackgroundColor);
+    connect(mUi->actionAlignCameraToModel, &QAction::triggered, this, &MainWindow::alignCameraToModel);
 
     connect(mUi->actionExportToTexture, &QAction::triggered, this, &MainWindow::exportLayerAsImage);
     connect(mUi->actionRenameLayer, &QAction::triggered, this, &MainWindow::triggerRenameLayer);
@@ -1847,6 +1863,9 @@ void MainWindow::createActions()
     connect(mUi->actionAddPaletteToCollection, &QAction::triggered, this, &MainWindow::addPaletteToCollection);
 
     connect(mUi->actionCreateHistogram, &QAction::triggered, this, &MainWindow::createHistogram);
+    connect(mUi->actionDistanceFieldOperation, &QAction::triggered, this, &MainWindow::computeDistanceField);
+    connect(mUi->actionNormalOperation, &QAction::triggered, this, &MainWindow::computeNormals);
+    connect(mUi->actionOrientationOperation, &QAction::triggered, this, &MainWindow::computeOrientation);
         
 /*    mSignalMapper = new QSignalMapper(this);
     mSignalMapper->setMapping(mUi->actionSilhouette, Technique::Silhouette);
@@ -2220,4 +2239,24 @@ void MainWindow::setState(MainWindow::State state)
     }
 }
 
+void MainWindow::setOperationUIState(bool enable)
+{
+    mUi->actionOperateLayer->setEnabled(enable);
+    mUi->actionSliceModelTool->setEnabled(enable);
+    mUi->actionCreateHistogram->setEnabled(enable);
+    mUi->actionDistanceFieldOperation->setEnabled(enable);
+    mUi->actionNormalOperation->setEnabled(enable);
+    mUi->actionOrientationOperation->setEnabled(enable);
+}
+
+void MainWindow::setLayerUIState(bool enable)
+{
+    mUi->actionCreateLayer->setEnabled(true);             
+    mUi->actionExportToTexture->setEnabled(true);
+    mUi->actionDuplicateLayer->setEnabled(true);
+    mUi->actionLoadLayer->setEnabled(true);
+    mUi->actionUnloadLayer->setEnabled(true);
+    mUi->actionEraseLayer->setEnabled(true);
+    mUi->actionRenameLayer->setEnabled(true);    
+}
 

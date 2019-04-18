@@ -114,6 +114,11 @@ TextureArray::TextureArray(unsigned int index, unsigned int layerCount, std::vec
     if(mAFLevel > 0)
         glTextureParameteri(mId, GL_TEXTURE_MAX_ANISOTROPY_EXT, mAFLevel);   
 
+    if (mBindless)
+    {
+        mHandle = glGetTextureHandleARB(mId);
+        glMakeTextureHandleResidentARB(mHandle);
+    }
     //glGenerateTextureMipmap(mId);
 }
 
@@ -122,7 +127,16 @@ TextureArray::~TextureArray()
     LOG("Destroying Texture array: ", mId);
 	for (int i = 0; i < mLayerCount; ++i)
 		freeLayer(i);
+
+    //if (mBindless) glMakeTextureHandleNonResidentARB(mHandle);
+
     glDeleteTextures(1, &mId);
+
+    if (mBindless)
+    {
+        if(glIsTextureHandleResidentARB(mHandle))
+            glMakeTextureHandleNonResidentARB(mHandle);
+    }
 }
 
 // *** Public Methods *** //

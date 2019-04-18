@@ -33,6 +33,8 @@ void main()
                 immediateData = uint(immediateData) | uint(1) << i;
         }
                 
-        FragColor = vec2(immediateData, 0);
+        FragColor = vec2(-immediateData, 0);
     }
+    else
+        discard;
 }

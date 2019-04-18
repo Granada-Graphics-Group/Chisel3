@@ -83,9 +83,13 @@ public:
     void setCurrentPaintTextures(Texture* color, Texture* data, Texture* palette);
     void setCurrentPaletteTexture(Texture* palette);
     void eraseLayer(unsigned int layerIndex);
+    void padLayerTextures(uint32_t layerIndex);
     void setOpacity(unsigned int layerIndex, float opacity);
     void computeExpression(const std::vector<std::string>& expression);
     void computeShader(Program* shader, const std::vector<glm::byte>& uniformData = {});
+    
+    void computeLayerOperation(uint32_t layerOperation, const std::vector<glm::byte>& uniformData = {});
+    
     void loadChiselScene(Scene3D* scene);
     void swapChiselScene(Scene3D* scene);
     void removeScene(Scene3D* scene);
@@ -94,8 +98,8 @@ public:
     void setDefaultModelColor(glm::vec4 color);
     void setSpecularColor(glm::vec3 color);
     void setSpecularPower(float power);
-	void setBackgroundColor(glm::vec4 color);
-	void alignMainCameraToModel();
+    void setBackgroundColor(glm::vec4 color);
+    void alignMainCameraToModel();
     void alignCameraToModel(Camera* camera, Model3D* model);
 
     std::vector<glm::byte> readLayerData(unsigned int layerIndex);
@@ -142,6 +146,9 @@ private:
     std::function<void()> mRemoveMarkTool;
     std::function<void(int, int)> mUpdateMarkToolPosition;
     std::function<void(float)> mUpdateMarkToolRadius;
+    
+    std::function<void(uint32_t)> mPadLayerTextures;
+    std::function<void(uint32_t)> mComputeLayerOperation;
     //std::unique_ptr<VulkanRenderer> mVkRenderer;
 };
 

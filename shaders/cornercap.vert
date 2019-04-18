@@ -1,4 +1,4 @@
-#version 430
+#version 450
 
 layout(location = 2) in vec2 in_CoordTextura;
 layout(location = 3) in ivec2 inTexArrayIndex;

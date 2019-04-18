@@ -1,30 +1,12 @@
-#version 430
+#version 450
+#extension GL_ARB_bindless_texture : require
 
 smooth in vec2 CoordST;
 flat in ivec2 TexArrayIndex;
-smooth in vec3 Normal;
-smooth in vec4 WorldVertex;
-smooth in vec4 Pos3D;
-
-// struct Light
-// {
-//     vec4 position;
-//     vec4 direction; 
-//     vec4 color;
-// };
-// 
-// layout(std140, binding = 0) uniform PerFrameData
-// {
-//     mat4 cameraToClipMatrix;
-//     mat4 worldToCameraMatrix;
-//     mat4 projectorCameraMatrix;
-//     mat4 paintTexCameraMatrix;
-//     Light lights[5];
-// };
 
 layout(location = 0) out vec4 FragColor;
 
-uniform sampler2DArray ArrayTexture[13];
+layout(bindless_sampler) uniform sampler2DArray ArrayTexture[20];
 
 void main()
 {

@@ -179,8 +179,8 @@ void GLRenderer::init(GLuint defaultFB)
     mUniformBuffers[GLUniBuffer::Compute] = std::make_unique<UniformBufferObject>(40 * sizeof(GLint), nullptr);
     mUniformBuffers[GLUniBuffer::Compute]->bindToIndexedBufferTarget(9, 0, mUniformBuffers[GLUniBuffer::Compute]->capacity());
     
-    mUniformBuffers[GLUniBuffer::Transient] = std::make_unique<UniformBufferObject>(10 * sizeof(glm::uvec2), nullptr);
-    mUniformBuffers[GLUniBuffer::Transient]->bindToIndexedBufferTarget(11, 0, mUniformBuffers[GLUniBuffer::Transient]->capacity());
+    mUniformBuffers[GLUniBuffer::RenderTarget] = std::make_unique<UniformBufferObject>(10 * sizeof(glm::uvec2), nullptr);
+    mUniformBuffers[GLUniBuffer::RenderTarget]->bindToIndexedBufferTarget(11, 0, mUniformBuffers[GLUniBuffer::RenderTarget]->capacity());
     
     mUniformBuffers[GLUniBuffer::Material] = std::make_unique<UniformBufferObject>(62 * sizeof(glm::vec4), nullptr);
     mUniformBuffers[GLUniBuffer::Material]->bindToIndexedBufferTarget(12, 0, mUniformBuffers[GLUniBuffer::Material]->capacity());
@@ -539,13 +539,13 @@ void GLRenderer::render()
         {
             tech->decreaseLife();
             
-            LOG("GLRenderer::render:: Technique: ", tech->name(), ", life: ", tech->life());
+            //-LOG("GLRenderer::render:: Technique: ", tech->name(), ", life: ", tech->life());
             updateGenericUniformData();
                         
             for(auto target : tech->targets())
             {
                 //LOG("Target: ", target->name());                
-                updateTransientUniformData(target);
+                updateRenderTargetUniformData(target);
 
                 if (target == mDilationTarget || target == mEraseDilationTarget)
                 {
@@ -555,11 +555,11 @@ void GLRenderer::render()
 
                     int Offset = 1;
                     
-                    mUniformBuffers[GLUniBuffer::Transient]->updateCache(0, sizeof(glm::uvec2), glm::value_ptr(dstData->textureArrayIndices()));
-                    mUniformBuffers[GLUniBuffer::Transient]->updateCache(sizeof(glm::uvec2), sizeof(int), &Offset);
-                    mUniformBuffers[GLUniBuffer::Transient]->updateGPU();
+                    mUniformBuffers[GLUniBuffer::RenderTarget]->updateCache(0, sizeof(glm::uvec2), glm::value_ptr(dstData->textureArrayIndices()));
+                    mUniformBuffers[GLUniBuffer::RenderTarget]->updateCache(sizeof(glm::uvec2), sizeof(int), &Offset);
+                    mUniformBuffers[GLUniBuffer::RenderTarget]->updateGPU();
                 }
-                
+                                
                 auto fbo = target->fbo();
                 const auto& viewport = target->viewport();                
                                               
@@ -614,7 +614,7 @@ void GLRenderer::render()
 
                     if(scene->models().size())
                     {
-                        LOG("GLRenderer::render::scene size: ", scene->models().size());
+                        //-LOG("GLRenderer::render::scene size: ", scene->models().size());
                         
                         glBindVertexArray(mVAO);
 
@@ -638,105 +638,16 @@ void GLRenderer::render()
                             const auto& drawCommands = scene->drawCommands();
                             
                             glMemoryBarrier(GL_ALL_BARRIER_BITS);
-                            //glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, &mDrawIndirectCommands[0], mDrawIndirectCommands.size(), 0 );
                             glMultiDrawElementsIndirect(static_cast<GLenum>(scene->primitive()), GL_UNSIGNED_INT, &drawCommands[0], drawCommands.size(), 0 );                            
                             
                             glMemoryBarrier(GL_ALL_BARRIER_BITS);
-//                             glMemoryBarrier(GL_ALL_BARRIER_BITS);
-//                             if(saveDisk)
-//                             {
-//                                 saveDisk = false;
-//                                 glBindTexture(GL_TEXTURE_2D_ARRAY, paint->originalTexture()->textureArrayId());
-//                                 glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-//                             }
-
-                            //if (saveDisk)
-                            //{
-                            //    saveDisk = false;
-                            //    glBindTexture(GL_TEXTURE_2D, paint->id());
-                            //    glGetTexImage(paint->target(), 0, GL_RGBA, GL_UNSIGNED_BYTE, mPixelData.get());
-                            //    QImage buffer(mPixelData.get(), 2048, 2048, QImage::Format_RGBA8888);
-                            //    buffer = buffer.mirrored();
-                            //    std::string name("layerTex.png");
-                            //    buffer.save(name.c_str());
-                            //}
-//                            glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, &mDrawIndirectCommands[0] + 1, mDrawIndirectCommands.size() - 1, 0 );
-//                             mPrograms["BillBoarding"]->use();          
-//                             glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, &mDrawIndirectCommands[0], 1, 0 );
-                            
-                            //glReadBuffer(GL_COLOR_ATTACHMENT0);
-
-                            //double xPos, yPos;
-                            //glfwGetCursorPos(mWindow, &xPos, &yPos);
-                            
-                           /* xPos = 360; yPos = 640;
-                            auto data = reinterpret_cast<float *>(mPBO->dataCache().data());
-                            
-                            //float x = data[ xPos * 1280 * 2 + yPos * 2];
-                            //float y = data[ xPos * 1280 * 2 + yPos * 2 + 1];
-                            
-                            for(int i = xPos - 20; i < (xPos + 20); ++i)
-                                for(int j = yPos - 20; j < (yPos + 20); ++j)
-                                {
-                                   float x = data[ i * 1280 * 2 + j * 2 ];
-                                   float y = data[ i * 1280 * 2 + j * 2 + 1 ];
-                                   
-                                   int coordX = static_cast<int>(roundf(x * 512));
-                                   int coordY = static_cast<int>(roundf(y * 512));
-                                   imagen[coordX * 512 * 3 + coordY * 3] = 0;
-                                   imagen[coordX * 512 * 3 + coordY * 3 + 1] = 0;
-                                   imagen[coordX * 512 * 3 + coordY * 3 + 2] = 255;
-                                }
-*/                          
-//                            if(saveDisk && pass->name().compare("ExpandPass") == 0)
-//                             {
-//                                 saveDisk = false;
-//                                 glReadPixels(0, 0, viewport[2], viewport[3], GL_RGBA, GL_UNSIGNED_BYTE, mPixelData.get());
-//                                 QImage buffer(mPixelData.get(), viewport[2], viewport[3], QImage::Format_RGBA8888);
-//                                 buffer = buffer.mirrored();
-//                                 std::string name("outputCoord.png");
-//                                 buffer.save(name.c_str());
-//                             }
-
-                            
-                            
-                            /*for(int i = 0; i < fbo->drawBuffers().size(); i++)
-                            {
-                                glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
-                                glReadPixels(0, 0, 1280, 720, GL_RGB, GL_UNSIGNED_BYTE, mPixelData.get());
-                                QImage buffer(mPixelData.get(), 1280, 720, QImage::Format_RGB888);
-                                buffer = buffer.mirrored();
-                                std::string name("output" + std::to_string(i) + ".png");
-                                buffer.save(name.c_str());
-                            }
-                            
-                            if(!fbo->drawBuffers().size())
-                            {
-                                glReadPixels(0, 0, 1280, 720, GL_RGB, GL_UNSIGNED_BYTE, mPixelData.get());
-                                QImage buffer(mPixelData.get(), 1280, 720, QImage::Format_RGB888);
-                                buffer = buffer.mirrored();
-                                std::string name("outputStd.png");
-                                buffer.save(name.c_str());                                
-                            }*/
                         }
                         else                        
                             for(auto material: scene->materials())
                             {
                                 material->shader()->use();
                                 const auto& matDrawCommands = scene->drawCommands(material->name());
-//                             LOG("Drawing Material: ", material->name());
-//                             
-//                             std::vector<DrawElementsIndirectCommand> drawCommands = mDrawIndirectCommands2[material->name()];
-//                             
-//                             for(auto command: drawCommands)
-//                             {                                
-//                                 LOG("- Count: ", command.mCount);
-//                                 LOG("- InstanceCount: ", command.mInstanceCount);
-//                                 LOG("- FirstIndex: ", command.mFirstIndex);
-//                                 LOG("- BaseVertex: ", command.mBaseVertex);
-//                                 LOG("- BaseInstance: ", command.mBaseInstance);                                
-//                             }                            
-                                //glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, &mDrawIndirectCommands2[material->name()][0], mDrawIndirectCommands2[material->name()].size(), 0 );
+
                                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, &matDrawCommands[0], matDrawCommands.size(), 0 );
                             }
                             
@@ -746,12 +657,12 @@ void GLRenderer::render()
                 }
                 
                 
-                if(mAreaPerPixelTexture != nullptr && glIsTexture(mAreaPerPixelTexture->textureArray()->id()))
-                {
-                    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-                    glGenerateTextureMipmap(mAreaPerPixelTexture->textureArrayId());
-                    //glGenerateTextureMipmap(mLockTexture->textureArrayId());
-                }
+//                 if(mAreaPerPixelTexture != nullptr && glIsTexture(mAreaPerPixelTexture->textureArray()->id()))
+//                 {
+//                     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+//                     glGenerateTextureMipmap(mAreaPerPixelTexture->textureArrayId());
+//                     //glGenerateTextureMipmap(mLockTexture->textureArrayId());
+//                 }
                 
 //                 if(!target->isDefaultTargetUsed())
 //                 {
@@ -825,7 +736,30 @@ void GLRenderer::render()
                     mReadData = false;
                 }
                 
-                //fbo->unbindFBO();                
+                //fbo->unbindFBO();
+                
+//-                 if(target == mEraseTexTarget)
+//                 {
+//                     std::vector<glm::byte> textureData(mBrushMaskTexture->height() * mBrushMaskTexture->width() * sizeOfGLInternalFormat(mBrushMaskTexture->internalFormat())); 
+//                     glGetTextureSubImage(mBrushMaskTexture->textureArrayId(), 0, 0, 0, mBrushMaskTexture->textureArrayLayerIndex(), mBrushMaskTexture->width(), mBrushMaskTexture->height(), 1, mBrushMaskTexture->format(), mBrushMaskTexture->type(), textureData.size(), textureData.data());
+//                     
+//                     std::vector<glm::byte> pixelData(4 * textureData.size());
+//                     
+//                     for (std::size_t texel = 0; texel < textureData.size(); texel++)
+//                     {        
+//                         if(textureData[texel] > 0)
+//                         {
+//                             pixelData[4 * texel] = static_cast<unsigned char>(255);
+//                             pixelData[4 * texel + 1] = static_cast<unsigned char>(0);
+//                             pixelData[4 * texel + 2] = static_cast<unsigned char>(0);
+//                             pixelData[4 * texel + 3] = static_cast<unsigned char>(255);
+//                         }
+//                     }                    
+//                     
+//                     QImage layerImage(pixelData.data(), mBrushMaskTexture->width(), mBrushMaskTexture->height(), QImage::Format_RGBA8888);
+//                     layerImage = layerImage.mirrored(false, true);
+//                     layerImage.save("./brushshape.png");                   
+//                 }
             }
 
             if (tech == mSeamMaskTech)
@@ -835,26 +769,26 @@ void GLRenderer::render()
                 mMainScene->setViewCameraNeedUpdate(true);
                 
                 mSeamMaskTexture = mSeamMaskTarget->colorTexOutputs()[0];
-                std::vector<glm::byte> textureData(mSeamMaskTexture->height() * mSeamMaskTexture->width() * sizeOfGLInternalFormat(mSeamMaskTexture->internalFormat())); 
-                glGetTextureSubImage(mSeamMaskTexture->textureArrayId(), 0, 0, 0, mSeamMaskTexture->textureArrayLayerIndex(), mSeamMaskTexture->width(), mSeamMaskTexture->height(), 1, mSeamMaskTexture->format(), mSeamMaskTexture->type(), textureData.size(), textureData.data());
-                
-                QImage layerImage(textureData.data(), mSeamMaskTexture->width(), mSeamMaskTexture->height(), QImage::Format_RGBA8888);
-                layerImage = layerImage.mirrored(false, true);
-                layerImage.save("./seamMask.png");
+//-                 std::vector<glm::byte> textureData(mSeamMaskTexture->height() * mSeamMaskTexture->width() * sizeOfGLInternalFormat(mSeamMaskTexture->internalFormat())); 
+//                 glGetTextureSubImage(mSeamMaskTexture->textureArrayId(), 0, 0, 0, mSeamMaskTexture->textureArrayLayerIndex(), mSeamMaskTexture->width(), mSeamMaskTexture->height(), 1, mSeamMaskTexture->format(), mSeamMaskTexture->type(), textureData.size(), textureData.data());
+//                 
+//                 QImage layerImage(textureData.data(), mSeamMaskTexture->width(), mSeamMaskTexture->height(), QImage::Format_RGBA8888);
+//                 layerImage = layerImage.mirrored(false, true);
+//                 layerImage.save("./seamMask.png");
             }
             
-            if(tech == mNeighborsTech)
-            {
-                mManager->exportImage2("./neighbors.png", mNeighborhoodTexture->width(), mNeighborhoodTexture->height(), readFloatTexture(mNeighborhoodTexture));
-            }
+//-             if(tech == mEdgesToOutlineTech)
+//             {
+//                 mManager->exportImage2("./neighborsE.png", mNeighborhoodTexture->width(), mNeighborhoodTexture->height(), readFloatTexture(mNeighborhoodTexture));
+//             }
         }
 
-        mRenderQueue.erase(std::remove_if(begin(mRenderQueue), end(mRenderQueue),[](RenderTechnique *element) -> bool {return (element->life() == 0);}), end(mRenderQueue));
-        
+        updateRenderQueue();
+       
         auto t_end = clock_type::now();
         if (std::chrono::duration<double, std::milli>(t_end - t_start).count() > 1000)
         {
-            std::cout << "Time per frame: " << 1000.0 / static_cast<double>(frameCounter) << " milliseconds" << std::endl;
+            //-std::cout << "Time per frame: " << 1000.0 / static_cast<double>(frameCounter) << " milliseconds" << std::endl;
             frameCounter = 0;
             t_start = clock_type::now();
         }
@@ -866,6 +800,31 @@ void GLRenderer::render()
                             0, 0, mWindowWidth, mWindowHeight,
                             GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
+
+void GLRenderer::updateRenderQueue()
+{
+    auto queueProcessingFunction = [&](RenderTechnique *tech) -> bool 
+        {
+            auto endOfLife = tech->life() == 0;
+            
+            if(endOfLife)
+            {
+                for(const auto texture : tech->disposableTextures())
+                    if(texture != nullptr)
+                        mManager->deleteTexture(texture);
+
+                tech->clearDisposableTextures();
+            }
+            
+            if(tech == mLayerOperationTech)
+                this->padLayerTextures(0);
+            
+            return endOfLife;            
+        };
+            
+    mRenderQueue.erase(std::remove_if(begin(mRenderQueue), end(mRenderQueue), queueProcessingFunction), end(mRenderQueue));
+}
+
 
 void GLRenderer::resize(int width, int height)
 {
@@ -1539,44 +1498,61 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
     {
         mLayerSize = layer.mValue->dimensions();
 
+        removeTechnique(mAreaPerPixelTech);
+
         mManager->deleteTexture(mBrushMaskTexture);        
         mBrushMaskTexture = mManager->createTexture("BrushMaskTexture", GL_TEXTURE_2D, GL_R8, mLayerSize.x, mLayerSize.y, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, false);
         mManager->deleteTexture(mSeamMaskTexture);
         mSeamMaskTexture = mManager->createTexture("SeamMaskTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
         mManager->deleteTexture(mDepthTexTexture);
         mDepthTexTexture = mManager->createTexture("DepthTexTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+        mManager->freeAllImageUnits();
+        mAreaPerPixelTexture->textureArray()->setImageUnit(-1);
         mManager->deleteTexture(mAreaPerPixelTexture);
+        mManager->deleteTexture(mDummyTex);
+        mDummyTex = mManager->createTexture("dummy", GL_TEXTURE_2D, GL_R8, mLayerSize.x, mLayerSize.y, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, mLayerSize.x, mLayerSize.y, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
-        mManager->deleteTexture(mLockTexture);
-        mLockTexture = mManager->createTexture("LockPerPixel", GL_TEXTURE_2D, GL_R32UI, mLayerSize.x, mLayerSize.y, GL_RED_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, false);
-        mManager->deleteTexture(mNeighborhoodTexture);
-        mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_R16UI, mLayerSize.x, mLayerSize.y, GL_RED_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        
+        mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
+        
+        //mManager->deleteTexture(mTempNeighborhoodTexture);
+        //mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, mLayerSize.x, mLayerSize.y, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        //mManager->deleteTexture(mNeighborhoodTexture);
+        //mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, mLayerSize.x, mLayerSize.y, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        //mManager->deleteTexture(mNeighborEdgesTexture);
+        //mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);        
         
         mSeamMaskTarget->setColorTextures({mSeamMaskTexture});
         mDepthTexTarget->setColorTextures({mDepthTexTexture});
         mSeamMaskTech->settingUP();
 
-        mAreaPerPixelTarget->setColorTextures({mAreaPerPixelTexture});
+        mAreaPerPixelTarget->setColorTextures({mDummyTex});
         mAreaPerPixelTech->settingUP();
-        
-        //mImmediateNeighborsTarget->setColorTextures({mNeighborhoodTexture});
-        //mImmediateNeighborsTech->settingUP();
+                
+        //mNeighborEdgesTarget->setColorTextures({mNeighborEdgesTexture});
+        //mNeighborEdgesTech->settingUP();
         //
-        //mNeighborsTarget->setColorTextures({mNeighborhoodTexture});    
-        //mNeighborsTech->settingUP();
+        //mEdgesToOutlineTarget->setColorTextures({mNeighborhoodTexture, mTempNeighborhoodTexture});
+        //mEdgesToOutlineTech->settingUP();
         //
         //mCornerCapTarget->setColorTextures({mNeighborhoodTexture});
         //mCornerCapTech->settingUP();
-                
+        //        
+        //mImmediateNeighborsTarget->setColorTextures({mNeighborhoodTexture});
+        //mImmediateNeighborsTech->settingUP();
+                        
         mUniformBuffers[GLUniBuffer::App]->updateCache(sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mSeamMaskTarget->colorTexOutputs()[0]->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
-
+        //mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
+        //mUniformBuffers[GLUniBuffer::App]->updateCache(8 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborEdgesTexture->textureArrayIndices()));        
+        //mUniformBuffers[GLUniBuffer::App]->updateCache(9 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mTempNeighborhoodTexture->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateGPU();
 
         insertTechnique(mSeamMaskTech, 1);
-        //insertTechnique(mNeighborsTech, 1);
+        //insertTechnique(mNeighborEdgesTech, 1);
+        //insertTechnique(mEdgesToOutlineTech, 1);
         //insertTechnique(mCornerCapTech, 1);
         //insertTechnique(mImmediateNeighborsTech, 1);
         insertTechnique(mAreaPerPixelTech,1);
@@ -1607,6 +1583,34 @@ void GLRenderer::eraseLayer(unsigned int layerIndex)
     mLayers.erase(begin(mLayers) + layerIndex);
     if(mLayerCount > 0) mLayerCount--;
     if(mCurrentLayerIndex > 0) mCurrentLayerIndex--;
+}
+
+void GLRenderer::padLayerTextures(uint32_t layerIndex)
+{
+    if(layerIndex >= 0 && layerIndex < mLayers.size())
+    {
+        auto layer = mLayers[layerIndex];        
+        std::vector<Texture*> copyTextures;
+        std::size_t offset = 0;
+        
+        for(auto texture : {layer.mValue, layer.mMask})
+        {
+            auto copyTexture = mManager->createTexture(texture->name() + ".Copy", texture->target(), texture->internalFormat(), texture->width(), texture->height(), texture->format(), texture->type(),{}, texture->magFilter(), texture->minFilter(), texture->anisoFiltLevel(), false);
+            
+            glCopyImageSubData(texture->textureArrayId(), texture->textureArray()->target(), 0, 0, 0, texture->textureArrayLayerIndex(), copyTexture->textureArrayId(), copyTexture->textureArray()->target(), 0, 0, 0, copyTexture->textureArrayLayerIndex(), texture->width(), texture->height(), 1);
+                        
+            mCustomPaddingTarget->updateUniformData(offset, offset + sizeof(glm::uvec2), glm::value_ptr(copyTexture->textureArrayIndices()));            
+            mCustomPaddingTech->addDisposableTexture(copyTexture);
+            
+            copyTextures.push_back(copyTexture);
+            offset += sizeof(glm::uvec2);
+        }
+               
+        mCustomPaddingTarget->setColorTextures({layer.mValue, layer.mMask});        
+        mCustomPaddingTech->settingUP();
+                    
+        insertTechnique(mCustomPaddingTech, 1);
+    }
 }
 
 
@@ -1729,6 +1733,34 @@ void GLRenderer::computeShader(Program* shader, const std::vector<glm::byte>& un
     insertComputeJob(compJob); 
 }
 
+void GLRenderer::computeLayerOperation(unsigned int layerOperation, const std::vector<glm::byte>& uniformData)
+{
+    if(layerOperation == 0)
+    {
+        const auto& layerX = mLayers[0];
+        const auto& layerY = mLayers[1];
+        const auto& layerZ = mLayers[2];
+        
+        auto operationProgram = mManager->shaderProgram("DrawNormals");
+        auto renderTarget = mLayerOperationTech->targets()[0];
+        renderTarget->passes()[0]->sceneMaterial()->setShader(operationProgram);        
+        renderTarget->setColorTextures({layerX.mValue, layerX.mMask, layerY.mValue, layerY.mMask, layerZ.mValue, layerZ.mMask});      
+    }
+    else if(layerOperation == 1)
+    {
+        const auto& orientationlayer = mLayers[0];
+
+        auto operationProgram = mManager->shaderProgram("DrawOrientation");
+        auto renderTarget = mLayerOperationTech->targets()[0];
+        renderTarget->passes()[0]->sceneMaterial()->setShader(operationProgram);
+        renderTarget->updateUniformData(0, uniformData.size(), uniformData.data());        
+        renderTarget->setColorTextures({orientationlayer.mValue, orientationlayer.mMask});
+    }
+    
+    mLayerOperationTech->settingUP();    
+    
+    insertTechnique(mLayerOperationTech, 1);
+}
 
 std::vector<glm::byte> GLRenderer::readTexture(Texture* texture)
 { 
@@ -1740,7 +1772,7 @@ std::vector<glm::byte> GLRenderer::readTexture(Texture* texture)
 template<typename T>
 std::vector<T> GLRenderer::readTexture(Texture* texture)
 {    
-    std::vector<T> textureData(texture->height() * texture->width() * 2);    
+    std::vector<T> textureData(texture->height() * texture->width() * sizeOfGLFormat(texture->format()));    
     glGetTextureSubImage(texture->textureArrayId(), 0, 0, 0, texture->textureArrayLayerIndex(), texture->width(), texture->height(), 1, texture->format(), texture->type(), textureData.size() * sizeOfGLType(texture->type()), textureData.data());
     return textureData;    
 }
@@ -1806,6 +1838,16 @@ void GLRenderer::insertTechnique(RenderTechnique* tech, int life)
     for(const auto target: tech->targets())
         for(const auto pass: target->passes())
             insertScene(pass->scene());
+}
+
+void GLRenderer::removeTechnique(RenderTechnique * tech)
+{
+    auto search = std::find(begin(mRenderQueue), end(mRenderQueue), tech);
+    if (search != end(mRenderQueue) && search != begin(mRenderQueue))
+    {
+        mRenderQueue.erase(search);
+        tech->setLife(0);
+    }
 }
 
 void GLRenderer::insertComputeJob(ComputeJob* tech, int life)
@@ -1930,8 +1972,10 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mReadFBTextureI = mManager->createTexture("readFBTextureI", GL_TEXTURE_2D, GL_RG32I, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mReadFBTextureUI = mManager->createTexture("readFBTextureUI", GL_TEXTURE_2D, GL_RG32UI, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, 2048, 2048, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
-        mLockTexture = mManager->createTexture("LockPerPixel", GL_TEXTURE_2D, GL_R32UI, 2048, 2048, GL_RED_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, false);
-        mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        //mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        //mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        //mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, 2048, 2048, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+    
         
         auto quad = mManager->createQuad("PPQuad", {0.0, 0.0}, {2048, 2048});
         auto ppQuadModel = new Model3D("ppModel", quad, {mManager->material("Dummy")});
@@ -1960,7 +2004,14 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         auto dilationMat = mManager->createMaterial("dilationMat", "Dilation");
         mDilationPass = mManager->createRenderPass("dilationPass", ppScene, dilationMat);
         mDilationPass->setAutoClearColor(false);
+        mDilationPass->disableDepthTest();
         mDilationTarget = mManager->createRenderTarget("dilationTarget", mManager, { 0, 0, 2048, 2048 }, { mDilationPass }, {}, nullptr, false);
+        
+        auto customPaddingMat = mManager->createMaterial("customPaddingMat", "CustomPadding");
+        auto customPaddingPass = mManager->createRenderPass("customPaddingPass", ppScene, customPaddingMat);
+        customPaddingPass->setAutoClearColor(false);
+        customPaddingPass->disableDepthTest();
+        mCustomPaddingTarget = mManager->createRenderTarget("customPaddingTarget", mManager, { 0, 0, 2048, 2048 }, { customPaddingPass }, {}, nullptr, false);
                 
         auto projMat = mManager->createMaterial("projMat", "ProjectiveTex");
         mProjPass = mManager->createRenderPass("projPass", mMainScene, projMat);
@@ -1985,30 +2036,44 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         auto viewTexMat = mManager->createMaterial("ViewTexMat", "ViewTex");
         auto viewTexPass = mManager->createRenderPass("viewTexPass", ppScene, viewTexMat);
         viewTexPass->setAutoClear(false);
-        auto viewTexTarget = mManager->createRenderTarget("vieTexTarget", mManager, { 0, 0, 512, 512 }, { viewTexPass }, true, mFBO->id());
+        auto viewTexTarget = mManager->createRenderTarget("vieTexTarget", mManager, { 0, 0, 2048, 2048 }, { viewTexPass }, true, mFBO->id());
         mViewTexTech = mManager->createRenderTechnique("viewTexTech", {viewTexTarget});
 
         auto areaPerPixelMat = mManager->createMaterial("AreaPerPixel", "AreaPerPixel");
         auto areaPerPixelPass = mManager->createRenderPass("AreaPerPixel", mMainScene, areaPerPixelMat);
         areaPerPixelPass->disableDepthTest();
-        //auto dummyTex = mManager->createTexture("dummy", GL_TEXTURE_2D, GL_RGBA8, 2048, 2048, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, true);
-        mAreaPerPixelTarget = mManager->createRenderTarget("AreaPerPixelTarget", mManager, { 0, 0, 2048, 2048 }, { areaPerPixelPass }, {mAreaPerPixelTexture}, nullptr, false);    
+        mDummyTex = mManager->createTexture("dummy", GL_TEXTURE_2D, GL_R8, 2048, 2048, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, true);
+        mAreaPerPixelTarget = mManager->createRenderTarget("AreaPerPixelTarget", mManager, { 0, 0, 2048, 2048 }, { areaPerPixelPass }, {mDummyTex}, nullptr, false);    
         mAreaPerPixelTech = mManager->createRenderTechnique("AreaPerPixelTech", {mAreaPerPixelTarget});
                 
         mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
-        mManager->commitFreeImageUnit(mLockTexture->textureArray());
         
         
         //auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
         //auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
+        //immediateNeighborsPass->setAutoClear(false);
         //mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, {mNeighborhoodTexture}, nullptr, false);
         //mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", {mImmediateNeighborsTarget});
         //
         //auto neighborhoodMesh = mManager->copyMesh(*mMainScene->meshes()[0], "neighborhoodMesh");
         //neighborhoodMesh->generateAdjacencyInformation();
         //auto neighborhoodModel = new Model3D("neighborhoodModel", neighborhoodMesh, {mManager->material("Dummy")});
+        //        
+        //auto neighborEdgesScene = new Scene3D("neighborEgdesScene", {mNormOrthoCamera.get()}, {neighborhoodModel});
+        //neighborEdgesScene->setPrimitive(Primitive::Lines);
+        //
+        //auto neighborEdgesMat = mManager->createMaterial("NeighborEgdesMat", "NeighborEdges");
+        //auto neighborEdgesPass = mManager->createRenderPass("NeighborEdgesPass", neighborEdgesScene, neighborEdgesMat);
+        //neighborEdgesPass->setAutoClear(false);
+        //mNeighborEdgesTarget = mManager->createRenderTarget("NeighborEdgesTarget", mManager, { 0, 0, 2048, 2048 }, { neighborEdgesPass }, {mNeighborEdgesTexture}, nullptr, false);
+        //mNeighborEdgesTech = mManager->createRenderTechnique("NeighborEdgesTech", {mNeighborEdgesTarget});          
+        //
+        //auto edgesToOutlineMat = mManager->createMaterial("EdgesToOutlineMat", "EdgesToOutline");
+        //auto edgesToOutlinePass = mManager->createRenderPass("EdgesToOutlinePass", ppScene, edgesToOutlineMat);
+        //mEdgesToOutlineTarget = mManager->createRenderTarget("EdgesToOutlineTarget", mManager, { 0, 0, 2048, 2048 }, { edgesToOutlinePass }, {mNeighborhoodTexture, mTempNeighborhoodTexture}, nullptr, false);
+        //mEdgesToOutlineTech = mManager->createRenderTechnique("EdgesToOutlineTech", {mEdgesToOutlineTarget}); 
+        //
         //auto neighborhoodScene = new Scene3D("neighborhoodScene", {mNormOrthoCamera.get()}, {neighborhoodModel});
-        ////neighborhoodScene->setPrimitive(Primitive::Lines);
         //
         //auto neighborsMat = mManager->createMaterial("NeighborsMat", "Neighbors");
         //auto neighborsPass = mManager->createRenderPass("NeighborsPass", neighborhoodScene, neighborsMat);
@@ -2016,11 +2081,19 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         //neighborsPass->setAutoClear(false);
         //mNeighborsTarget = mManager->createRenderTarget("NeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { neighborsPass }, {mNeighborhoodTexture}, nullptr, false);
         //mNeighborsTech = mManager->createRenderTechnique("NeighborsTech", {mNeighborsTarget});
-        //
+        //       
         //auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
         //auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
+        //cornerCapPass->setAutoClear(false);
         //mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, {mNeighborhoodTexture}, nullptr, false);
         //mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", {mCornerCapTarget});
+        
+        //auto layerOperationMat = mManager->createMaterial("LayerOperationMat", "DrawNormals");
+        //auto layerOperationPass = mManager->createRenderPass("LayerOperationPass", mMainScene, layerOperationMat);
+        //layerOperationPass->disableDepthTest();
+        //auto layerOperationTarget = mManager->createRenderTarget("LayerOperationTarget", mManager, { 0, 0, 2048, 2048 }, { layerOperationPass }, {}, nullptr, false);
+        //mLayerOperationTech = mManager->createRenderTechnique("LayerOperationTech", {layerOperationTarget});
+            
         
         auto modelBBox = mMainScene->models()[0]->mesh()->boundingBox();
         auto diagonal = glm::length(glm::vec3(mMainScene->models()[0]->modelMatrix() * glm::vec4(modelBBox.max - modelBBox.min, 1.0)));
@@ -2057,6 +2130,7 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
 
         mDepthTech = mManager->createRenderTechnique("DepthPrePassTechnique", {mDepthTarget}, 1);
         mPaintTexTech = mManager->createRenderTechnique("PaintTexTechnique", {mDepthTarget, mPaintTexTarget, mDilationTarget});
+        //mCustomPaddingTech = mManager->createRenderTechnique("CustomPaddingTechnique", {mCustomPaddingTarget}, 0);
         mPaintTexTech->removeTarget(mDepthTarget);
         mReadFBTech = mManager->createRenderTechnique("ReadFBTech", {mReadFBTarget});
         mEraseTexTech = mManager->createRenderTechnique("EraseTexTech", {mEraseTexTarget, mEraseDilationTarget});
@@ -2069,6 +2143,8 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         
         insertTechnique(mSeamMaskTech, 1);
         //insertTechnique(mNeighborsTech, 1);
+        //insertTechnique(mNeighborEdgesTech, 1);
+        //insertTechnique(mEdgesToOutlineTech, 1);
         //insertTechnique(mCornerCapTech, 1);
         //insertTechnique(mImmediateNeighborsTech, 1);
         insertTechnique(mDepthTech, 1);
@@ -2408,9 +2484,9 @@ void GLRenderer::initAppUniformData()
     mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
     mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
     mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
-    mUniformBuffers[GLUniBuffer::App]->updateCache(6 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mLockTexture->textureArrayIndices()));
-    mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
-
+    //mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
+    //mUniformBuffers[GLUniBuffer::App]->updateCache(8 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborEdgesTexture->textureArrayIndices()));
+    //mUniformBuffers[GLUniBuffer::App]->updateCache(9 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mTempNeighborhoodTexture->textureArrayIndices()));
     //mUniformBuffers[GLUniBuffer::App]->updateCache(2 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mPaintTexTarget->colorTexOutputs()[2]->textureArrayIndices()));    
 //     mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDilatedLayerTexture->textureArrayIndices()));    
 
@@ -2432,20 +2508,21 @@ void GLRenderer::updateGenericUniformData()
         mManager->clearDirtyImageArrays();
     }    
     
-    if(mManager->dirtyTextureArrays().size())
-    {        
-        for(const auto dirtyArray: mManager->dirtyTextureArrays())
-        {
-            LOG("1A Dirty Tex Array id: ", dirtyArray->id(), ", index: ", dirtyArray->index(), ", sampler: ", static_cast<int>(dirtyArray->samplerType()), ", textureUnit: ", dirtyArray->textureUnit());
-            glBindTextureUnit(dirtyArray->textureUnit(), dirtyArray->id());
-        }
-        
-        mManager->clearDirtyTextureArrays();
-    }
+    //if(mManager->dirtyTextureArrays().size())
+    //{        
+    //    for(const auto dirtyArray: mManager->dirtyTextureArrays())
+    //    {
+    //        LOG("1A Dirty Tex Array id: ", dirtyArray->id(), ", index: ", dirtyArray->index(), ", sampler: ", static_cast<int>(dirtyArray->samplerType()), ", textureUnit: ", dirtyArray->textureUnit());
+    //        glBindTextureUnit(dirtyArray->textureUnit(), dirtyArray->id());
+    //    }
+    //    
+    //    mManager->clearDirtyTextureArrays();
+    //}
         
     if(mManager->dirtySampler().size())
     {
         const auto& bindedTexUnits = mManager->bindedTexUnits();
+        const auto& texArraysPerSampler = mManager->bindedTextureArrays();
                 
         for(const auto& program: mManager->programs())
         {
@@ -2458,30 +2535,60 @@ void GLRenderer::updateGenericUniformData()
                 auto sampler = targetSampler.second;
                 const auto& texUnits = bindedTexUnits.at(targetSampler);
                 
-                std::string unitstring;
-                for(auto texUnit : texUnits)
-                    unitstring.append(std::to_string(texUnit) + " ");
+                //std::string unitstring;
+                //for(auto texUnit : texUnits)
+                //    unitstring.append(std::to_string(texUnit) + " ");
+                //
+                //LOG("1A Target: ", target, ", Sampler: ", static_cast<int>(targetSampler.second), ", TexUnits : ", unitstring);
+                //
+                //if(target == GL_TEXTURE_2D_ARRAY)
+                //{
+                //    if(sampler == SamplerType::Float && programShader->uniform("ArrayTexture[0]") >= 0)
+                //        glUniform1iv(programShader->uniform("ArrayTexture[0]"), texUnits.size(), texUnits.data());
+                //    else if(sampler == SamplerType::Signed && programShader->uniform("iArrayTexture[0]") >= 0)
+                //        glUniform1iv(programShader->uniform("iArrayTexture[0]"), texUnits.size(), texUnits.data());
+                //    else if(sampler == SamplerType::Unsigned && programShader->uniform("uArrayTexture[0]") >= 0)
+                //        glUniform1iv(programShader->uniform("uArrayTexture[0]"), texUnits.size(), texUnits.data());
+                //}
+                //else if(target == GL_TEXTURE_1D_ARRAY)
+                //{
+                //    if(sampler == SamplerType::Float && programShader->uniform("ArrayTexture1D[0]") >= 0)
+                //        glUniform1iv(programShader->uniform("ArrayTexture1D[0]"), texUnits.size(), texUnits.data());
+                //    else if(sampler == SamplerType::Signed && programShader->uniform("iArrayTexture1D[0]") >= 0)
+                //        glUniform1iv(programShader->uniform("iArrayTexture1D[0]"), texUnits.size(), texUnits.data());
+                //    else if(sampler == SamplerType::Unsigned && programShader->uniform("uArrayTexture1D[0]") >= 0)
+                //        glUniform1iv(programShader->uniform("uArrayTexture1D[0]"), texUnits.size(), texUnits.data());                    
+                //}
+
+                const auto& texArrays = texArraysPerSampler.at(targetSampler);
                 
-                LOG("1A Target: ", target, ", Sampler: ", static_cast<int>(targetSampler.second), ", TexUnits : ", unitstring);
-                
-                if(target == GL_TEXTURE_2D_ARRAY)
+                std::vector<uint64_t> texArrayHandles;
+
+                for (const auto& texArray : texArrays)
+                    if (texArray != nullptr)
+                        texArrayHandles.push_back(texArray->handle());
+                    else
+                        texArrayHandles.push_back(0);
+
+                if (target == GL_TEXTURE_2D_ARRAY)
                 {
-                    if(sampler == SamplerType::Float && programShader->uniform("ArrayTexture[0]") >= 0)
-                        glUniform1iv(programShader->uniform("ArrayTexture[0]"), texUnits.size(), texUnits.data());
-                    else if(sampler == SamplerType::Signed && programShader->uniform("iArrayTexture[0]") >= 0)
-                        glUniform1iv(programShader->uniform("iArrayTexture[0]"), texUnits.size(), texUnits.data());
-                    else if(sampler == SamplerType::Unsigned && programShader->uniform("uArrayTexture[0]") >= 0)
-                        glUniform1iv(programShader->uniform("uArrayTexture[0]"), texUnits.size(), texUnits.data());
+                    if (sampler == SamplerType::Float && programShader->uniform("ArrayTexture[0]") >= 0)
+                        glUniformHandleui64vARB(programShader->uniform("ArrayTexture[0]"), texArrayHandles.size(), texArrayHandles.data());
+                    else if (sampler == SamplerType::Signed && programShader->uniform("iArrayTexture[0]") >= 0)
+                        glUniformHandleui64vARB(programShader->uniform("iArrayTexture[0]"), texArrayHandles.size(), texArrayHandles.data());
+                    else if (sampler == SamplerType::Unsigned && programShader->uniform("uArrayTexture[0]") >= 0)
+                        glUniformHandleui64vARB(programShader->uniform("uArrayTexture[0]"), texArrayHandles.size(), texArrayHandles.data());
                 }
-                else if(target == GL_TEXTURE_1D_ARRAY)
+                else if (target == GL_TEXTURE_1D_ARRAY)
                 {
-                    if(sampler == SamplerType::Float && programShader->uniform("ArrayTexture1D[0]") >= 0)
-                        glUniform1iv(programShader->uniform("ArrayTexture1D[0]"), texUnits.size(), texUnits.data());
-                    else if(sampler == SamplerType::Signed && programShader->uniform("iArrayTexture1D[0]") >= 0)
-                        glUniform1iv(programShader->uniform("iArrayTexture1D[0]"), texUnits.size(), texUnits.data());
-                    else if(sampler == SamplerType::Unsigned && programShader->uniform("uArrayTexture1D[0]") >= 0)
-                        glUniform1iv(programShader->uniform("uArrayTexture1D[0]"), texUnits.size(), texUnits.data());                    
+                    if (sampler == SamplerType::Float && programShader->uniform("ArrayTexture1D[0]") >= 0)
+                        glUniformHandleui64vARB(programShader->uniform("ArrayTexture1D[0]"), texArrayHandles.size(), texArrayHandles.data());
+                    else if (sampler == SamplerType::Signed && programShader->uniform("iArrayTexture1D[0]") >= 0)
+                        glUniformHandleui64vARB(programShader->uniform("iArrayTexture1D[0]"), texArrayHandles.size(), texArrayHandles.data());
+                    else if (sampler == SamplerType::Unsigned && programShader->uniform("uArrayTexture1D[0]") >= 0)
+                        glUniformHandleui64vARB(programShader->uniform("uArrayTexture1D[0]"), texArrayHandles.size(), texArrayHandles.data());
                 }
+
             }           
         }
         
@@ -2559,7 +2666,7 @@ void GLRenderer::updateGenericUniformData()
 void GLRenderer::updateSceneUniformData(Scene3D *scene, bool forceUpdate)
 {    
     auto camera = scene->camera();
-    LOG("Scene update: ", scene->name());
+    //-LOG("Scene update: ", scene->name());
     if(scene->projCameraNeedUpdate() || forceUpdate)
     {
         mUniformBuffers[GLUniBuffer::Frame]->updateCache(0, sizeof(glm::mat4), glm::value_ptr(camera->projectionMatrix()));        
@@ -2656,18 +2763,25 @@ void GLRenderer::updateMaterialUniformData()
 }
 
 
-void GLRenderer::updateTransientUniformData(RenderTarget* target)
+void GLRenderer::updateRenderTargetUniformData(RenderTarget* target)
 {
-    const auto& colorInputs = target->colorInputIndices();
-    const auto& depthInputs = target->depthInputIndices();
+    const auto& uniformData = target->uniformData();
     
-    if(colorInputs.size() > 0)
-        mUniformBuffers[GLUniBuffer::Transient]->updateCache(0, colorInputs.size() * sizeof(GLuint) * 2, colorInputs.data());
-    
-    if(depthInputs.size() > 0)
-        mUniformBuffers[GLUniBuffer::Transient]->updateCache(colorInputs.size() * sizeof(GLuint) * 2, depthInputs.size() * sizeof(GLuint), depthInputs.data());
-    
-    mUniformBuffers[GLUniBuffer::Transient]->updateGPU();
+    if(!uniformData.size())
+    {
+        const auto& colorInputs = target->colorInputIndices();
+        const auto& depthInputs = target->depthInputIndices();
+            
+        if(colorInputs.size() > 0)
+            mUniformBuffers[GLUniBuffer::RenderTarget]->updateCache(0, colorInputs.size() * sizeof(GLuint) * 2, colorInputs.data());
+        
+        if(depthInputs.size() > 0)
+            mUniformBuffers[GLUniBuffer::RenderTarget]->updateCache(colorInputs.size() * sizeof(GLuint) * 2, depthInputs.size() * sizeof(GLuint), depthInputs.data());
+        
+        mUniformBuffers[GLUniBuffer::RenderTarget]->updateGPU();
+    }
+    else
+        mUniformBuffers[GLUniBuffer::RenderTarget]->update(0, uniformData.size(), uniformData.data());
 }
 
 void GLRenderer::updateSlicePlaneUniformData()
@@ -2732,7 +2846,7 @@ void GLRenderer::updateMeshData(Scene3D* scene)
 
 void GLRenderer::updateMultiDrawCommand(Scene3D* scene)
 {
-    LOG("Renderer: Updating MultiDrawCommmand for Scene ", scene->name() );
+    //-LOG("Renderer: Updating MultiDrawCommmand for Scene ", scene->name() );
   
     auto meshInstances = scene->modelsByGeometry(); 
     auto modelsPerMaterialPerMesh = scene->modelsPerMaterialPerMesh();
@@ -3017,48 +3131,51 @@ void GLRenderer::updateMultiDrawCommand(Scene3D* scene)
 
 void GLRenderer::processComputeJobs()
 {
-    if(mManager->dirtyImageArrays().size())
+    if (mComputeQueue.size())
     {
-        for(const auto dirtyImage: mManager->dirtyImageArrays())
+        if (mManager->dirtyImageArrays().size())
         {
-            LOG("Process Compute Jobs - Dirty image: ", dirtyImage->imageUnit(), ", id: ", dirtyImage->id());
-            glBindImageTexture(dirtyImage->imageUnit(), dirtyImage->id(), 0, GL_TRUE, 0, GL_READ_WRITE, dirtyImage->internalFormat());            
-        }        
-        mManager->clearDirtyImageArrays();
-    }
-    
-    for(const auto& job: mComputeQueue)
-    {
-        job->shader()->use();
-        
-        const auto& groupCount = job->groupCount();
-        const auto& groupSize = job->groupSize();
-        const auto& data = job->data();
-        
-        //mUniformBuffers[GLUniBuffer::Compute]->updateCache(0, indices.size() * sizeof(GLint), indices.data());
-        if(data.size())
+            for (const auto dirtyImage : mManager->dirtyImageArrays())
+            {
+                LOG("Process Compute Jobs - Dirty image: ", dirtyImage->imageUnit(), ", id: ", dirtyImage->id());
+                glBindImageTexture(dirtyImage->imageUnit(), dirtyImage->id(), 0, GL_TRUE, 0, GL_READ_WRITE, dirtyImage->internalFormat());
+            }
+            mManager->clearDirtyImageArrays();
+        }
+
+        for (const auto& job : mComputeQueue)
         {
-            mUniformBuffers[GLUniBuffer::Compute]->updateCache(0, data.size(), data.data());
-            mUniformBuffers[GLUniBuffer::Compute]->updateGPU();
-        }                
-        
-        glDispatchComputeGroupSizeARB(groupCount[0], groupCount[1], groupCount[2], 
-                                      groupSize[0], groupSize[1], groupSize[2]);
-        
-        glMemoryBarrier(job->memoryBarriers());
-        
-        glGenerateTextureMipmap(mLayers[0].mValue->textureArrayId());
-        glGenerateTextureMipmap(mLayers[0].mMask->textureArrayId());        
-        
-        mManager->deleteShader(job->shader()->name());
+            job->shader()->use();
+
+            const auto& groupCount = job->groupCount();
+            const auto& groupSize = job->groupSize();
+            const auto& data = job->data();
+
+            //mUniformBuffers[GLUniBuffer::Compute]->updateCache(0, indices.size() * sizeof(GLint), indices.data());
+            if (data.size())
+            {
+                mUniformBuffers[GLUniBuffer::Compute]->updateCache(0, data.size(), data.data());
+                mUniformBuffers[GLUniBuffer::Compute]->updateGPU();
+            }
+
+            glDispatchComputeGroupSizeARB(groupCount[0], groupCount[1], groupCount[2],
+                groupSize[0], groupSize[1], groupSize[2]);
+
+            glMemoryBarrier(job->memoryBarriers());
+
+            glGenerateTextureMipmap(mLayers[0].mValue->textureArrayId());
+            glGenerateTextureMipmap(mLayers[0].mMask->textureArrayId());
+
+            mManager->deleteShader(job->shader()->name());
+        }
+
+        if (mComputeQueue.size() > 0)
+            mComputeQueue.clear();
+
+        mManager->freeAllImageUnits();
+
+        mChisel->unloadTempLayers();
     }
-    
-    if(mComputeQueue.size() > 0)
-        mComputeQueue.clear();
-    
-    mManager->freeAllImageUnits();
-    
-    mChisel->unloadTempLayers();
 }
 
 

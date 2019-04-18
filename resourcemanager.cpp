@@ -825,6 +825,27 @@ Layer* ResourceManager::createLayer(std::string name, Layer::Type type, std::pai
     return mLayers.back().get();
 }
 
+std::string ResourceManager::createValidLayerName(std::string name)
+{
+    bool valid = false;
+    std::string newName;    
+    //auto filenames = mChisel->diskLayerModel()->filenames();
+
+    for(unsigned int i = 1; i < std::numeric_limits<unsigned int>::max() && !valid; ++i)
+    {
+        newName = name + "_" + std::to_string(i);
+
+        auto search = std::find_if(begin(mLayers), end(mLayers), [&](const std::unique_ptr<Layer>& currentLayer) {
+            return (newName == currentLayer->name()) ? true : false;
+        });
+
+        if(search == end(mLayers))
+            valid = true;
+    }
+    
+    return newName;
+}
+
 Layer * ResourceManager::createLayerFromTableField(const RegisterLayer* layer, const DataBaseField& field)
 {    
     Layer* tempLayer;    
@@ -1114,7 +1135,7 @@ Layer* ResourceManager::duplicateLayer(Layer* sourceLayer)
         {
             newName = sourceLayer->name() + "_" + std::to_string(i);
             
-            auto search = std::find_if(begin(mLayers), end(mLayers), [&](const std::unique_ptr<Layer>& currentLayer){ return (newName ==      currentLayer->name()) ? true : false;});
+            auto search = std::find_if(begin(mLayers), end(mLayers), [&](const std::unique_ptr<Layer>& currentLayer){ return (newName == currentLayer->name()) ? true : false;});
             
             if(search == end(mLayers))
                 valid = true;
@@ -1169,10 +1190,10 @@ void ResourceManager::deleteLayer(Layer* layer)
         mSQLiteDatabaseManager->deleteTable(layer->name());
         deleteDirectory(mCHISelPath + mStdPaths[RESOURCES] + layer->name());
     }
-    
-    deleteLayerPalette(layer->palette());
-    
+    auto palette = layer->palette();
+        
     unloadLayer(layer);        
+    deleteLayerPalette(palette);
 }
 
 void ResourceManager::deleteDiskLayer(std::string name)
@@ -1290,14 +1311,22 @@ void ResourceManager::exportImage2(std::string pathName, uint16_t width, uint16_
         
     for (std::size_t texel = 0; texel < data.size(); texel+=2)
     {        
-        if(data[texel] != 0)
+        if(data[texel] > 0)
         {
-            glm::uvec2 texelIndex(texel /(2 * height), (texel/2) % width);
+            glm::uvec2 texelIndex((texel/2) % width, texel /(2 * height));
             LOG("Texel[", texelIndex.x, ", ", texelIndex.y, "] -> [", data[texel], ", ", data[texel + 1], "] -> [", static_cast<uint32_t>(data[texel] * 2048), ", ", static_cast<uint32_t>(data[texel + 1] * 2048),"] -> [", static_cast<uint32_t>(data[texel] * 4096), ", ", static_cast<uint32_t>(data[texel + 1] * 4096),"]");
-            pixelData[4 * texel/2] = static_cast<unsigned char>(255);
-            pixelData[4 * texel/2 + 1] = static_cast<unsigned char>(0);
-            pixelData[4 * texel/2 + 2] = static_cast<unsigned char>(0);
-            pixelData[4 * texel/2 + 3] = static_cast<unsigned char>(255);
+            
+            glm::ivec2 neighborTexel(data[texel], data[texel + 1]);
+            
+            pixelData[4 * neighborTexel.y * height + 4 * neighborTexel.x] = static_cast<unsigned char>(0);
+            pixelData[4 * neighborTexel.y * height + 4 * neighborTexel.x + 1] = static_cast<unsigned char>(200);
+            pixelData[4 * neighborTexel.y * height + 4 * neighborTexel.x + 2] = static_cast<unsigned char>(255);
+            pixelData[4 * neighborTexel.y * height + 4 * neighborTexel.x + 3] = static_cast<unsigned char>(255);  
+            
+//             pixelData[4 * texel/2] = static_cast<unsigned char>(255);
+//             pixelData[4 * texel/2 + 1] = static_cast<unsigned char>(0);
+//             pixelData[4 * texel/2 + 2] = static_cast<unsigned char>(0);
+//             pixelData[4 * texel/2 + 3] = static_cast<unsigned char>(255);
         }
     }
     
@@ -1356,7 +1385,7 @@ Palette* ResourceManager::duplicatePalette(Palette* palette, bool validateName)
             {
                 newName = palette->name() + "_" + std::to_string(i);
                 
-                auto search = std::find_if(begin(mPalettes), end(mPalettes), [&](const std::unique_ptr<Palette>& currentPalette){ return (newName ==      currentPalette->name()) ? true : false;});
+                auto search = std::find_if(begin(mPalettes), end(mPalettes), [&](const std::unique_ptr<Palette>& currentPalette){ return (newName == currentPalette->name()) ? true : false;});
                 
                 if(search == end(mPalettes))
                     valid = true;

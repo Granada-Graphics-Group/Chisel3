@@ -1,10 +1,8 @@
 #version 450
-#extension GL_ARB_shader_draw_parameters : enable
 
-layout(location = 0) in vec3 in_Posicion;
-layout(location = 1) in vec3 in_Normal;
 layout(location = 2) in vec2 in_CoordTextura;
-layout(location = 3) in ivec2 inTexArrayIndex;
+
+smooth out vec2 CoordST;
 
 struct Light
 {
@@ -31,8 +29,7 @@ layout(std140, binding = 1) uniform ModelMatrices
 
 void main(void)
 {
-        int index1 = int((gl_BaseInstanceARB + gl_InstanceID) / 1000);
-        int index2 = int(mod(gl_BaseInstanceARB + gl_InstanceID, 1000));
-
+        CoordST = in_CoordTextura;
+              
         gl_Position = paintTexCameraMatrix * vec4(in_CoordTextura, 0.0, 1.0);
 }

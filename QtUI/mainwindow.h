@@ -81,6 +81,9 @@ public slots:
     void updateOpacity(unsigned int layerIndex, float opacity);
 
     void createHistogram();
+    void computeDistanceField();
+    void computeNormals();
+    void computeOrientation();
     
     void updateLayerToolBoxState(int index);
     void saveNewPalette();
@@ -153,6 +156,8 @@ protected:
 private:
     void enableEditingTools(bool enable);
     void setState(State state);
+    void setOperationUIState(bool enable);
+    void setLayerUIState(bool enable);
     
     std::unique_ptr<Ui::MainWindow> mUi;
     std::unique_ptr<PaletteValueWidget> mCurrentPaletteValueWidget;

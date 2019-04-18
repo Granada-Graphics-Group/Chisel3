@@ -1,24 +1,7 @@
-#version 430
+#version 450
+#extension GL_ARB_bindless_texture : require
 
 smooth in vec2 CoordST;
-flat in ivec2 TexArrayIndex;
-
-/*
-struct Light
-{
-    vec4 position;
-    vec4 direction; 
-    vec4 color;
-};
-
-layout(std140, binding = 0) uniform PerFrameData
-{
-    mat4 cameraToClipMatrix;
-    mat4 worldToCameraMatrix;
-    mat4 projectorCameraMatrix;
-    mat4 paintTexCameraMatrix;
-    Light lights[5];
-};*/
 
 layout(std140, binding = 10) uniform AppData
 {
@@ -37,27 +20,34 @@ layout(std140, binding = 11) uniform TransientData
 
 layout(location = 0) out float FragMask;
 
-uniform sampler2DArray ArrayTexture[13];
+layout(bindless_sampler) uniform sampler2DArray ArrayTexture[20];
 
 void main()
 {
     float seamMask = texture(ArrayTexture[seamMaskIndices.x], vec3(CoordST, seamMaskIndices.y)).x;
-    ivec3 layerSize = textureSize(ArrayTexture[copyIndices.x], 0);
+    ivec3 layerSize = textureSize(ArrayTexture[brushMaskIndices.x], 0);
+    
+    float otra = texture(ArrayTexture[brushMaskIndices.x], vec3(CoordST, brushMaskIndices.y)).x;
 
     int count = 0;
 
-    for(int y = Offset; y >= -Offset; y--)
-        for(int x = -Offset; x <= Offset; x++)
-        {
-            vec2 offsetCoord = CoordST + vec2(float(x)/layerSize.x, float(y)/layerSize.y);
-                                    
-            if(texture(ArrayTexture[brushMaskIndices.x], vec3(offsetCoord, brushMaskIndices.y)).x != 0.0)
-                count = count + 1;
-        }
-
-    if(seamMask != 0.0 && count > 0)
+    if(seamMask != 0.0)
     {
-        FragMask = 0.0;
+        for(int y = Offset; y >= -Offset; y--)
+            for(int x = -Offset; x <= Offset; x++)
+            {
+                vec2 offsetCoord = CoordST + vec2(float(x)/layerSize.x, float(y)/layerSize.y);
+                                        
+                if(texture(ArrayTexture[brushMaskIndices.x], vec3(offsetCoord, brushMaskIndices.y)).x != 0.0)
+                    count = count + 1;
+            }
+
+        if(count > 0)
+        {
+            FragMask = 0.0;
+        }
+        else
+            discard;    
     }
     else
         discard;

@@ -55,8 +55,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>268</width>
-         <height>673</height>
+         <width>125</width>
+         <height>130</height>
         </rect>
        </property>
        <attribute name="label">
@@ -624,8 +624,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>223</width>
-            <height>667</height>
+            <width>96</width>
+            <height>26</height>
            </rect>
           </property>
           <attribute name="label">
@@ -728,6 +728,9 @@
     </property>
     <addaction name="actionCreateHistogram"/>
     <addaction name="actionSliceModelTool"/>
+    <addaction name="actionDistanceFieldOperation"/>
+    <addaction name="actionNormalOperation"/>
+    <addaction name="actionOrientationOperation"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -1226,7 +1229,31 @@
     <string>Export &amp;Project...</string>
    </property>
    <property name="toolTip">
-    <string>Export Project</string>
+    <string>Export project</string>
+   </property>
+  </action>
+  <action name="actionDistanceFieldOperation">
+   <property name="text">
+    <string>&amp;Distance field</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute distance field layer</string>
+   </property>
+  </action>
+  <action name="actionNormalOperation">
+   <property name="text">
+    <string>&amp;Normals</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute normal layer</string>
+   </property>
+  </action>
+  <action name="actionOrientationOperation">
+   <property name="text">
+    <string>Orientation</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute surface orientation given a reference vector</string>
    </property>
   </action>
  </widget>

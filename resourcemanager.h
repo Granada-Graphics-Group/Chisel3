@@ -139,6 +139,7 @@ public:
     void deleteShader(std::string name);    
 
     Layer* createLayer(std::string name, Layer::Type type, std::pair<int, int> resolution, const std::vector<glm::byte>& data, const std::vector<glm::byte>& mask, Palette* palette = nullptr, bool createPalette = true);
+    std::string createValidLayerName(std::string name);
     Layer* createLayerFromTableField(const RegisterLayer* layer, const DataBaseField& field);
     Layer* loadLayer(std::string name, std::string path = "");
     void saveLayer(Layer* layer, std::string path = "");

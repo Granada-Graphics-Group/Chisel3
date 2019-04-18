@@ -50,6 +50,7 @@ set(Chisel_SRCS  lib/headers/pugixml-1.6/src/pugixml.cpp
                     mesh.cpp cone.cpp cylinder.cpp circle.cpp disk.cpp sphere.cpp quad.cpp line.cpp
                     shader.cpp GLSLFileLoader.cpp 
                     fbobject.cpp fbxexporter.cpp
+                    texturealgorithms.cpp
                     chisel.cpp main.cpp
    )
    

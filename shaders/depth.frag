@@ -1,4 +1,4 @@
-#version 430
+#version 450
 
 smooth in vec2 CoordST;
 flat in ivec2 TexArrayIndex;
@@ -25,7 +25,7 @@ layout(location = 0) out float FragColor;
 //layout(location = 1) out vec4 FragColor2;
 //layout(location = 2) out vec4 FragColor3;
 
-uniform sampler2DArray ArrayTexture[20];
+//uniform sampler2DArray ArrayTexture[20];
 //uniform sampler2D PPTextures[4];
 
 void main()

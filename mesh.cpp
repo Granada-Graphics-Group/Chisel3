@@ -195,6 +195,21 @@ glm::vec2 computePoint(glm::dvec2 a, glm::dvec2 b, glm::dvec2 c, glm::dvec2 d, g
     return pointF;
 }
 
+glm::vec2 computeNormal(glm::dvec2 a, glm::dvec2 b, glm::dvec2 c)
+{
+    glm::dvec2 distance = b - a;
+    glm::dvec2 normal(distance.y, -distance.x);
+    
+    normal = glm::normalize(normal);
+    
+    glm::dvec2 testPoint = a + normal * 0.2;
+    
+    if(sameSide(a, b, testPoint, c))
+        normal = glm::normalize(glm::vec2(-distance.y, distance.x));
+    
+    return normal;
+}
+
 void Mesh::generateAdjacencyInformation()
 {
     std::unordered_map<glm::vec3, uint32_t> uniqueVertices;
@@ -215,14 +230,16 @@ void Mesh::generateAdjacencyInformation()
         
         indices.push_back(uniqueVertices[vertex]);
         
-        LOG(indices.size() - 1, " - ", indices.back(), " vert(", vertex.x, ", ", vertex.y, ", ", vertex.z, ")    uv(", uvBuffer[2 * i/3], ", ", uvBuffer[2 * i/3  + 1], ")");
+        //LOG(indices.size() - 1, " - ", indices.back(), " vert(", vertex.x, ", ", vertex.y, ", ", vertex.z, ")    uv(", uvBuffer[2 * i/3], ", ", uvBuffer[2 * i/3  + 1], ")");
     }
 
-    std::unordered_map<uint64_t, HalfEdge *> map;
+    auto uniqueIndexSize = indices.size();
     
-    for(int i = 0; i < indices.size(); i += 3)
-    {
-        std::array<uint32_t, 3> uniqueIndices = {indices[i], indices[i + 1], indices[i + 2]};
+    std::unordered_map<uint64_t, HalfEdge *> map;
+   
+    for(int i = 0; i < indexBufferSize; i += 3)
+    {        
+        std::array<uint32_t, 3> uniqueIndices = {indices[indexBuffer[i]], indices[indexBuffer[i + 1]], indices[indexBuffer[i + 2]]};
         std::array<uint32_t, 3> bufferIndices = {indexBuffer[i], indexBuffer[i + 1], indexBuffer[i + 2]};
         
         for(int i = 0; i < 3; ++i) mHalfEdges.push_back(std::make_unique<HalfEdge>());        
@@ -238,6 +255,25 @@ void Mesh::generateAdjacencyInformation()
             map[key] = mHalfEdges[HEIndex + i].get();            
         }                
     }
+    
+//     for(int i = 0; i < indices.size(); i += 3)
+//     {
+//         std::array<uint32_t, 3> uniqueIndices = {indices[i], indices[i + 1], indices[i + 2]};
+//         std::array<uint32_t, 3> bufferIndices = {indexBuffer[i], indexBuffer[i + 1], indexBuffer[i + 2]};
+//         
+//         for(int i = 0; i < 3; ++i) mHalfEdges.push_back(std::make_unique<HalfEdge>());        
+//         mFaces.push_back(std::make_unique<Face>(bufferIndices, mHalfEdges[mHalfEdges.size() - 3].get()));
+//         
+//         for(auto i = 0; i < 3; ++i)
+//         {   
+//             auto HEIndex = mHalfEdges.size() - 3;
+//             mHalfEdges[HEIndex + i]->setOrigin(bufferIndices[i]);
+//             mHalfEdges[HEIndex + i]->setNext(mHalfEdges[HEIndex + (i + 1) % 3].get());
+//             mHalfEdges[HEIndex + i]->setFace(mFaces.back().get());
+//             uint64_t key = static_cast<uint64_t>(uniqueIndices[i]) | (static_cast<uint64_t>(uniqueIndices[(i + 1) % 3]) << 32);
+//             map[key] = mHalfEdges[HEIndex + i].get();            
+//         }                
+//     }
 
     if (map.size() != 3 * mFaces.size())
         LOG_WARN("Mesh::generateAdjacencyInformation: duplicated egdes are possible");
@@ -250,6 +286,7 @@ void Mesh::generateAdjacencyInformation()
     
     std::vector<float> edgeVertices;
     std::vector<float> edgeUVs;
+    std::vector<float> edgeNormals;
     std::vector<uint32_t> edgeIndices;
     
     std::vector<float> faceVertices;
@@ -290,42 +327,71 @@ void Mesh::generateAdjacencyInformation()
                 
                 if(currentUVs != pairUVs && !hola)
                 {
-                    hola = true;
-                    LOG("Island border halfEdge: [", currentVertexIndex, ", ", currentVertexIndexNext, "] -> " , glm::to_string(currentUVs));
-                    LOG("Island border pair halfEdge: [", pairVertexIndex, ", ", pairVertexIndexNext, "] -> opposite of" , glm::to_string(pairUVs));
+                    //hola = true;
+                    //-LOG("Island border halfEdge: [", currentVertexIndex, ", ", currentVertexIndexNext, "] -> " , glm::to_string(currentUVs));
+                    //-LOG("Island border pair halfEdge: [", pairVertexIndex, ", ", pairVertexIndexNext, "] -> opposite of" , glm::to_string(pairUVs));
                     
                     borderHalfEdges.push_back(currentVertexIndex); borderHalfEdges.push_back(currentVertexIndexNext);
                     borderHalfEdges.push_back(pairVertexIndex); borderHalfEdges.push_back(pairVertexIndexNext);
                     
-                    std::copy(std::begin(currentHE->face()->vertexIndices()), std::end(currentHE->face()->vertexIndices()), std::back_inserter(borderFaces));
-                    std::copy(std::begin(pairHE->face()->vertexIndices()), std::end(pairHE->face()->vertexIndices()), std::back_inserter(borderFaces));
+                    const auto& cVertexIndices = currentHE->face()->vertexIndices();
+                    const auto& pVertexIndices = pairHE->face()->vertexIndices();
+
+                    std::copy(std::begin(cVertexIndices), std::end(cVertexIndices), std::back_inserter(borderFaces));
+                    std::copy(std::begin(pVertexIndices), std::end(pVertexIndices), std::back_inserter(borderFaces));
+                    
+                    glm::vec2 a(uvBuffer[2 * pairVertexIndexNext], uvBuffer[2 * pairVertexIndexNext + 1]);
+                    glm::vec2 b(uvBuffer[2 * pairVertexIndex], uvBuffer[2 * pairVertexIndex + 1]);
+                    glm::vec2 c(uvBuffer[2 * pairVertexIndexNextNext], uvBuffer[2 * pairVertexIndexNextNext + 1]);
+
+                    glm::vec2 d(uvBuffer[2 * currentVertexIndex], uvBuffer[2 * currentVertexIndex + 1]);
+                    glm::vec2 e(uvBuffer[2 * currentVertexIndexNext], uvBuffer[2 * currentVertexIndexNext + 1]);
+                    glm::vec2 g(uvBuffer[2 * currentVertexIndexNextNext], uvBuffer[2 * currentVertexIndexNextNext + 1]);
+
+                    auto edgeNormal = computeNormal(d, e, g);
+                    auto edgeNormalPair = computeNormal(a, b, c);                    
                     
                     // --------------- //
-                    
+                                        
                     edgeVertices.push_back(uvBuffer[2 * currentVertexIndex]);
                     edgeVertices.push_back(uvBuffer[2 * currentVertexIndex + 1]);
                     edgeVertices.push_back(0);
                     
                     edgeUVs.push_back(uvBuffer[2 * pairVertexIndexNext]);
                     edgeUVs.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-                    
+                                                            
+                    edgeNormals.push_back(edgeNormal.x);
+                    edgeNormals.push_back(edgeNormal.y);
+                    edgeNormals.push_back(edgeNormalPair.x);
+                    edgeNormals.push_back(edgeNormalPair.y);
+                                        
                     edgeIndices.push_back(edgeIndices.size());
-                    
+                                        
                     edgeVertices.push_back(uvBuffer[2 * currentVertexIndexNext]);
                     edgeVertices.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
                     edgeVertices.push_back(0);
 
                     edgeUVs.push_back(uvBuffer[2 * pairVertexIndex]);
                     edgeUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-                    
+
+                    edgeNormals.push_back(edgeNormal.x);
+                    edgeNormals.push_back(edgeNormal.y);
+                    edgeNormals.push_back(edgeNormalPair.x);
+                    edgeNormals.push_back(edgeNormalPair.y);                    
+                                        
                     edgeIndices.push_back(edgeIndices.size());
-                    
+                                        
                     edgeVertices.push_back(uvBuffer[2 * pairVertexIndex]);
                     edgeVertices.push_back(uvBuffer[2 * pairVertexIndex + 1]);
                     edgeVertices.push_back(0);
                     
                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndexNext]);
                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
+                                        
+                    edgeNormals.push_back(edgeNormalPair.x);
+                    edgeNormals.push_back(edgeNormalPair.y);
+                    edgeNormals.push_back(edgeNormal.x);
+                    edgeNormals.push_back(edgeNormal.y);                    
                     
                     edgeIndices.push_back(edgeIndices.size());
                     
@@ -335,6 +401,11 @@ void Mesh::generateAdjacencyInformation()
 
                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+
+                    edgeNormals.push_back(edgeNormalPair.x);
+                    edgeNormals.push_back(edgeNormalPair.y);
+                    edgeNormals.push_back(edgeNormal.x);
+                    edgeNormals.push_back(edgeNormal.y);                    
                     
                     edgeIndices.push_back(edgeIndices.size());
 
@@ -352,7 +423,7 @@ void Mesh::generateAdjacencyInformation()
                     faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
                     faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
                     
-                    LOG("Texel[",uvBuffer[2 * pairVertexIndexNext],", ", uvBuffer[2 * pairVertexIndexNext + 1], "]"); 
+//                     LOG("Texel[",uvBuffer[2 * pairVertexIndexNext],", ", uvBuffer[2 * pairVertexIndexNext + 1], "]"); 
                     
                     faceIndices.push_back(faceIndices.size());
                     
@@ -368,23 +439,73 @@ void Mesh::generateAdjacencyInformation()
                     faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
                     faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
                     
-                    LOG("Texel[",uvBuffer[2 * pairVertexIndex],", ", uvBuffer[2 * pairVertexIndex + 1], "]"); 
+//                     LOG("Texel[",uvBuffer[2 * pairVertexIndex],", ", uvBuffer[2 * pairVertexIndex + 1], "]"); 
                     
                     faceIndices.push_back(faceIndices.size());
-
-                    glm::vec2 a(uvBuffer[2 * pairVertexIndexNext], uvBuffer[2 * pairVertexIndexNext + 1]);
-                    glm::vec2 b(uvBuffer[2 * pairVertexIndex], uvBuffer[2 * pairVertexIndex + 1]);
-                    glm::vec2 c(uvBuffer[2 * pairVertexIndexNextNext], uvBuffer[2 * pairVertexIndexNextNext + 1]);
-
-                    glm::vec2 d(uvBuffer[2 * currentVertexIndex], uvBuffer[2 * currentVertexIndex + 1]);
-                    glm::vec2 e(uvBuffer[2 * currentVertexIndexNext], uvBuffer[2 * currentVertexIndexNext + 1]);
-                    glm::vec2 g(uvBuffer[2 * currentVertexIndexNextNext], uvBuffer[2 * currentVertexIndexNextNext + 1]);
 
                     auto newPoint = computePoint(a, b, c, d, e, g);
 
                     faceVertices.push_back(newPoint.x);
                     faceVertices.push_back(newPoint.y);
                     faceVertices.push_back(0);
+                    
+//                     // -
+//                     
+//                     edgeVertices.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeVertices.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                     edgeVertices.push_back(0);
+// 
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+// 
+//                     edgeNormals.push_back(edgeNormal.x);
+//                     edgeNormals.push_back(edgeNormal.y);
+//                     edgeNormals.push_back(0);
+//                     edgeNormals.push_back(0);                    
+//                     
+//                     edgeIndices.push_back(edgeIndices.size());
+// 
+//                     edgeVertices.push_back(newPoint.x);
+//                     edgeVertices.push_back(newPoint.y);
+//                     edgeVertices.push_back(0);
+// 
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+// 
+//                     edgeNormals.push_back(edgeNormal.x);
+//                     edgeNormals.push_back(edgeNormal.y);
+//                     edgeNormals.push_back(0);
+//                     edgeNormals.push_back(0);                    
+//                     
+//                     edgeIndices.push_back(edgeIndices.size());
+//                     
+//                     edgeVertices.push_back(newPoint.x);
+//                     edgeVertices.push_back(newPoint.y);
+//                     edgeVertices.push_back(0);
+// 
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+// 
+//                     edgeNormals.push_back(edgeNormal.x);
+//                     edgeNormals.push_back(edgeNormal.y);
+//                     edgeNormals.push_back(0);
+//                     edgeNormals.push_back(0);                    
+//                     
+//                     edgeIndices.push_back(edgeIndices.size());
+//                     
+//                     edgeVertices.push_back(uvBuffer[2 * currentVertexIndexNext]);
+//                     edgeVertices.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
+//                     edgeVertices.push_back(0);
+// 
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+// 
+//                     edgeNormals.push_back(edgeNormal.x);
+//                     edgeNormals.push_back(edgeNormal.y);
+//                     edgeNormals.push_back(0);
+//                     edgeNormals.push_back(0);                      
+//                     
+//                     // -
                     
                     faceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
                     faceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
@@ -394,7 +515,7 @@ void Mesh::generateAdjacencyInformation()
                     faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
                     faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
                     
-                    LOG("Texel[",uvBuffer[2 * pairVertexIndexNextNext],", ", uvBuffer[2 * pairVertexIndexNextNext + 1], "]"); 
+//                     LOG("Texel[",uvBuffer[2 * pairVertexIndexNextNext],", ", uvBuffer[2 * pairVertexIndexNextNext + 1], "]"); 
  
                     faceIndices.push_back(faceIndices.size());
 
@@ -443,6 +564,64 @@ void Mesh::generateAdjacencyInformation()
                     
                     faceIndices.push_back(faceIndices.size());
                     
+//                     // -
+//                     
+//                     edgeVertices.push_back(uvBuffer[2 * pairVertexIndex]);
+//                     edgeVertices.push_back(uvBuffer[2 * pairVertexIndex + 1]);
+//                     edgeVertices.push_back(0);
+// 
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+// 
+//                     edgeNormals.push_back(edgeNormal.x);
+//                     edgeNormals.push_back(edgeNormal.y);
+//                     edgeNormals.push_back(0);
+//                     edgeNormals.push_back(0);                    
+//                     
+//                     edgeIndices.push_back(edgeIndices.size());
+// 
+//                     edgeVertices.push_back(newPoint.x);
+//                     edgeVertices.push_back(newPoint.y);
+//                     edgeVertices.push_back(0);
+// 
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+// 
+//                     edgeNormals.push_back(edgeNormal.x);
+//                     edgeNormals.push_back(edgeNormal.y);
+//                     edgeNormals.push_back(0);
+//                     edgeNormals.push_back(0);                    
+//                     
+//                     edgeIndices.push_back(edgeIndices.size());
+//                     
+//                     edgeVertices.push_back(newPoint.x);
+//                     edgeVertices.push_back(newPoint.y);
+//                     edgeVertices.push_back(0);
+// 
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+// 
+//                     edgeNormals.push_back(edgeNormal.x);
+//                     edgeNormals.push_back(edgeNormal.y);
+//                     edgeNormals.push_back(0);
+//                     edgeNormals.push_back(0);                    
+//                     
+//                     edgeIndices.push_back(edgeIndices.size());
+//                     
+//                     edgeVertices.push_back(uvBuffer[2 * pairVertexIndexNext]);
+//                     edgeVertices.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
+//                     edgeVertices.push_back(0);
+// 
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                     edgeUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+// 
+//                     edgeNormals.push_back(edgeNormal.x);
+//                     edgeNormals.push_back(edgeNormal.y);
+//                     edgeNormals.push_back(0);
+//                     edgeNormals.push_back(0);                      
+//                     
+//                     // -                    
+//                     
                     // --------------- // 
                     
                     nfaceVertices.push_back(uvBuffer[2 * currentVertexIndex]);
@@ -508,22 +687,23 @@ void Mesh::generateAdjacencyInformation()
         }
     }
     
-//     updateData(GLBuffer::Vertex, 0, edgeVertices.size() * sizeof(float), edgeVertices.data());
-//     updateData(GLBuffer::UV, 0, edgeUVs.size() * sizeof(float), edgeUVs.data());
-//     updateData(GLBuffer::Index, 0, edgeIndices.size() * sizeof(uint32_t), edgeIndices.data());
-//     
-//     std::vector<uint32_t> subMeshIndexes(1, static_cast<uint32_t>(edgeIndices.size()));
-//     updateSubMeshData(subMeshIndexes);
+    updateData(GLBuffer::Vertex, 0, edgeVertices.size() * sizeof(float), edgeVertices.data());
+    updateData(GLBuffer::UV, 0, edgeUVs.size() * sizeof(float), edgeUVs.data());
+    updateData(GLBuffer::Color, 0, edgeNormals.size() * sizeof(float), edgeNormals.data());
+    updateData(GLBuffer::Index, 0, edgeIndices.size() * sizeof(uint32_t), edgeIndices.data());
+    
+    std::vector<uint32_t> subMeshIndexes(1, static_cast<uint32_t>(edgeIndices.size()));
+    updateSubMeshData(subMeshIndexes);
 
     // ------------------------------ //
     
-    updateData(GLBuffer::Vertex, 0, faceVertices.size() * sizeof(float), faceVertices.data());
-    updateData(GLBuffer::UV, 0, faceUVs.size() * sizeof(float), faceUVs.data());
-    updateData(GLBuffer::Color, 0, faceEdges.size() * sizeof(float), faceEdges.data());
-    updateData(GLBuffer::Index, 0, faceIndices.size() * sizeof(uint32_t), faceIndices.data());
-    
-    std::vector<uint32_t> subMeshIndexes2(1, static_cast<uint32_t>(faceIndices.size()));
-    updateSubMeshData(subMeshIndexes2);
+//     updateData(GLBuffer::Vertex, 0, faceVertices.size() * sizeof(float), faceVertices.data());
+//     updateData(GLBuffer::UV, 0, faceUVs.size() * sizeof(float), faceUVs.data());
+//     updateData(GLBuffer::Color, 0, faceEdges.size() * sizeof(float), faceEdges.data());
+//     updateData(GLBuffer::Index, 0, faceIndices.size() * sizeof(uint32_t), faceIndices.data());
+//     
+//     std::vector<uint32_t> subMeshIndexes2(1, static_cast<uint32_t>(faceIndices.size()));
+//     updateSubMeshData(subMeshIndexes2);
     
     // ------------------------------ //
     

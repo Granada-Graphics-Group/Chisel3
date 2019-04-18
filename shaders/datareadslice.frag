@@ -1,4 +1,5 @@
-#version 430
+#version 450
+#extension GL_ARB_bindless_texture : require
 
 smooth in vec2 CoordST;
 smooth in vec4 EyePosition;
@@ -29,7 +30,7 @@ layout(std140, binding = 12) uniform PerMaterialData
 
 layout(location = 0) out vec2 FragColor;
 
-uniform sampler2DArray ArrayTexture[13];
+layout(bindless_sampler) uniform sampler2DArray ArrayTexture[13];
 
 
 void main()

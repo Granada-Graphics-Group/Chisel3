@@ -20,6 +20,7 @@ public:
     void updateTextureData(unsigned int index);
     
     GLuint id() const { return mId; }
+    uint64_t handle() const { return mHandle; }
     GLuint index() const { return mIndex; }
     GLuint textureUnit() const { return mTexUnit; }
     GLint imageUnit() const { return mImageUnit; }
@@ -37,8 +38,11 @@ public:
     Texture* texture(std::string texture) const;
     std::vector<glm::byte> textureData(unsigned int layer) const;
 
+    bool isBindless() const { return mBindless; }
     bool isEmpty() const { return mFreeList.size() == mLayerCount ? true : false; }
     bool isFull() const { return mFreeList.empty(); }
+    bool isSparse() const { return mSparseness; }
+
     
     void clear(glm::vec4 color, const std::list<unsigned int>& layers = {}, bool continuous = false);
 
@@ -62,7 +66,8 @@ private:
     std::list<unsigned int> mFreeList;
     std::list<unsigned int> mCleaningList;
     
-    GLuint mId;    
+    GLuint mId;
+    uint64_t mHandle;
     GLenum mTarget;
     GLenum mMinFilter;
     GLenum mMagFilter;
@@ -76,6 +81,7 @@ private:
     GLenum mFormat;
     GLenum mType;
     GLboolean mSparseness;
+    bool mBindless = true;
     SamplerType mSamplerType;
 };
 

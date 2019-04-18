@@ -23,8 +23,8 @@
 
 Texture::~Texture()
 {
-    if(glIsTexture(mId))
-        glDeleteTextures(1, &mId);
+    //if(glIsTexture(mId))
+    //    glDeleteTextures(1, &mId);
 }
 //TODO Manejar mejor la actualización de parametros. Decidir aquellos por defecto en el constructor
 Texture::Texture(std::string name, GLenum target, GLenum internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const std::vector<glm::byte>& data, GLenum magFilter, GLenum minFilter, GLenum anitropyLevel, bool generate)

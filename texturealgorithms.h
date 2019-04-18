@@ -1,0 +1,4 @@
+#ifndef TEXTUREALGORITHMS_H
+#define TEXTUREALGORITHMS_H
+
+#endif

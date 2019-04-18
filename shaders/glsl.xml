@@ -102,6 +102,24 @@
             <shader type="fragment"   name="udilation.frag"/>
         </shaders>
     </program>
+    <program name="CustomPadding">
+        <shaders>
+            <shader type="vertex"   name="dilation.vert"/>
+            <shader type="fragment"   name="custompadding.frag"/>
+        </shaders>
+    </program>
+    <program name="DrawNormals">
+        <shaders>
+            <shader type="vertex"   name="paint.vert"/>
+            <shader type="fragment"   name="drawnormals.frag"/>
+        </shaders>
+    </program>
+    <program name="DrawOrientation">
+        <shaders>
+            <shader type="vertex"   name="paint.vert"/>
+            <shader type="fragment"   name="draworientation.frag"/>
+        </shaders>
+    </program>    
     <program name="ViewTex">
         <shaders>
             <shader type="vertex"   name="viewtex.vert"/>
@@ -120,7 +138,19 @@
             <shader type="vertex"   name="immediateneighbors.vert"/>
             <shader type="fragment" name="immediateneighbors.frag"/>
         </shaders>
-    </program>        
+    </program>
+    <program name="NeighborEdges">
+        <shaders>
+            <shader type="vertex"   name="neighboredges.vert"/>
+            <shader type="fragment" name="neighboredges.frag"/>
+        </shaders>
+    </program>
+    <program name="EdgesToOutline">
+        <shaders>
+            <shader type="vertex"   name="edgestooutline.vert"/>
+            <shader type="fragment" name="edgestooutline.frag"/>
+        </shaders>
+    </program>    
     <program name="Neighbors">
         <shaders>
             <shader type="vertex"   name="neighbors.vert"/>

@@ -32,6 +32,7 @@ public:
     const std::vector<GLuint>& colorInputIndices() const { return mColorInputIndices; }
     const std::vector<GLuint>& depthInputIndices() const { return mDepthInputIndices; }
     bool isDefaultTargetUsed() const { return mUseDefaultTarget; }
+    const std::vector<glm::byte>& uniformData() const { return mUniformData; }
     
     void setFBO(std::unique_ptr<FBObject> fbo);
     void setColorTextures(const std::vector< Texture* >& colorTextures, bool updateDepthTexture = true);
@@ -43,12 +44,14 @@ public:
     
     void setColorInputIndices(const std::vector<GLuint>& indices) { mColorInputIndices = indices; }
     void setDepthInputIndices(const std::vector<GLuint>& indices) { mDepthInputIndices = indices; }
-
     
     void addPass(RenderPass* pass, bool defaultTarget);
     void removePass(RenderPass* pass);
     
     void attachColorTexturesToFBO(bool updateDepthTexture = false);
+    
+    void updateUniformData(GLintptr offset, GLsizeiptr size, const GLvoid* data);
+    
 private:
     void createTextureTargets();
     void createTextureTargets(RenderPass* pass);
@@ -61,7 +64,8 @@ private:
     std::vector<RenderPass* > mPasses;
     ResourceManager* mResourceManager = nullptr;
     std::unique_ptr<FBObject> mFBO = nullptr;
-    
+    std::vector<glm::byte> mUniformData;
+        
     std::vector< Texture* > mColorTextures;
     Texture* mDepthTexture = nullptr;
 

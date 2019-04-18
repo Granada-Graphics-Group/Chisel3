@@ -122,11 +122,11 @@ void CreateLayerDialog::validateLayerName()
 
     if(found == std::end(filenames))
     {
-        QRegExp regExp("^[a-zA-Z][a-zA-Z0-9_]*$" );
-        QStringList ForbiddenName;
-        ForbiddenName<<"CON"<<"PRN"<<"AUX"<<"NUL"<<"COM"<<"COM1"<<"COM2"<<"COM3"<<"COM4"<<"COM5"<<"COM6"<<"COM7"<<"COM8"<<"COM9"<<"LPT"<<"LPT1"<<"LPT2"<<"LPT3"<<"LPT4"<<"LPT5"<<"LPT6"<<"LPT7"<<"LPT8"<<"LPT9";
+        QRegExp regExp("^[a-zA-Z][a-zA-Z0-9_]*$");
+        QStringList forbiddenNameList;
+        forbiddenNameList<<"CON"<<"PRN"<<"AUX"<<"NUL"<<"COM"<<"COM1"<<"COM2"<<"COM3"<<"COM4"<<"COM5"<<"COM6"<<"COM7"<<"COM8"<<"COM9"<<"LPT"<<"LPT1"<<"LPT2"<<"LPT3"<<"LPT4"<<"LPT5"<<"LPT6"<<"LPT7"<<"LPT8"<<"LPT9";
         
-        if(mUi->nameTextEdit->text().contains(regExp) && !ForbiddenName.contains(mUi->nameTextEdit->text().toUpper()))
+        if(mUi->nameTextEdit->text().contains(regExp) && !forbiddenNameList.contains(mUi->nameTextEdit->text().toUpper()))
         {        
             if(mErrorDialog->isVisible()) mErrorDialog->hide();
             mErrorDialog->clearMessage();            

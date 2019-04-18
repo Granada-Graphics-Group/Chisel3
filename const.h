@@ -20,7 +20,7 @@ namespace GLUniBuffer
     const int Frame = 1;
     const int Material = 2;
     const int Model = 3;
-    const int Transient = 4;
+    const int RenderTarget = 4;
     const int Compute = 5;
     const int Count = 6;
 }

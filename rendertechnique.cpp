@@ -94,3 +94,13 @@ void RenderTechnique::settingUP()
     }
 }
 
+void RenderTechnique::addDisposableTexture(Texture* texture)
+{
+    if(texture != nullptr)
+        mDisposableTextures.insert(texture);
+}
+
+void RenderTechnique::clearDisposableTextures()
+{
+    mDisposableTextures.clear();
+}

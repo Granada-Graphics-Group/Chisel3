@@ -32,7 +32,10 @@ Renderer::Renderer(RendererType type, int windowWidth, int windowHeight, Resourc
             mInsertMarkTool = [this](){ this->mGLRenderer->insertMarkTool(); };
             mRemoveMarkTool = [this](){ this->mGLRenderer->removeMarkTool(); };
             mUpdateMarkToolPosition = [this](int x, int y){ this->mGLRenderer->updateMarkToolPosition(x, y); };
-            mUpdateMarkToolRadius = [this](float radius){ this->mGLRenderer->updateMarkToolRadius(radius); };            
+            mUpdateMarkToolRadius = [this](float radius){ this->mGLRenderer->updateMarkToolRadius(radius); };
+            mPadLayerTextures = [this](uint32_t layerIndex){ this->mGLRenderer->padLayerTextures(layerIndex); };
+            
+            mComputeLayerOperation = [this](uint32_t layerIndex){ this->mGLRenderer->computeLayerOperation(layerIndex); };
         }
     }
 }
@@ -279,6 +282,11 @@ void Renderer::eraseLayer(unsigned int layerIndex)
     mGLRenderer->eraseLayer(layerIndex);
 }
 
+void Renderer::padLayerTextures(uint32_t layerIndex)
+{
+    mPadLayerTextures(layerIndex);
+}
+
 
 void Renderer::setOpacity(unsigned int layerIndex, float opacity)
 {
@@ -293,6 +301,11 @@ void Renderer::computeExpression(const std::vector<std::string>& expression)
 void Renderer::computeShader(Program* shader, const std::vector<glm::byte>& uniformData)
 {
     mGLRenderer->computeShader(shader, uniformData);
+}
+
+void Renderer::computeLayerOperation(uint32_t layerOperation, const std::vector<glm::byte>& uniformData)
+{
+    mGLRenderer->computeLayerOperation(layerOperation, uniformData);
 }
 
 void Renderer::loadChiselScene(Scene3D* scene)
@@ -332,12 +345,12 @@ void Renderer::setSpecularPower(float power)
 
 void Renderer::setBackgroundColor(glm::vec4 color)
 {
-	mGLRenderer->setClearColor(color);
+    mGLRenderer->setClearColor(color);
 }
 
 void Renderer::alignMainCameraToModel()
 {
-	mAlignMainCameraToModel();
+    mAlignMainCameraToModel();
 }
 
 void Renderer::alignCameraToModel(Camera * camera, Model3D * model)

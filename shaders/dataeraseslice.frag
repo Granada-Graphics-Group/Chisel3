@@ -1,4 +1,5 @@
-#version 430
+#version 450
+#extension GL_ARB_bindless_texture : require
 
 smooth in vec2 CoordST;
 flat in ivec2 TexArrayIndex;
@@ -31,7 +32,7 @@ layout(std140, binding = 12) uniform PerMaterialData
 layout(location = 0) out float FragMask;
 layout(location = 1) out float FragBrushMask;
 
-uniform sampler2DArray ArrayTexture[20];
+layout(bindless_sampler) uniform sampler2DArray ArrayTexture[20];
 
 void main()
 {
@@ -49,7 +50,7 @@ void main()
             ProjTexCoord.q >= 0 && Pos3D.q >= 0 &&
             projCoord.x >= 0.0 && projCoord.y >= 0.0 && projCoord.x <= 1.0 && projCoord.y <= 1.0)
         {        
-            if(texture(ArrayTexture[brushIndices.x], vec3(projCoord.xy, brushIndices.y)).a == 1.0)
+            if(texture(ArrayTexture[brushIndices.x], vec3(projCoord.xy, brushIndices.y)).r != 0.0)
             {
                 FragMask = 0.0;
                 FragBrushMask = 1.0;

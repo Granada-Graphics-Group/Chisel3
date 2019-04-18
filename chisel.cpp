@@ -33,6 +33,8 @@
 #include <QImage>
 #include <algorithm>
 #include <tuple>
+#include <stack>
+#include <set>
 
 Chisel::Chisel(MainWindow* mainWindow)
 :
@@ -291,8 +293,11 @@ void Chisel::deleteLayer(unsigned int index)
     
     mActiveLayers.erase(begin(mActiveLayers) + index);
     
-    if(!mActiveLayers.size()) 
+    if(!mActiveLayers.size())
+    {
         mCurrentLayer = nullptr;
+        mCurrentPalette = mResourceManager->palette(0);
+    }
 }
 
 void Chisel::deleteLayer(std::string name)
@@ -664,6 +669,334 @@ void Chisel::updateTableAreaFields(unsigned int index)
             dbLayer->setAreaFieldDirty(false);
         }        
     }
+}
+
+Layer * Chisel::computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost)
+{
+    auto seedLayer = mActiveLayers[seedLayerIndex];
+    auto seedTexture = seedLayer->maskTexture();
+    auto costTexture = mActiveLayers[costLayerIndex]->dataTexture();
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+    auto outlineMaskTexture = mResourceManager->texture("SeamMaskTargetColor0");
+    if(outlineMaskTexture == nullptr) outlineMaskTexture = mResourceManager->texture("SeamMaskTexture");
+    
+    auto seedData = mRenderer->readLayerMask(seedLayerIndex);
+    auto frictionData = mRenderer->readFloatTexture(costTexture);
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
+    auto outlineData = mRenderer->readTexture(outlineMaskTexture);
+    std::vector<float> surfaceCostData(frictionData.size(), std::numeric_limits<float>::max());
+    
+    std::vector<glm::byte> valueTextureData(surfaceCostData.size() * sizeof(float), 0);
+    std::vector<glm::byte> maskTextureData(surfaceCostData.size(), 0);
+    
+    std::set<std::pair<double, uint64_t>> activeTexels;
+    std::vector<char> inspectedTexels(frictionData.size(), 2);
+    std::array<int, 8> neighborOffsets = { -1, 1, seedTexture->width(), -seedTexture->width(), -1 + seedTexture->width(), -1 - seedTexture->width(), 1 + seedTexture->width(), 1 - seedTexture->width() };
+    
+    for(auto i = 0; i < seedData.size(); ++i)
+        if(seedData[i] && neighborhoodData[2 * i] < 0)
+        {
+            activeTexels.insert({0,i});
+            surfaceCostData[i] = 0.0f;
+            inspectedTexels[i] = 1;
+        }
+    
+    if(activeTexels.size())
+    {
+        do
+        {
+            auto currentTexelIndex = activeTexels.cbegin()->second;
+            activeTexels.erase(activeTexels.cbegin());
+            
+            for(int i = 0; i < 8; ++i)
+            {
+                // módulo de texel index para saber si tiene sentido el vecino ?
+                        
+                auto neighborTexelIndex = 0;            
+                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+                
+                
+                if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << i)) != 0)
+                {
+                    //LOG("- Inside: ", a, " bit and: ", c);
+                    neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
+                    
+                    //LOG("-> Neigh texel[ ", neighborTexelIndex / seedTexture->width(), ", ", neighborTexelIndex % seedTexture->width(), "]");
+                    
+                }
+                else
+                {
+                    
+                    auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[i]);
+    //                 LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[tempIndex], ", ", neighborhoodData[tempIndex + 1], "]");
+                    
+                    if(indirectIndex > 0)
+                    {
+                        neighborTexelIndex = neighborhoodData[indirectIndex + 1] * seedTexture->width() + neighborhoodData[indirectIndex];
+    //                     LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
+                                            
+                        if(neighborTexelIndex < 0)
+                        {
+                            auto a = neighborhoodData[indirectIndex];
+                            auto b = neighborhoodData[indirectIndex + 1];
+                            auto c  = 0;
+                            auto d = neighborhoodData[2 * currentTexelIndex];
+                            auto e = neighborhoodData[2 * currentTexelIndex + 1];
+                            neighborTexelIndex = 0;
+                            
+                            LOG("<> Current texel[", currentTexelIndex % seedTexture->width(),", ", currentTexelIndex / seedTexture->width(),  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
+                        }
+                        
+                        if(neighborhoodData[2 * neighborTexelIndex] > 0)
+                        {
+                            neighborTexelIndex = 0;
+                            LOG("---> Current texel[", currentTexelIndex % seedTexture->width(),", ", currentTexelIndex / seedTexture->width(),  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
+                        }
+                    }
+                }
+                
+                if(neighborTexelIndex != 0 && neighborTexelIndex < seedTexture->width() * seedTexture->height())
+                {
+                    float costToNeighbor = surfaceCostData[currentTexelIndex];
+                    
+                    if(i < 4)
+                        costToNeighbor += std::sqrt(frictionData[currentTexelIndex])/2.0 + std::sqrt(frictionData[neighborTexelIndex])/2.0;
+                    else
+                        costToNeighbor += std::sqrt(2 * frictionData[currentTexelIndex])/2.0 + std::sqrt(2 * frictionData[neighborTexelIndex])/2.0;
+                        
+                    if(costToNeighbor <= maxCost && surfaceCostData[neighborTexelIndex] > costToNeighbor)
+                    {
+                        if(inspectedTexels[neighborTexelIndex] > 1)
+                        {
+                            activeTexels.insert({costToNeighbor, neighborTexelIndex});
+                            inspectedTexels[neighborTexelIndex] = 1;
+                        }
+                        else if(inspectedTexels[neighborTexelIndex] == 1)
+                        {
+                            auto found = activeTexels.find({surfaceCostData[neighborTexelIndex], neighborTexelIndex});
+                            if(found != end(activeTexels))
+                            {
+                                activeTexels.erase(found);
+                                activeTexels.insert({costToNeighbor, neighborTexelIndex});
+                            }
+                            
+                        }
+                        
+                        if(neighborhoodData[2 * neighborTexelIndex] == 0 && neighborhoodData[2 * neighborTexelIndex + 1] == 0)
+                            auto a = 0;
+                        else
+                            surfaceCostData[neighborTexelIndex] = costToNeighbor;                
+                    }
+                }
+            }
+            
+            inspectedTexels[currentTexelIndex] = 0;
+            maskTextureData[currentTexelIndex] = 255;
+        }while(!activeTexels.empty());
+        
+        auto surfaceCostByteData = reinterpret_cast<glm::byte*>(surfaceCostData.data());
+        std::copy(surfaceCostByteData, surfaceCostByteData + surfaceCostData.size() * sizeof(float), begin(valueTextureData));
+        
+        auto surfaceCostLayer = mResourceManager->createLayer(seedLayer->name() + "SurfaceCost", Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
+        addActiveLayer(surfaceCostLayer);
+        
+        mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+
+        mRenderer->padLayerTextures(0);
+
+        return surfaceCostLayer;
+    }
+    
+    return nullptr;    
+}
+
+
+Layer* Chisel::computeDistanceFieldLayer(unsigned int index, double distance)
+{
+    auto seedLayer = mActiveLayers[index];
+    auto seedTexture = seedLayer->maskTexture();
+    auto areaTexture = mResourceManager->texture("AreaPerPixel");
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+    auto outlineMaskTexture = mResourceManager->texture("SeamMaskTargetColor0");
+    if(outlineMaskTexture == nullptr) outlineMaskTexture = mResourceManager->texture("SeamMaskTexture");
+    
+    auto seedData = mRenderer->readLayerMask(index);
+    auto areaData = mRenderer->readFloatTexture(areaTexture);
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
+    auto outlineData = mRenderer->readTexture(outlineMaskTexture);
+    std::vector<float> distanceData(areaData.size(), std::numeric_limits<float>::max());
+    
+    std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
+    std::vector<glm::byte> maskTextureData(distanceData.size(), 0);
+    
+    std::set<std::pair<double, uint64_t>> activeTexels;
+    std::vector<char> inspectedTexels(areaData.size(), 2);
+    //glm::ivec2 immediateOffsets[8] = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}, {-1, 1}, {-1, -1}, {1, 1}, {1, -1}};    
+    //std::array<int, 8> neighborOffsets = { -seedTexture->width(), seedTexture->width(), 1, -1, -seedTexture->width() + 1, -seedTexture->width() - 1, seedTexture->width() + 1, seedTexture->width() - 1 };
+    std::array<int, 8> neighborOffsets = { -1, 1, seedTexture->width(), -seedTexture->width(), -1 + seedTexture->width(), -1 - seedTexture->width(), 1 + seedTexture->width(), 1 - seedTexture->width() };
+    
+    for(auto i = 0; i < seedData.size(); ++i)
+        if(seedData[i] && neighborhoodData[2 * i] < 0)
+        {
+            activeTexels.insert({0,i});
+            distanceData[i] = 0.0f;
+            inspectedTexels[i] = 1;
+        }
+    
+    if(activeTexels.size())
+    {
+        do
+        {
+            auto currentTexelIndex = activeTexels.cbegin()->second;
+            auto currentDistance = distanceData[currentTexelIndex];
+            activeTexels.erase(activeTexels.cbegin());
+            
+    //         LOG("Current texel[ ", currentTexelIndex % seedTexture->width(), ", ", currentTexelIndex / seedTexture->width(), "] - Value: ", -neighborhoodData[2 * currentTexelIndex]);
+            
+            if (currentTexelIndex == 0)
+                auto ca = 1;
+            
+            for(int i = 0; i < 8; ++i)
+            {
+                // módulo de texel index para saber si tiene sentido el vecino ?
+                        
+                auto neighborTexelIndex = 0;            
+                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+                
+                
+                if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << i)) != 0)
+                {
+                    //LOG("- Inside: ", a, " bit and: ", c);
+                    neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
+                    
+                    //LOG("-> Neigh texel[ ", neighborTexelIndex / seedTexture->width(), ", ", neighborTexelIndex % seedTexture->width(), "]");
+                    
+                }
+                else
+                {
+                    
+                    auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[i]);
+    //                 LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[tempIndex], ", ", neighborhoodData[tempIndex + 1], "]");
+                    
+                    if(indirectIndex > 0)
+                    {
+                        neighborTexelIndex = neighborhoodData[indirectIndex + 1] * seedTexture->width() + neighborhoodData[indirectIndex];
+    //                     LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
+                                            
+                        if(neighborTexelIndex < 0)
+                        {
+                            auto a = neighborhoodData[indirectIndex];
+                            auto b = neighborhoodData[indirectIndex + 1];
+                            auto c  = 0;
+                            auto d = neighborhoodData[2 * currentTexelIndex];
+                            auto e = neighborhoodData[2 * currentTexelIndex + 1];
+                            neighborTexelIndex = 0;
+                            
+                            LOG("<> Current texel[", currentTexelIndex % seedTexture->width(),", ", currentTexelIndex / seedTexture->width(),  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
+                        }
+                        
+                        if(neighborhoodData[2 * neighborTexelIndex] > 0)
+                        {
+                            neighborTexelIndex = 0;
+                            LOG("---> Current texel[", currentTexelIndex % seedTexture->width(),", ", currentTexelIndex / seedTexture->width(),  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
+                        }
+                    }
+                }
+                
+                if(neighborTexelIndex != 0 && neighborTexelIndex < seedTexture->width() * seedTexture->height())
+                {
+                    float distanceToNeighbor = currentDistance;
+                    
+                    if(i < 4)
+                        distanceToNeighbor += std::sqrt(areaData[currentTexelIndex])/2.0 + std::sqrt(areaData[neighborTexelIndex])/2.0;
+                    else
+                        distanceToNeighbor += std::sqrt(2 * areaData[currentTexelIndex])/2.0 + std::sqrt(2 * areaData[neighborTexelIndex])/2.0;
+                        
+                    if(distanceData[neighborTexelIndex] > distanceToNeighbor)
+                    {
+                        if(inspectedTexels[neighborTexelIndex] > 1)
+                        {
+                            activeTexels.insert({distanceToNeighbor, neighborTexelIndex});
+                            inspectedTexels[neighborTexelIndex] = 1;
+                        }
+                        else if(inspectedTexels[neighborTexelIndex] == 1)
+                        {
+                            auto found = activeTexels.find({distanceData[neighborTexelIndex], neighborTexelIndex});
+                            if(found != end(activeTexels))
+                            {
+                                activeTexels.erase(found);
+                                activeTexels.insert({distanceToNeighbor, neighborTexelIndex});
+                            }
+                            
+                        }
+                        
+                        if(neighborhoodData[2 * neighborTexelIndex] == 0 && neighborhoodData[2 * neighborTexelIndex + 1] == 0)
+                            auto a = 0;
+                        else
+                            distanceData[neighborTexelIndex] = distanceToNeighbor;                
+                    }
+                }
+            }
+            
+            inspectedTexels[currentTexelIndex] = 0;
+            maskTextureData[currentTexelIndex] = 255;
+            
+    //         LOG("Active texels size: ", activeTexels.size());
+        }while(!activeTexels.empty());
+        
+        auto distanceByteData = reinterpret_cast<glm::byte*>(distanceData.data());
+        std::copy(distanceByteData, distanceByteData + distanceData.size() * sizeof(float), begin(valueTextureData));
+        
+        auto distanceLayer = mResourceManager->createLayer(seedLayer->name() + "Distance", Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
+        addActiveLayer(distanceLayer);
+        
+        mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+
+        mRenderer->padLayerTextures(0);
+
+        return distanceLayer;
+    }
+    
+    return nullptr;
+}
+
+std::array<Layer*, 3> Chisel::computeNormalLayer(const std::pair<int, int> layerResolution)
+{
+    std::vector<float> distanceData(layerResolution.first * layerResolution.second, 100);
+    std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
+    auto distanceByteData = reinterpret_cast<glm::byte*>(distanceData.data());
+    std::copy(distanceByteData, distanceByteData + distanceData.size() * sizeof(float), begin(valueTextureData));    
+
+    auto normalLayerX = mResourceManager->createLayer("NormalsX", Layer::Type::Float32, layerResolution, valueTextureData, {}, mCurrentPalette);
+    auto normalLayerY = mResourceManager->createLayer("NormalsY", Layer::Type::Float32, layerResolution, valueTextureData, {}, mCurrentPalette);
+    auto normalLayerZ = mResourceManager->createLayer("NormalsZ", Layer::Type::Float32, layerResolution, valueTextureData, {}, mCurrentPalette);
+         
+    addActiveLayer(normalLayerX);
+    addActiveLayer(normalLayerY);
+    addActiveLayer(normalLayerZ);
+    mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+    
+    mRenderer->computeLayerOperation(0);
+    mRenderer->padLayerTextures(0);
+    
+    return {normalLayerX, normalLayerY, normalLayerZ};
+}
+
+Layer* Chisel::computeOrientationLayer(const std::pair<int, int> layerResolution, glm::vec3 reference)
+{   
+    auto orientationLayer = mResourceManager->createLayer("Orientation", Layer::Type::Float32, layerResolution, {}, {}, mCurrentPalette);
+         
+    addActiveLayer(orientationLayer);    
+    mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+    
+    std::vector<glm::byte> uniformData(4 * sizeof(float), 0);    
+    auto referenceDataPtr = glm::value_ptr(reference);    
+    std::copy(referenceDataPtr, referenceDataPtr + 3 * sizeof(float), begin(uniformData));
+    
+    mRenderer->computeLayerOperation(1, uniformData);
+    mRenderer->padLayerTextures(0);
+    
+    return orientationLayer;
 }
 
 void Chisel::createPalette(std::string name)
