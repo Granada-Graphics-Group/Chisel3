@@ -16,6 +16,7 @@
 #include "glutils.h"
 #include "cerealglm.h"
 #include "logger.hpp"
+#include "disklayermodel.h"
 
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/archives/json.hpp>
@@ -28,6 +29,8 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QGLWidget>
+
+#include <regex>
 #include <iostream>
 #include <array>
 
@@ -88,7 +91,6 @@ Program* ResourceManager::shaderProgram(std::string program) const
         return nullptr;
 }
 
-
 Material* ResourceManager::material(std::string material) const
 {
     if(mMaterials.find(material) != mMaterials.end())
@@ -97,13 +99,83 @@ Material* ResourceManager::material(std::string material) const
         return nullptr;
 }
 
-
 Mesh *ResourceManager::mesh(std::string mesh) const
 {
     if(mMeshes.find(mesh) != mMeshes.end())
         return mMeshes.at(mesh).get();
     else
         return nullptr;
+}
+
+bool ResourceManager::isValidName(const std::string candidate) const
+{
+    std::string forbiddenNames = "CON|PRN|AUX|NUL|COM|COM1|COM2|COM3|COM4|COM5|COM6|COM7|COM8|COM9|LPT|LPT1|LPT2|LPT3|LPT4|LPT5|LPT6|LPT7|LPT8|LPT9";
+    std::regex validPattern("^(?!(" + forbiddenNames + ")$)[a-zA-Z][a-zA-Z0-9_]*$", std::regex::ECMAScript);
+    
+    return std::regex_match(candidate, validPattern);    
+}
+
+std::string ResourceManager::createValidName(const std::string candidate, std::vector<std::string> existingNames) const
+{
+    std::string validName = isValidName(candidate) ? candidate : "tempName";    
+        
+    bool valid = false;
+    std::string baseValidName = validName;
+
+    for(unsigned int i = 1; i < std::numeric_limits<unsigned int>::max() && !valid; ++i)
+    {           
+        auto found = std::find_if(std::begin(existingNames), std::end(existingNames), [&](const std::string& filename) { return (filename == validName) ? true : false; });
+        
+        if(found == end(existingNames))
+            valid = true;
+        else
+            validName = baseValidName + "_" + std::to_string(i);
+    }
+    
+    return validName;    
+}
+
+std::string ResourceManager::createValidLayerName(const std::string name) const
+{
+    return createValidName(name, existingLayerNames());
+}
+
+std::string ResourceManager::createValidPaletteName(const std::string name) const
+{
+    return createValidName(name, existingPaletteNames());
+}
+
+std::vector<std::string> ResourceManager::existingLayerNames() const
+{
+    return mChisel->diskLayerModel()->filenames();
+}
+
+std::vector<std::string> ResourceManager::existingPaletteNames() const
+{
+    std::vector<std::string> paletteNames;
+    
+    for(const auto& palette: mPalettes)
+        paletteNames.push_back(palette->name());
+
+    return paletteNames;
+}
+
+bool ResourceManager::layerExists(const std::string layerName) const
+{
+    auto layerNames = existingLayerNames();
+    
+    auto found = std::find_if(std::begin(layerNames), std::end(layerNames), [&](const std::string& currentLayerName) { return (currentLayerName == layerName) ? true : false; });
+    
+    return (found != end(layerNames)) ? true : false;
+}
+
+bool ResourceManager::paletteExists(const std::string paletteName) const
+{
+    auto paletteNames = existingPaletteNames();
+    
+    auto found = std::find_if(std::begin(paletteNames), std::end(paletteNames), [&](const std::string& currentPaletteName) { return (currentPaletteName == paletteName) ? true : false; });
+    
+    return (found != end(paletteNames)) ? true : false;
 }
 
 Layer* ResourceManager::layer(std::string layer) const
@@ -662,6 +734,27 @@ Texture* ResourceManager::createTexture(std::string name, GLenum target, GLenum 
     return texPtr;
 }
 
+Texture * ResourceManager::copyTexture(std::string sourceName, std::string copyName)
+{
+    auto source = texture(sourceName);
+    
+    if(source != nullptr)
+        copyTexture(source, copyName);
+    
+    return source;
+}
+
+Texture * ResourceManager::copyTexture(Texture* source, std::string copyName)
+{
+    auto copy = createTexture(!copyName.length() ? source->name() + "Duplicate" : copyName, source->target(), source->internalFormat(), source->width(), source->height(), source->format(), source->type(),{}, source->magFilter(), source->minFilter(), source->anisoFiltLevel(), false);    
+    
+    glCopyImageSubData(source->textureArrayId(), source->textureArray()->target(), 0, 0, 0, source->textureArrayLayerIndex(), copy->textureArrayId(), copy->textureArray()->target(), 0, 0, 0, copy->textureArrayLayerIndex(), source->width(), source->height(), 1);
+    
+    LOG("Copy Texture data from: ", source->name(), " to ", copy->name());
+
+    return copy;
+}
+
 bool ResourceManager::deleteTexture(Texture* texture)
 {
     if(texture != nullptr)
@@ -825,25 +918,54 @@ Layer* ResourceManager::createLayer(std::string name, Layer::Type type, std::pai
     return mLayers.back().get();
 }
 
-std::string ResourceManager::createValidLayerName(std::string name)
+Layer * ResourceManager::createLayer(std::string name, Layer::Type type, std::pair<int, int> resolution, Texture* dataTexture, const std::vector<glm::byte>& mask, Palette* palette, bool createPalette)
 {
-    bool valid = false;
-    std::string newName;    
-    //auto filenames = mChisel->diskLayerModel()->filenames();
-
-    for(unsigned int i = 1; i < std::numeric_limits<unsigned int>::max() && !valid; ++i)
-    {
-        newName = name + "_" + std::to_string(i);
-
-        auto search = std::find_if(begin(mLayers), end(mLayers), [&](const std::unique_ptr<Layer>& currentLayer) {
-            return (newName == currentLayer->name()) ? true : false;
-        });
-
-        if(search == end(mLayers))
-            valid = true;
-    }
+    auto internalFormat = getInternalFormat(type);
+    auto formatType = getFormatAndType(internalFormat);
     
-    return newName;
+    Texture *maskTexture = createTexture(name + ".Mask", GL_TEXTURE_2D, GL_R8, resolution.first, resolution.second, GL_RED, GL_UNSIGNED_BYTE, mask, GL_NEAREST, GL_NEAREST, 0, false);
+    
+    Texture *paletteTexture = createTexture(name + ".Palette", GL_TEXTURE_1D, GL_RGBA32F, 4096, 1, GL_RGBA, GL_FLOAT, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 0, false); 
+                
+    std::vector<std::pair<Texture*, Texture*>> textures {{dataTexture, maskTexture}};
+    
+    Palette* layerPalette = palette;
+    
+    if(createPalette)
+    {
+        mLayerPalettes.push_back(std::make_unique<Palette>(*palette));
+        layerPalette = mLayerPalettes.back().get();
+        layerPalette->setName(name);
+    }
+
+    layerPalette->setTexture(paletteTexture);
+    
+    if(type != Layer::Type::Register)
+        mLayers.push_back(std::make_unique<Layer>(name, type, resolution, textures, layerPalette));
+    else
+    {        
+        if(!mSQLiteDatabaseManager->isDatabaseOpen())
+        {
+            auto filepath = mCHISelPath + mStdPaths[DB] + chiselName() + mFileExtensions[DB];
+            mSQLiteDatabaseManager->openDatabase(filepath);
+            mChisel->setDatabase(filepath);
+            
+            auto resourceDir = mCHISelPath + mStdPaths[RESOURCES];        
+            if(!directoryExists(resourceDir))
+                createDirectory(resourceDir);
+            mChisel->updateDataBaseResourcePath(resourceDir);
+        }
+        
+        auto layerResourceDir = mCHISelPath + mStdPaths[RESOURCES] + name;        
+        if(!directoryExists(layerResourceDir))
+            createDirectory(layerResourceDir);
+        
+        mLayers.push_back(std::make_unique<RegisterLayer>(name, resolution, textures, layerPalette));
+    }
+
+    mLayers.back().get()->updatePaletteInterpolation();
+    
+    return mLayers.back().get();    
 }
 
 Layer * ResourceManager::createLayerFromTableField(const RegisterLayer* layer, const DataBaseField& field)
@@ -877,7 +999,7 @@ Layer * ResourceManager::createLayerFromTableField(const RegisterLayer* layer, c
         }
         
         //auto tempPalette = duplicatePalette(layer->palette());
-        tempLayer = createLayer(layer->name() + "_" + field.mName, Layer::Type::Int32, layer->resolution(), {}, {}, layer->palette());
+        tempLayer = createLayer(layer->name() + "_" + field.mName, Layer::Type::Int32, layer->resolution(), layer->palette());
         tempLayer->palette()->rescaleTo(min, max, true);
     }
     else if(field.mType == DataBaseField::Type::Double)
@@ -899,7 +1021,7 @@ Layer * ResourceManager::createLayerFromTableField(const RegisterLayer* layer, c
             min = std::min(min, floatFieldValues.back());            
         }
         
-        tempLayer = createLayer(layer->name() + field.mName, Layer::Type::Float32, layer->resolution(), {}, {}, layer->palette());
+        tempLayer = createLayer(layer->name() + field.mName, Layer::Type::Float32, layer->resolution(), layer->palette());
         tempLayer->palette()->rescaleTo(min, max);
     }
     
@@ -1124,23 +1246,11 @@ void ResourceManager::saveRawLayer(Layer* layer, std::string path)
 
 Layer* ResourceManager::duplicateLayer(Layer* sourceLayer)
 {
-    auto search = std::find_if(begin(mLayers), end(mLayers), [&](const std::unique_ptr<Layer>& currentLayer){ return (sourceLayer->name() == currentLayer->name()) ? true : false;});
+    auto search = std::find_if(begin(mLayers), end(mLayers), [&](const std::unique_ptr<Layer>& currentLayer){ return (sourceLayer == currentLayer.get()) ? true : false;});
 
     if(search != end(mLayers))
     {
-        bool valid = false;
-        std::string newName;
-        
-        for(unsigned int i = 1; i < std::numeric_limits<unsigned int>::max() && !valid; ++i)
-        {
-            newName = sourceLayer->name() + "_" + std::to_string(i);
-            
-            auto search = std::find_if(begin(mLayers), end(mLayers), [&](const std::unique_ptr<Layer>& currentLayer){ return (newName == currentLayer->name()) ? true : false;});
-            
-            if(search == end(mLayers))
-                valid = true;
-        }
-        
+        auto newName = createValidLayerName(sourceLayer->name());        
         auto data = mRenderer->readTexture(sourceLayer->dataTexture());
         auto mask = mRenderer->readTexture(sourceLayer->maskTexture());        
         
@@ -1372,28 +1482,13 @@ void ResourceManager::renamePaletteFile(unsigned int index, std::string newName)
 
 Palette* ResourceManager::duplicatePalette(Palette* palette, bool validateName)
 {
-    auto search = std::find_if(begin(mPalettes), end(mPalettes), [&](const std::unique_ptr<Palette>& currentPalette){ return (palette->name() == currentPalette->name()) ? true : false;});
+    auto search = std::find_if(begin(mPalettes), end(mPalettes), [&](const std::unique_ptr<Palette>& currentPalette){ return (palette == currentPalette.get()) ? true : false;});
 
     if(search != end(mPalettes))
     {
         if(validateName)
         {
-            bool valid = false;
-            std::string newName;
-            
-            for(unsigned int i = 1; i < std::numeric_limits<unsigned int>::max() && !valid; ++i)
-            {
-                newName = palette->name() + "_" + std::to_string(i);
-                
-                auto search = std::find_if(begin(mPalettes), end(mPalettes), [&](const std::unique_ptr<Palette>& currentPalette){ return (newName == currentPalette->name()) ? true : false;});
-                
-                if(search == end(mPalettes))
-                    valid = true;
-            }
-            
-    /*        auto textureData = mRenderer->readTexture(palette->texture());
-            Texture *paletteTexture = createTexture(newName + ".Palette", GL_TEXTURE_1D, GL_RGBA32F, 4096, 1, GL_RGBA, GL_FLOAT, textureData, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 0, false);   */     
-            
+            auto newName = createValidLayerName(palette->name());            
             mPalettes.push_back(std::make_unique<Palette>(mPalettes.size(), newName, "", palette->type(), palette->controlPoints()));
         }
         else

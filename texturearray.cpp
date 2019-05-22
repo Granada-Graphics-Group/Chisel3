@@ -125,18 +125,14 @@ TextureArray::TextureArray(unsigned int index, unsigned int layerCount, std::vec
 TextureArray::~TextureArray()
 {
     LOG("Destroying Texture array: ", mId);
-	for (int i = 0; i < mLayerCount; ++i)
-		freeLayer(i);
+    
+    for (int i = 0; i < mLayerCount; ++i)
+        freeLayer(i);
 
-    //if (mBindless) glMakeTextureHandleNonResidentARB(mHandle);
+    if (mBindless && glIsTextureHandleResidentARB(mHandle))
+        glMakeTextureHandleNonResidentARB(mHandle);
 
     glDeleteTextures(1, &mId);
-
-    if (mBindless)
-    {
-        if(glIsTextureHandleResidentARB(mHandle))
-            glMakeTextureHandleNonResidentARB(mHandle);
-    }
 }
 
 // *** Public Methods *** //
@@ -145,8 +141,6 @@ void TextureArray::updateTexture(Texture* texture, unsigned int index)
     LOG("Updating texture in TextureArray[", texture->textureArrayIndex(), "]: ", mId, " index: ", index, " with ", texture->name());
     
     mTextures[index] = texture;
-    
-//     glBindTexture(mTarget, mId);
     
     glTextureSubImage3D(mId, 0, 0, 0, index, mWidth, mHeight, 1, mFormat, mType, texture->data());    
     glGenerateTextureMipmap(mId);
@@ -157,8 +151,6 @@ void TextureArray::updateTextureData(unsigned int index)
 {
     Texture *texture = mTextures[index];
     LOG("Updating texture ", texture->name(), " data in TextureArray[", texture->textureArrayIndex(), "]: ", mId, " index: ", index);
-    
-//     glBindTexture(mTarget, mId);
     
     glTextureSubImage3D(mId, 0, 0, 0, index, mWidth, mHeight, 1, mFormat, mType, texture->data());    
     glGenerateTextureMipmap(mId);

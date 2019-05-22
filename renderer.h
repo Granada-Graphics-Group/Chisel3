@@ -86,7 +86,7 @@ public:
     void padLayerTextures(uint32_t layerIndex);
     void setOpacity(unsigned int layerIndex, float opacity);
     void computeExpression(const std::vector<std::string>& expression);
-    void computeShader(Program* shader, const std::vector<glm::byte>& uniformData = {});
+    void computeShader(Program* shader, const std::vector<glm::byte>& uniformData = {}, bool computeImmediately = true);
     
     void computeLayerOperation(uint32_t layerOperation, const std::vector<glm::byte>& uniformData = {});
     
@@ -102,8 +102,9 @@ public:
     void alignMainCameraToModel();
     void alignCameraToModel(Camera* camera, Model3D* model);
 
-    std::vector<glm::byte> readLayerData(unsigned int layerIndex);
-    std::vector<glm::byte> readLayerMask(unsigned int layerIndex);
+    std::vector<double> readLayerData(unsigned int layerIndex);
+    std::vector<double> readLayerDataTexture(Texture* texture);
+    std::vector<glm::byte> readLayerMask(unsigned int layerIndex);    
     std::vector<glm::byte> readTexture(Texture* texture);
     std::vector<char> readCharTexture(Texture* texture);
     std::vector<uint16_t> readUShortTexture(Texture* texture);

@@ -227,12 +227,14 @@ bool Chisel::setDatabase(std::string name)
     return result;
 }
 
-void Chisel::createLayer(std::string name, Layer::Type type, std::pair< int, int > resolution)
+Layer* Chisel::createLayer(std::string name, Layer::Type type, std::pair< int, int > resolution)
 {
-    auto newLayer = mResourceManager->createLayer(name, type, resolution, {}, {}, mResourceManager->palettes()[0]);
+    auto newLayer = mResourceManager->createLayer(name, type, resolution, mResourceManager->palettes()[0]);
     mResourceManager->saveLayer(newLayer);
     addActiveLayer(newLayer);    
     setCurrentLayer(0);
+    
+    return newLayer;
 }
 
 void Chisel::loadLayer(std::string name)
@@ -671,7 +673,516 @@ void Chisel::updateTableAreaFields(unsigned int index)
     }
 }
 
-Layer * Chisel::computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost)
+Layer* Chisel::computeCellArea(const std::pair<int, int> layerResolution)
+{
+    auto layerName = mResourceManager->createValidLayerName("CellArea");
+    auto areaTexture = mResourceManager->texture("AreaPerPixel");
+    auto copyAreaTexture = mResourceManager->copyTexture(areaTexture, layerName + ".Data");
+    
+    std::vector<glm::byte> maskTextureData(copyAreaTexture->width() * copyAreaTexture->height(), 255);
+    
+    auto cellAreaLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName("CellArea"), Layer::Type::Float32, layerResolution, copyAreaTexture, maskTextureData, mResourceManager->palette(0));
+    
+    addActiveLayer(cellAreaLayer);        
+    mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+    mRenderer->padLayerTextures(0);
+}
+
+std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int functionLayerIndex, int functionFieldIndex, unsigned int baseLayerIndex, StatOps operation)
+{
+    auto functionLayer = mActiveLayers[functionLayerIndex];
+    Layer* fieldLayer = nullptr;
+    std::vector<double> functionData;
+    
+    if(functionLayer->registerType() && functionFieldIndex > -1)
+    {
+        auto regLayer = static_cast<RegisterLayer*>(functionLayer);
+        auto field = regLayer->field(functionFieldIndex);
+        fieldLayer = mResourceManager->createLayerFromTableField(regLayer, regLayer->field(0));
+        mMainWindow->visualizer()->update();
+        functionData = mRenderer->readLayerDataTexture(fieldLayer->dataTexture());
+    }
+    else
+        functionData = mRenderer->readLayerData(functionLayerIndex);
+        
+    auto functionMask = mRenderer->readLayerMask(functionLayerIndex);
+    
+    auto baseLayer = mActiveLayers[baseLayerIndex];    
+    auto baseData = mRenderer->readLayerData(baseLayerIndex);
+    auto baseMask = mRenderer->readLayerMask(baseLayerIndex);
+    
+    
+    std::unordered_map<double, double> areaStatistics;    
+    std::vector<std::array<double, 2>> doubleAreaStatistics;
+    
+    switch(operation)
+    {
+        case StatOps::MeanValue:
+        {   
+            std::unordered_map<double, uint64_t> count;
+            
+            for(auto i = 0; i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] != 0)
+                {
+                    areaStatistics[baseData[i]] += functionData[i];
+                    count[baseData[i]]++;
+                }
+            
+            for(auto& [key, value] : areaStatistics)
+               value = value/count[key];
+        }
+            break;        
+        case StatOps::MinValue:
+        {   
+            for(auto i = 0; i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] != 0)
+                {
+                    auto category = baseData[i];
+                    if(!areaStatistics.count(category)) areaStatistics[category] = std::numeric_limits<int64_t>::max();
+                    if(areaStatistics[category] > functionData[i]) areaStatistics[category] = functionData[i];
+                }
+        }            
+            break;
+        case StatOps::MaxValue:
+        {
+            for(auto i = 0; i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] != 0)
+                {
+                    auto category = baseData[i];
+                    if(!areaStatistics.count(category)) areaStatistics[category] = std::numeric_limits<int64_t>::min();
+                    if(areaStatistics[category] < functionData[i]) areaStatistics[category] = functionData[i];
+                }            
+        }                        
+            break;
+        case StatOps::Variance:
+        {
+            std::unordered_map<double, uint64_t> count;
+            std::unordered_map<double, double> mean;
+            
+            for(auto i = 0; i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] != 0)
+                {
+                    mean[baseData[i]] += functionData[i];
+                    count[baseData[i]]++;
+                }
+            
+            for(auto& [key, value] : mean)
+               value = value/count[key];
+            
+            for(auto i = 0; i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] != 0)
+                {
+                    auto tempValue = functionData[i] - mean[baseData[i]];
+                    areaStatistics[baseData[i]] = tempValue * tempValue;
+                }
+            
+            for(auto& [key, value] : areaStatistics)
+               value = value/count[key];            
+        }
+            break;
+            
+        case StatOps::StdDeviation:
+        {
+            std::unordered_map<double, uint64_t> count;
+            std::unordered_map<double, double> mean;
+            
+            for(auto i = 0; i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] != 0)
+                {
+                    mean[baseData[i]] += functionData[i];
+                    count[baseData[i]]++;
+                }
+            
+            for(auto& [key, value] : mean)
+               value = value/count[key];
+            
+            for(auto i = 0; i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] != 0)
+                {
+                    auto tempValue = functionData[i] - mean[baseData[i]];
+                    areaStatistics[baseData[i]] = tempValue * tempValue;
+                }
+            
+            for(auto& [key, value] : areaStatistics)
+               value = std::sqrt(value/count[key]); 
+        }
+            break;
+        case StatOps::NoNull:
+        {
+            auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+            
+            for(auto i = 0;i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] != 0)
+                    areaStatistics[baseData[i]] += areaData[i];            
+        }
+            break;
+        case StatOps::Null:
+        {
+            auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+
+            for(auto i = 0;i < functionData.size(); ++i)
+                if(baseMask[i] != 0 && functionMask[i] == 0)
+                    areaStatistics[baseData[i]] += areaData[i];            
+        }
+            break;
+    }
+    
+    for(const auto& stat : areaStatistics)
+        doubleAreaStatistics.push_back({stat.first, stat.second});
+    
+    if(baseLayer->registerType())
+    {
+        auto regLayer = static_cast<RegisterLayer*>(baseLayer);
+
+        DataBaseTable* currentSchema = nullptr;
+        if(mCurrentLayer != baseLayer)
+        {
+            currentSchema = mDataBaseTableDataModel->schema();
+            mDataBaseTableDataModel->setSchema(regLayer->tableSchema());
+        }
+        
+        if(!regLayer->containField("Statistics"))
+            mDataBaseTableDataModel->addDoubleField("Statistics", doubleAreaStatistics);
+        else
+            mDataBaseTableDataModel->setFieldData("Statistics", doubleAreaStatistics);
+        
+        if(mCurrentLayer->registerType())
+            mDataBaseTableDataModel->setSchema(currentSchema);
+    }
+    
+    if(fieldLayer != nullptr)
+        mResourceManager->deleteLayer(fieldLayer);
+//     std::unordered_map<layerDataTypes, double> areaStatistics;
+//         
+//     switch(operation)
+//     {
+//         case AreaStatOps::MeanValue:
+//         {            
+//             std::unordered_map<layerDataTypes, int64_t> count;
+//             
+//             auto sumAndCount = [&areaStatistics, &count](auto&& function, auto&& base){ areaStatistics[base] += function; count[base]++;};
+//             
+//             for(auto i = 0; i < functionData.size(); ++i)
+//                 if(baseMask[i] != 0 && functionMask[i] != 0)
+//                     std::visit(sumAndCount, functionData[i], baseData[i]);
+//             
+//             for(auto& [key, value] : areaStatistics)
+//                value = value/count[key];
+//         }
+//             break;
+//         case AreaStatOps::MinValue:
+//         {            
+//             auto min = [&areaStatistics](auto&& function, auto&& base)
+//             { 
+//                 if(!areaStatistics.count(base)) areaStatistics[base] = std::numeric_limits<int64_t>::max();
+//                 if(areaStatistics[base] > function) areaStatistics[base] = function;                
+//             };
+//             
+//             for(auto i = 0; i < functionData.size(); ++i)
+//                 if(baseMask[i] != 0 && functionMask[i] != 0)
+//                     std::visit(min, functionData[i], baseData[i]);
+//         }            
+//             break;
+//         case AreaStatOps::MaxValue:
+//         {            
+//             auto max = [&areaStatistics](auto&& function, auto&& base)
+//             { 
+//                 if(!areaStatistics.count(base)) areaStatistics[base] = std::numeric_limits<int64_t>::min();
+//                 if(areaStatistics[base] < function) areaStatistics[base] = function;                
+//             };
+//             
+//             for(auto i = 0; i < functionData.size(); ++i)
+//                 if(baseMask[i] != 0 && functionMask[i] != 0)
+//                     std::visit(max, functionData[i], baseData[i]);
+//         }                        
+//             break;
+//         case AreaStatOps::Variance:
+//         {
+//             std::unordered_map<layerDataTypes, int64_t> count;
+//             std::unordered_map<layerDataTypes, double> mean;
+//             
+//             auto sumAndCount = [&mean, &count](auto&& function, auto&& base){ mean[base] += function; count[base]++;};
+//             
+//             for(auto i = 0; i < functionData.size(); ++i)
+//                 if(baseMask[i] != 0 && functionMask[i] != 0)
+//                     std::visit(sumAndCount, functionData[i], baseData[i]);
+//             
+//             for(auto& [key, value] : mean)
+//                value = value/count[key];
+//             
+//             auto const addSquare = [&areaStatistics, &mean](auto&& function, auto&& base)
+//             {
+//                 auto d = function - mean[base];
+//                 areaStatistics[base] += d * d;
+//             };
+//             
+//             for(auto i = 0; i < functionData.size(); ++i)
+//                 if(baseMask[i] != 0 && functionMask[i] != 0)
+//                     std::visit(addSquare, functionData[i], baseData[i]);            
+//             
+//             for(auto& [key, value] : areaStatistics)
+//                value = value/count[key];
+//         }
+//             break;
+//             
+//         case AreaStatOps::StdDeviation
+//         {
+//             
+//         }
+//         break;
+//         case AreaStatOps::NoNull:
+//         {
+//             auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+//             
+//             std::size_t i = 0;
+//             auto add = [&areaStatistics, &areaData, &i](auto&& base){ areaStatistics[base] += areaData[i]; };
+//             
+//             for(;i < functionData.size(); ++i)
+//                 if(baseMask[i] != 0 && functionMask[i] != 0)
+//                     std::visit(add, baseData[i]);
+//         }
+//             break;
+//         case AreaStatOps::Null:
+//         {
+//             auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+//             
+//             std::size_t i = 0;
+//             auto add = [&areaStatistics, &areaData, &i](auto&& base){ areaStatistics[base] += areaData[i]; };
+//             
+//             for(;i < functionData.size(); ++i)
+//                 if(baseMask[i] != 0 && functionMask[i] == 0)
+//                     std::visit(add, baseData[i]);
+//         }
+//             break;
+//     }
+//     
+//     std::vector<std::array<double, 2>> doubleAreaStatistics;
+//     
+//     auto toDouble = [](auto&& arg) -> double { return arg; };
+//     
+//     for(const auto& stat : areaStatistics)
+//         doubleAreaStatistics.push_back({std::visit(toDouble, stat.first), stat.second});
+        
+    return doubleAreaStatistics;
+}
+
+Layer* Chisel::computeNeighborhoodStatistics(unsigned int functionLayerIndex, int functionFieldIndex, unsigned int radius, StatOps operation)
+{
+    auto functionLayer = mActiveLayers[functionLayerIndex];
+    std::vector<double> functionData;
+    
+    if(functionLayer->registerType() && functionFieldIndex > -1)
+    {
+        auto regLayer = static_cast<RegisterLayer*>(functionLayer);
+        auto field = regLayer->field(functionFieldIndex);
+        auto fieldLayer = mResourceManager->createLayerFromTableField(regLayer, regLayer->field(0));
+        mMainWindow->visualizer()->update();
+        functionData = mRenderer->readLayerDataTexture(fieldLayer->dataTexture());
+        mResourceManager->deleteLayer(fieldLayer);
+    }
+    else
+        functionData = mRenderer->readLayerData(functionLayerIndex);
+        
+    auto functionMask = mRenderer->readLayerMask(functionLayerIndex);
+        
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+    auto outlineMaskTexture = mResourceManager->texture("SeamMaskTargetColor0");
+    if(outlineMaskTexture == nullptr) outlineMaskTexture = mResourceManager->texture("SeamMaskTexture");
+    
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
+    auto outlineData = mRenderer->readTexture(outlineMaskTexture);    
+    
+    std::vector<float> neighborhoodStatsData(functionData.size(), 0);
+    std::vector<glm::byte> valueTextureData(functionData.size() * sizeof(float), 0);
+    std::vector<glm::byte> maskTextureData(functionData.size(), 0);
+
+    auto width = functionLayer->dataTexture()->width();
+    auto height = functionLayer->dataTexture()->height();
+    std::array<int, 8> neighborOffsets = { -1, 1, width, -width, -1 + width, -1 - width, 1 + width, 1 - width };
+    
+    std::vector<uint64_t> surfaceCostData(functionData.size(), std::numeric_limits<uint64_t>::max());            
+    std::vector<char> inspectedTexels(functionData.size(), 2);
+    
+    for(auto i = 0; i < functionMask.size(); ++i)
+        if(functionMask[i] && neighborhoodData[2 * i] < 0)
+        {
+            std::vector<double> statisticsData;
+            std::vector<uint64_t> dirtyIndices;
+            std::set<std::pair<uint64_t, uint64_t>> activeTexels;
+            
+            activeTexels.insert({0,i});
+            surfaceCostData[i] = 0;
+            inspectedTexels[i] = 1;
+                        
+            do
+            {
+                auto currentTexelIndex = activeTexels.cbegin()->second;
+                activeTexels.erase(activeTexels.cbegin());
+                
+                if(functionMask[currentTexelIndex])
+                {
+                    /*if(surfaceCostData[currentTexelIndex] < radius)     */               
+                        for(int idx = 0; idx < 8; ++idx)
+                        {
+                            // módulo de texel index para saber si tiene sentido el vecino ?
+                                    
+                            auto neighborTexelIndex = 0;            
+                            int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+                            
+                            
+                            if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << idx)) != 0)
+                            {
+                                neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
+                            }
+                            else
+                            {                        
+                                auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[idx]);
+                                
+                                if(indirectIndex > 0)
+                                {
+                                    neighborTexelIndex = neighborhoodData[indirectIndex + 1] * width + neighborhoodData[indirectIndex];
+                                                        
+                                    if(neighborTexelIndex < 0)
+                                    {
+                                        auto a = neighborhoodData[indirectIndex];
+                                        auto b = neighborhoodData[indirectIndex + 1];
+                                        auto c  = 0;
+                                        auto d = neighborhoodData[2 * currentTexelIndex];
+                                        auto e = neighborhoodData[2 * currentTexelIndex + 1];
+                                        neighborTexelIndex = 0;
+                                        
+                                        LOG("<> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
+                                    }
+                                    
+                                    if(neighborhoodData[2 * neighborTexelIndex] > 0)
+                                    {
+                                        neighborTexelIndex = 0;
+                                        LOG("---> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
+                                    }
+                                }
+                            }
+                            
+                            if(neighborTexelIndex != 0 && neighborTexelIndex < width * height)
+                            {
+                                float costToNeighbor = surfaceCostData[currentTexelIndex] + 1;
+                                                            
+                                if(costToNeighbor <= radius && surfaceCostData[neighborTexelIndex] > costToNeighbor)
+                                {
+                                    if(inspectedTexels[neighborTexelIndex] > 1)
+                                    {
+                                        activeTexels.insert({costToNeighbor, neighborTexelIndex});
+                                        inspectedTexels[neighborTexelIndex] = 1;
+                                    }
+                                    else if(inspectedTexels[neighborTexelIndex] == 1)
+                                    {
+                                        auto found = activeTexels.find({surfaceCostData[neighborTexelIndex], neighborTexelIndex});
+                                        if(found != end(activeTexels))
+                                        {
+                                            activeTexels.erase(found);
+                                            activeTexels.insert({costToNeighbor, neighborTexelIndex});
+                                        }                                
+                                    }
+                                    
+                                    if(neighborhoodData[2 * neighborTexelIndex] == 0 && neighborhoodData[2 * neighborTexelIndex + 1] == 0)
+                                        auto a = 0;
+                                    else
+                                    {
+                                        surfaceCostData[neighborTexelIndex] = costToNeighbor;
+                                        dirtyIndices.push_back(neighborTexelIndex);
+                                    }
+                                }
+                            }
+                        }
+                    
+                    inspectedTexels[currentTexelIndex] = 0;                                
+                    statisticsData.push_back(functionData[currentTexelIndex]);
+                    dirtyIndices.push_back(currentTexelIndex);
+                }
+            }while(!activeTexels.empty());
+
+            for(const auto& index: dirtyIndices)
+            {
+                surfaceCostData[index] = std::numeric_limits<uint64_t>::max();
+                inspectedTexels[index] = 2;
+            }
+
+            maskTextureData[i] = 255;
+            
+            switch(operation)
+            {
+                case StatOps::MeanValue:
+                {
+                    neighborhoodStatsData[i] = std::accumulate(begin(statisticsData), end(statisticsData), 0.0)/ statisticsData.size();
+                    auto b = neighborhoodStatsData[i];
+                    auto c = 0;
+                }
+                break;
+                case StatOps::MinValue:
+                {
+                    neighborhoodStatsData[i] = *std::min_element(begin(statisticsData), end(statisticsData));
+                }
+                break;
+                case StatOps::MaxValue:
+                {
+                    neighborhoodStatsData[i] = *std::max_element(begin(statisticsData), end(statisticsData));
+                }
+                break;
+                case StatOps::Variance:
+                {
+                    auto mean = std::accumulate(begin(statisticsData), end(statisticsData), 0.0) / statisticsData.size();
+                    
+                    auto const add_square = [&mean](double sum, double i)
+                    {                        
+                        auto d = i - mean;
+                        return sum + d*d;
+                    };
+                                        
+                    neighborhoodStatsData[i] = std::accumulate(begin(statisticsData), end(statisticsData), 0.0, add_square) / (statisticsData.size() - 1);
+                }
+                break;
+
+                case StatOps::StdDeviation:
+                {
+                    auto mean = std::accumulate(begin(statisticsData), end(statisticsData), 0.0) / statisticsData.size();
+                    
+                    auto const add_square = [&mean](double sum, double i)
+                    {                        
+                        auto d = i - mean;
+                        return sum + d*d;
+                    };
+                                        
+                    auto variance = std::accumulate(begin(statisticsData), end(statisticsData), 0.0, add_square) / (statisticsData.size() - 1);
+                    
+                    neighborhoodStatsData[i] = std::sqrt(variance);
+                }
+                break;
+                case StatOps::NoNull:
+                {
+                    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+                    
+                }
+                break;
+                case StatOps::Null:
+                {
+                    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+                }
+                break;
+            }  
+    }
+    
+    auto statsByteData = reinterpret_cast<glm::byte*>(neighborhoodStatsData.data());
+    std::copy(statsByteData, statsByteData + valueTextureData.size(), begin(valueTextureData));
+        
+    auto neighborhoodStatsLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName(functionLayer->name() + "Stats"), Layer::Type::Float32, functionLayer->resolution(), valueTextureData, maskTextureData, functionLayer->palette());
+    
+    addActiveLayer(neighborhoodStatsLayer);        
+    mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+    mRenderer->padLayerTextures(0);
+
+    return neighborhoodStatsLayer;
+}
+
+Layer* Chisel::computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost)
 {
     auto seedLayer = mActiveLayers[seedLayerIndex];
     auto seedTexture = seedLayer->maskTexture();
@@ -797,7 +1308,7 @@ Layer * Chisel::computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned in
         auto surfaceCostByteData = reinterpret_cast<glm::byte*>(surfaceCostData.data());
         std::copy(surfaceCostByteData, surfaceCostByteData + surfaceCostData.size() * sizeof(float), begin(valueTextureData));
         
-        auto surfaceCostLayer = mResourceManager->createLayer(seedLayer->name() + "SurfaceCost", Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
+        auto surfaceCostLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName(seedLayer->name() + "SurfaceCost"), Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
         addActiveLayer(surfaceCostLayer);
         
         mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
@@ -947,7 +1458,7 @@ Layer* Chisel::computeDistanceFieldLayer(unsigned int index, double distance)
         auto distanceByteData = reinterpret_cast<glm::byte*>(distanceData.data());
         std::copy(distanceByteData, distanceByteData + distanceData.size() * sizeof(float), begin(valueTextureData));
         
-        auto distanceLayer = mResourceManager->createLayer(seedLayer->name() + "Distance", Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
+        auto distanceLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName(seedLayer->name() + "Distance"), Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
         addActiveLayer(distanceLayer);
         
         mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
@@ -960,21 +1471,146 @@ Layer* Chisel::computeDistanceFieldLayer(unsigned int index, double distance)
     return nullptr;
 }
 
+Layer* Chisel::computeCurvatureLayer(const std::pair<int, int> layerResolution, double distance)
+{
+    auto normalLayers = computeNormalLayer(layerResolution);
+    
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");    
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
+    
+    std::array<std::vector<float>, 3> normalData;
+    normalData[0] = mRenderer->readFloatTexture(normalLayers[0]->dataTexture());
+    normalData[1] = mRenderer->readFloatTexture(normalLayers[1]->dataTexture());
+    normalData[2] = mRenderer->readFloatTexture(normalLayers[2]->dataTexture());
+    auto normalMask = mRenderer->readTexture(normalLayers[0]->maskTexture());
+
+    auto width = normalLayers[0]->dataTexture()->width();
+    auto height = normalLayers[0]->dataTexture()->height();
+    
+    std::vector<float> neighborhoodStatsData(normalMask.size(), 0);
+    std::vector<glm::byte> valueTextureData(normalMask.size() * sizeof(float), 0);
+    std::vector<glm::byte> maskTextureData(normalMask.size(), 0);
+
+    std::array<int, 8> neighborOffsets = { -1, 1, width, -width, -1 + width, -1 - width, 1 + width, 1 - width };
+    
+    std::vector<uint64_t> surfaceCostData(normalMask.size(), std::numeric_limits<uint64_t>::max());            
+    std::vector<char> inspectedTexels(normalMask.size(), 2);
+    
+    for(auto i = 0; i < normalMask.size(); ++i)
+        if(normalMask[i] && neighborhoodData[2 * i] < 0)
+        {
+            std::vector<double> statisticsData;
+            std::vector<uint64_t> dirtyIndices;
+            std::set<std::pair<uint64_t, uint64_t>> activeTexels;
+            
+            activeTexels.insert({0,i});
+            surfaceCostData[i] = 0;
+            inspectedTexels[i] = 1;
+                        
+            do
+            {
+                auto currentTexelIndex = activeTexels.cbegin()->second;
+                activeTexels.erase(activeTexels.cbegin());
+                
+                if(normalMask[currentTexelIndex])
+                {
+                    /*if(surfaceCostData[currentTexelIndex] < radius)     */               
+                        for(int idx = 0; idx < 8; ++idx)
+                        {
+                            // módulo de texel index para saber si tiene sentido el vecino ?
+                                    
+                            auto neighborTexelIndex = 0;            
+                            int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+                            
+                            
+                            if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << idx)) != 0)
+                            {
+                                neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
+                            }
+                            else
+                            {                        
+                                auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[idx]);
+                                
+                                if(indirectIndex > 0)
+                                {
+                                    neighborTexelIndex = neighborhoodData[indirectIndex + 1] * width + neighborhoodData[indirectIndex];
+                                                        
+                                    if(neighborTexelIndex < 0)
+                                    {
+                                        auto a = neighborhoodData[indirectIndex];
+                                        auto b = neighborhoodData[indirectIndex + 1];
+                                        auto c  = 0;
+                                        auto d = neighborhoodData[2 * currentTexelIndex];
+                                        auto e = neighborhoodData[2 * currentTexelIndex + 1];
+                                        neighborTexelIndex = 0;
+                                        
+                                        LOG("<> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
+                                    }
+                                    
+                                    if(neighborhoodData[2 * neighborTexelIndex] > 0)
+                                    {
+                                        neighborTexelIndex = 0;
+                                        LOG("---> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
+                                    }
+                                }
+                            }
+                            
+                            if(neighborTexelIndex != 0 && neighborTexelIndex < width * height)
+                            {
+                                float costToNeighbor = surfaceCostData[currentTexelIndex] + 1;
+                                                            
+                                if(costToNeighbor <= distance && surfaceCostData[neighborTexelIndex] > costToNeighbor)
+                                {
+                                    if(inspectedTexels[neighborTexelIndex] > 1)
+                                    {
+                                        activeTexels.insert({costToNeighbor, neighborTexelIndex});
+                                        inspectedTexels[neighborTexelIndex] = 1;
+                                    }
+                                    else if(inspectedTexels[neighborTexelIndex] == 1)
+                                    {
+                                        auto found = activeTexels.find({surfaceCostData[neighborTexelIndex], neighborTexelIndex});
+                                        if(found != end(activeTexels))
+                                        {
+                                            activeTexels.erase(found);
+                                            activeTexels.insert({costToNeighbor, neighborTexelIndex});
+                                        }                                
+                                    }
+                                    
+                                    if(neighborhoodData[2 * neighborTexelIndex] == 0 && neighborhoodData[2 * neighborTexelIndex + 1] == 0)
+                                        auto a = 0;
+                                    else
+                                    {
+                                        surfaceCostData[neighborTexelIndex] = costToNeighbor;
+                                        dirtyIndices.push_back(neighborTexelIndex);
+                                    }
+                                }
+                            }
+                        }
+                    
+                    inspectedTexels[currentTexelIndex] = 0;                                
+                    //statisticsData.push_back(functionData[currentTexelIndex]);
+                    dirtyIndices.push_back(currentTexelIndex);
+                }
+            }while(!activeTexels.empty());
+
+            for(const auto& index: dirtyIndices)
+            {
+                surfaceCostData[index] = std::numeric_limits<uint64_t>::max();
+                inspectedTexels[index] = 2;
+            }
+        }
+}
+
+Layer* Chisel::computeRugosityLayer(const std::pair<int, int> layerResolution, double distance)
+{
+    
+}
+
 std::array<Layer*, 3> Chisel::computeNormalLayer(const std::pair<int, int> layerResolution)
 {
-    std::vector<float> distanceData(layerResolution.first * layerResolution.second, 100);
-    std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
-    auto distanceByteData = reinterpret_cast<glm::byte*>(distanceData.data());
-    std::copy(distanceByteData, distanceByteData + distanceData.size() * sizeof(float), begin(valueTextureData));    
-
-    auto normalLayerX = mResourceManager->createLayer("NormalsX", Layer::Type::Float32, layerResolution, valueTextureData, {}, mCurrentPalette);
-    auto normalLayerY = mResourceManager->createLayer("NormalsY", Layer::Type::Float32, layerResolution, valueTextureData, {}, mCurrentPalette);
-    auto normalLayerZ = mResourceManager->createLayer("NormalsZ", Layer::Type::Float32, layerResolution, valueTextureData, {}, mCurrentPalette);
-         
-    addActiveLayer(normalLayerX);
-    addActiveLayer(normalLayerY);
-    addActiveLayer(normalLayerZ);
-    mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+    auto normalLayerX = createLayer(mResourceManager->createValidLayerName("NormalsX"), Layer::Type::Float32, layerResolution);
+    auto normalLayerY = createLayer(mResourceManager->createValidLayerName("NormalsY"), Layer::Type::Float32, layerResolution);
+    auto normalLayerZ = createLayer(mResourceManager->createValidLayerName("NormalsZ"), Layer::Type::Float32, layerResolution);
     
     mRenderer->computeLayerOperation(0);
     mRenderer->padLayerTextures(0);
@@ -984,13 +1620,10 @@ std::array<Layer*, 3> Chisel::computeNormalLayer(const std::pair<int, int> layer
 
 Layer* Chisel::computeOrientationLayer(const std::pair<int, int> layerResolution, glm::vec3 reference)
 {   
-    auto orientationLayer = mResourceManager->createLayer("Orientation", Layer::Type::Float32, layerResolution, {}, {}, mCurrentPalette);
-         
-    addActiveLayer(orientationLayer);    
-    mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+    auto orientationLayer = createLayer(mResourceManager->createValidLayerName("Orientation"), Layer::Type::Float32, layerResolution);
     
     std::vector<glm::byte> uniformData(4 * sizeof(float), 0);    
-    auto referenceDataPtr = glm::value_ptr(reference);    
+    auto referenceDataPtr = reinterpret_cast<glm::byte*>(glm::value_ptr(reference));    
     std::copy(referenceDataPtr, referenceDataPtr + 3 * sizeof(float), begin(uniformData));
     
     mRenderer->computeLayerOperation(1, uniformData);
@@ -1553,3 +2186,4 @@ std::string Chisel::trimZeros(const std::string& number)
 
     return trimmed.erase(zeroPos + 1, std::string::npos);    
 }
+

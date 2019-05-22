@@ -761,6 +761,29 @@ void MainWindow::createHistogram()
     mHistogramDialog->show();
 }
 
+void MainWindow::computeCellArea()
+{
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeCellArea({2048, 2048});    
+}
+
+void MainWindow::computeAreaStatistics()
+{
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeAreaStatistics(0, 0, 1, StatOps::MaxValue);
+}
+
+void MainWindow::computeNeighborhoodStatistics()
+{
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeNeighborhoodStatistics(0, -1, 1, StatOps::MeanValue);
+}
+
+void MainWindow::computeCostSurface()
+{
+    
+}
+
 void MainWindow::computeDistanceField()
 {
     auto index = mUi->activeLayerTreeView->currentIndex();
@@ -769,19 +792,46 @@ void MainWindow::computeDistanceField()
     mChisel->computeDistanceFieldLayer(index.row(), 1.0);
 }
 
+void MainWindow::computeDistanceBand()
+{
+    
+}
+
+void MainWindow::computeCurvature()
+{
+    
+}
+
+void MainWindow::computeRugosity()
+{
+    
+}
 
 void MainWindow::computeNormals()
 {
     mUi->Visualizer->makeCurrent();
     
-    mChisel->computeNormalLayer({2048, 2048});    
+    mChisel->computeNormalLayer({2048, 2048});
+
+    mUi->Visualizer->update();
+    
+    selectLayer(mChisel->activeLayerModel()->index(0, 0));
+    
+    setState(State::LayerCreated);
+
 }
 
 void MainWindow::computeOrientation()
 {
     mUi->Visualizer->makeCurrent();
     
-    mChisel->computeOrientationLayer({2048, 2048}, {0, 0, 1});    
+    mChisel->computeOrientationLayer({2048, 2048}, {1, 0, 0});
+    
+    mUi->Visualizer->update();
+    
+    selectLayer(mChisel->activeLayerModel()->index(0, 0));
+    
+    setState(State::LayerCreated);
 }
 
 void MainWindow::updateLayerToolBoxState(int index)
@@ -1863,7 +1913,14 @@ void MainWindow::createActions()
     connect(mUi->actionAddPaletteToCollection, &QAction::triggered, this, &MainWindow::addPaletteToCollection);
 
     connect(mUi->actionCreateHistogram, &QAction::triggered, this, &MainWindow::createHistogram);
+    connect(mUi->actionCellAreaOperation, &QAction::triggered, this, &MainWindow::computeCellArea);
+    connect(mUi->actionAreaStatisticsOperation, &QAction::triggered, this, &MainWindow::computeAreaStatistics);
+    connect(mUi->actionNeighborhoodStatisticsOperation, &QAction::triggered, this, &MainWindow::computeNeighborhoodStatistics);
+    connect(mUi->actionCostSurfaceOperation, &QAction::triggered, this, &MainWindow::computeCostSurface);
     connect(mUi->actionDistanceFieldOperation, &QAction::triggered, this, &MainWindow::computeDistanceField);
+    connect(mUi->actionDistanceBandOperation, &QAction::triggered, this, &MainWindow::computeDistanceBand);
+    connect(mUi->actionCurvatureOperation, &QAction::triggered, this, &MainWindow::computeCurvature);
+    connect(mUi->actionRugosityOperation, &QAction::triggered, this, &MainWindow::computeRugosity);
     connect(mUi->actionNormalOperation, &QAction::triggered, this, &MainWindow::computeNormals);
     connect(mUi->actionOrientationOperation, &QAction::triggered, this, &MainWindow::computeOrientation);
         

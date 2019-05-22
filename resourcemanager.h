@@ -67,6 +67,15 @@ public:
     Mesh* mesh(std::string mesh) const;
     Model3D* model(std::string model) const;
     
+    bool isValidName(const std::string candidate) const;
+    std::string createValidName(const std::string candidate, std::vector<std::string> existingNames) const;
+    std::string createValidLayerName(const std::string name) const;
+    std::string createValidPaletteName(const std::string name) const;
+    std::vector<std::string> existingLayerNames() const;
+    std::vector<std::string> existingPaletteNames() const;
+    bool layerExists(const std::string layerName) const;
+    bool paletteExists(const std::string paletteName) const;     
+    
     Layer* layer(std::string layer) const;
     std::vector<Layer*> layers() const;
     
@@ -128,18 +137,22 @@ public:
     void freeImageUnit(unsigned int unit) { mFreeImageUnitList.push_back(unit); }
     const std::vector<TextureArray*>& dirtyImageArrays() const { return mDirtyImageArrays; }
     void clearDirtyImageArrays() { mDirtyImageArrays.clear(); }
-            
+    
+
     Texture* createTexture(std::string name, GLenum target, GLenum internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const std::vector<glm::byte>& data, GLenum magFilter, GLenum minFilter, GLenum anitropyLevel, bool generate);
+    Texture* copyTexture(std::string sourceName, std::string copyName = "");
+    Texture* copyTexture(Texture* source, std::string copyName = "");
     bool deleteTexture(Texture* texture);
     void renameTexture(Texture* texture, const std::string& name);
     
     TextureArray* createTextureArray(unsigned int layerCount, const std::vector<Texture*>& textures, GLenum target, GLenum internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, GLenum magFilter, GLenum minFilter, GLenum anitropyLevel, GLboolean sparseness);
     bool deleteTextureArray(TextureArray* texArray);
     
-    void deleteShader(std::string name);    
-
+    void deleteShader(std::string name);
+    
+    Layer* createLayer(std::string name, Layer::Type type, std::pair<int, int> resolution, Palette* palette = nullptr, bool createPalette = true){ return createLayer(name, type, resolution, std::vector<glm::byte>{}, std::vector<glm::byte>{}, palette, createPalette); };    
     Layer* createLayer(std::string name, Layer::Type type, std::pair<int, int> resolution, const std::vector<glm::byte>& data, const std::vector<glm::byte>& mask, Palette* palette = nullptr, bool createPalette = true);
-    std::string createValidLayerName(std::string name);
+    Layer* createLayer(std::string name, Layer::Type type, std::pair<int, int> resolution, Texture* dataTexture, const std::vector<glm::byte>& mask, Palette* palette = nullptr, bool createPalette = true);    
     Layer* createLayerFromTableField(const RegisterLayer* layer, const DataBaseField& field);
     Layer* loadLayer(std::string name, std::string path = "");
     void saveLayer(Layer* layer, std::string path = "");

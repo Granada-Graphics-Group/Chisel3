@@ -728,7 +728,14 @@
     </property>
     <addaction name="actionCreateHistogram"/>
     <addaction name="actionSliceModelTool"/>
+    <addaction name="actionCellAreaOperation"/>
+    <addaction name="actionAreaStatisticsOperation"/>
+    <addaction name="actionNeighborhoodStatisticsOperation"/>
+    <addaction name="actionCostSurfaceOperation"/>
     <addaction name="actionDistanceFieldOperation"/>
+    <addaction name="actionDistanceBandOperation"/>
+    <addaction name="actionCurvatureOperation"/>
+    <addaction name="actionRugosityOperation"/>
     <addaction name="actionNormalOperation"/>
     <addaction name="actionOrientationOperation"/>
    </widget>
@@ -1250,10 +1257,66 @@
   </action>
   <action name="actionOrientationOperation">
    <property name="text">
-    <string>Orientation</string>
+    <string>&amp;Orientation</string>
    </property>
    <property name="toolTip">
     <string>Compute surface orientation given a reference vector</string>
+   </property>
+  </action>
+  <action name="actionAreaStatisticsOperation">
+   <property name="text">
+    <string>&amp;Area statistics</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute  area statistics</string>
+   </property>
+  </action>
+  <action name="actionCostSurfaceOperation">
+   <property name="text">
+    <string>Cos&amp;t surface</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute cost surface</string>
+   </property>
+  </action>
+  <action name="actionCellAreaOperation">
+   <property name="text">
+    <string>Ce&amp;ll Area</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute the area per cell</string>
+   </property>
+  </action>
+  <action name="actionNeighborhoodStatisticsOperation">
+   <property name="text">
+    <string>Ne&amp;ighborhood Statistics</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute statistics per neighborhood</string>
+   </property>
+  </action>
+  <action name="actionCurvatureOperation">
+   <property name="text">
+    <string>C&amp;urvature</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute the curvature per texel</string>
+   </property>
+  </action>
+  <action name="actionRugosityOperation">
+   <property name="text">
+    <string>&amp;Rugosity</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute the rugosity per texel</string>
+   </property>
+  </action>
+  <action name="actionDistanceBandOperation">
+   <property name="text">
+    <string>Distance band</string>
+   </property>
+   <property name="toolTip">
+    <string>Compute distance band</string>
    </property>
   </action>
  </widget>

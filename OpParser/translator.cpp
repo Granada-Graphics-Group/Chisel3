@@ -71,7 +71,7 @@ void Translator::exitDef(OParser::DefContext* ctx)
         
         if(search == end(layers))    
         {
-            auto newLayer = mChisel->resourceManager()->createLayer(targetLayerName, info.type, info.resolution, {}, {}, palette);
+            auto newLayer = mChisel->resourceManager()->createLayer(targetLayerName, info.type, info.resolution, palette);
             mNewLayers.push_back(newLayer);
             targetLayer = newLayer;
             mChisel->resourceManager()->commitFreeImageUnit(targetLayer->dataTexture()->textureArray());

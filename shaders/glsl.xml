@@ -110,13 +110,13 @@
     </program>
     <program name="DrawNormals">
         <shaders>
-            <shader type="vertex"   name="paint.vert"/>
+            <shader type="vertex"   name="drawnormals.vert"/>
             <shader type="fragment"   name="drawnormals.frag"/>
         </shaders>
     </program>
     <program name="DrawOrientation">
         <shaders>
-            <shader type="vertex"   name="paint.vert"/>
+            <shader type="vertex"   name="draworientation.vert"/>
             <shader type="fragment"   name="draworientation.frag"/>
         </shaders>
     </program>    

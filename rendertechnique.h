@@ -13,14 +13,16 @@ class RenderTechnique
 {
 public:
     RenderTechnique(std::string name): RenderTechnique(name, {}) {};
-    RenderTechnique(std::string name, std::vector<RenderTarget *> targets): RenderTechnique(name, targets, -1) {};
-    RenderTechnique(std::string name, std::vector<RenderTarget *> targets, int life);
+    RenderTechnique(std::string name, std::vector<RenderTarget *> targets): RenderTechnique(name, targets, false) {};
+    RenderTechnique(std::string name, std::vector<RenderTarget *> targets, bool sync) : RenderTechnique(name, targets, sync, -1) {};
+    RenderTechnique(std::string name, std::vector<RenderTarget *> targets, bool sync, int life);
     ~RenderTechnique();
     
     std::string name() const { return mName; }
     GLRenderer* renderer() const { return mRenderer; }
     std::vector<RenderTarget* > targets() const { return mTargets; }
     const std::set<Texture*> disposableTextures() const { return mDisposableTextures; }
+    bool needSync() const { return mSync; }
     int life() const { return mLife; }
         
     void addTarget(RenderTarget* target);
@@ -33,6 +35,8 @@ public:
     void addDisposableTexture(Texture* texture);
     void clearDisposableTextures();
 
+    void setSync(bool sync) { mSync = sync; }
+    
     void setLife(int life){ mLife = life; }
     void decreaseLife(){ if(mLife > -1) mLife--; }
     
@@ -41,6 +45,7 @@ private:
     GLRenderer* mRenderer = nullptr;
     std::vector<RenderTarget*> mTargets;
     std::set<Texture*> mDisposableTextures;
+    bool mSync = false;;
     
     int mLife = -1;
 };

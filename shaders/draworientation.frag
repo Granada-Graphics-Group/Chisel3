@@ -19,6 +19,6 @@ void main()
     
     //FragValue = atan(dot(normNormal, normalize(cross(cross(normNormal, normReference), normReference))), dot(normNormal, normReference)) * 180 / pi;
     
-    FragValue = reference.x;
+    FragValue = reference.z;
     FragMask = 1.0;
 }

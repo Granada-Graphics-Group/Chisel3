@@ -125,9 +125,9 @@ void DataBaseTableDataModel::setDataBaseTable(const std::string& name)
     if(open)
     {
         auto tables = database().tables(QSql::SystemTables);
-        auto views = database().tables(QSql::Views);
-        auto all = database().tables(QSql::AllTables);
-        auto nnn = database().tables(QSql::Tables);
+        //auto views = database().tables(QSql::Views);
+//         auto all = database().tables(QSql::AllTables);
+//         auto nnn = database().tables(QSql::Tables);
         
         auto tsize = tables.size();
     }
@@ -178,6 +178,45 @@ void DataBaseTableDataModel::setResourceFiles(const std::vector<std::string>& re
     mResourceFiles.clear();
     for (const auto& resource : resourceFiles)
         mResourceFiles.append(QString::fromStdString(resource));
+}
+
+void DataBaseTableDataModel::addDoubleField(const std::string fieldName, const std::vector<std::array<double, 2> >& values)
+{
+    auto index = fieldIndex(fieldName.data());
+    
+    if(index < 0)
+    {
+        mTableSchema->addField({fieldName, DataBaseField::Type::Double, 0});
+        index = mTableSchema->fields().size();
+    }
+    
+    loadTable();
+    
+    setFieldData(index, values);
+}
+
+void DataBaseTableDataModel::setFieldData(const std::string fieldName, const std::vector<std::array<double, 2> >& values)
+{
+    setFieldData(fieldIndex(fieldName.data()), values);
+}
+
+void DataBaseTableDataModel::setFieldData(unsigned int fieldIndex, const std::vector<std::array<double, 2> >& values)
+{
+    if(fieldIndex < (mTableSchema->fields().size() + 1))
+    {
+        for(auto i = 0; i < rowCount(); ++i)
+        {
+            auto id = record(i).value("Id").toInt();
+            auto foundId = std::find_if(begin(values), end(values), [&id](const std::array<double, 2>& value) { return (id == static_cast<int>(value[0])) ? true : false;});
+
+            if (foundId != end(values))
+                setData(index(i, fieldIndex), foundId->at(1));
+            else
+                setData(index(i, fieldIndex), "");
+        }
+        
+        commitData();
+    }
 }
 
 void DataBaseTableDataModel::setAreaFields(const std::vector<std::array<float, 2> >& values)

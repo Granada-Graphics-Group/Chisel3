@@ -29,6 +29,9 @@ public:
     void setSchema(DataBaseTable* schema);
     void setResourceDir(std::string path) { mResourceDir = path; }
     void setResourceFiles(const std::vector<std::string>& resourceFiles);
+    void addDoubleField(const std::string fieldName, const std::vector<std::array<double, 2>>& values);
+    void setFieldData(const std::string fieldName, const std::vector<std::array<double, 2>>& values);
+    void setFieldData(unsigned int fieldIndex, const std::vector<std::array<double, 2>>& values);
     void setAreaFields(const std::vector<std::array<float, 2>>& values);
     void setIdFilter(const QString& id) { setFilter("id = \'" + id + + "\'"); }
     void setHeaderVisible(bool visible) { mHeaderVisible = visible; };

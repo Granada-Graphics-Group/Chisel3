@@ -298,9 +298,9 @@ void Renderer::computeExpression(const std::vector<std::string>& expression)
     mGLRenderer->computeExpression(expression);
 }
 
-void Renderer::computeShader(Program* shader, const std::vector<glm::byte>& uniformData)
+void Renderer::computeShader(Program* shader, const std::vector<glm::byte>& uniformData, bool computeImmediately)
 {
-    mGLRenderer->computeShader(shader, uniformData);
+    mGLRenderer->computeShader(shader, uniformData, computeImmediately);
 }
 
 void Renderer::computeLayerOperation(uint32_t layerOperation, const std::vector<glm::byte>& uniformData)
@@ -358,9 +358,14 @@ void Renderer::alignCameraToModel(Camera * camera, Model3D * model)
     mAlignCameraToModel(camera, model);
 }
 
-std::vector<glm::byte> Renderer::readLayerData(unsigned int layerIndex)
+std::vector<double> Renderer::readLayerData(unsigned int layerIndex)
 {
     return mGLRenderer->readLayerData(layerIndex);
+}
+
+std::vector<double> Renderer::readLayerDataTexture(Texture* texture)
+{
+    return mGLRenderer->readLayerDataTexture(texture);
 }
 
 std::vector<glm::byte> Renderer::readLayerMask(unsigned int layerIndex)

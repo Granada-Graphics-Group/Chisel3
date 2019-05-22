@@ -42,6 +42,17 @@ enum class MouseAction: unsigned int
     Release = 2
 };
 
+enum class StatOps: unsigned char
+{
+    MeanValue = 0,
+    MinValue = 1,
+    MaxValue = 2,
+    Variance = 3,
+    StdDeviation = 4,
+    NoNull = 5,
+    Null = 6
+};
+
 struct LayerData
 {
     glm::uvec2 index;
@@ -108,7 +119,7 @@ public:
     
     bool setDatabase(std::string name);
    
-    void createLayer(std::string name, Layer::Type type, std::pair< int, int > resolution);
+    Layer* createLayer(std::string name, Layer::Type type, std::pair< int, int > resolution);
     void loadLayer(std::string name);
     void duplicateLayer(unsigned int index);
     void unloadLayer(unsigned int index);
@@ -130,14 +141,19 @@ public:
     void setLayerDirty(unsigned int index);
     void setLayerAreaFieldDirty(unsigned int index);
 
-    std::map<std::string, std::vector<uint32_t>> segmentModelWithLayer(unsigned int index);
+    std::map<std::string, std::vector<uint32_t>> segmentModelWithLayer(unsigned int index);    
     float computeSurfaceArea();
     float computeLayerArea(unsigned int index);
     std::vector<std::array<float, 2>> computeLayerValueArea(unsigned int index);
     void updateTableAreaFields(unsigned int index);
     
+    Layer* computeCellArea(const std::pair<int, int> layerResolution);
+    std::vector<std::array<double, 2>> computeAreaStatistics(unsigned int functionLayerIndex, int functionFieldIndex, unsigned int baseLayerIndex, StatOps operation);
+    Layer* computeNeighborhoodStatistics(unsigned int functionLayerIndex, int functionFieldIndex, unsigned int radius, StatOps operation);
     Layer* computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost);
-    Layer* computeDistanceFieldLayer(unsigned int index, double distance);    
+    Layer* computeDistanceFieldLayer(unsigned int index, double distance);
+    Layer* computeCurvatureLayer(const std::pair<int, int> layerResolution, double distance);
+    Layer* computeRugosityLayer(const std::pair<int, int> layerResolution, double distance);
     std::array<Layer*, 3> computeNormalLayer(const std::pair<int, int> layerResolution);
     Layer* computeOrientationLayer(const std::pair<int, int> layerResolution, glm::vec3 reference);
     

@@ -13,10 +13,11 @@
 }*/
 
 
-RenderTechnique::RenderTechnique(std::string name, std::vector< RenderTarget* > targets, int life)
+RenderTechnique::RenderTechnique(std::string name, std::vector< RenderTarget* > targets, bool sync, int life)
 :
     mName(name),
     mTargets(targets),
+    mSync(sync),
     mLife(life)
 {
     if(targets.size())

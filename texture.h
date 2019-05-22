@@ -63,7 +63,7 @@ public:
     const glm::byte* data() const { return (mData.size() > 0) ? mData.data() : nullptr; }
     std::vector<glm::byte> textureData() const;
     bool generated() const { return mGenerated; }
-    TextureArray* textureArray() { return mArray; }
+    TextureArray* textureArray() const { return mArray; }
     
     GLuint textureArrayId() const { return mArrayId; }
     unsigned int textureArrayIndex() const { return mArrayIndices.x; }

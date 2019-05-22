@@ -76,18 +76,18 @@ public:
     
     void init(GLuint defaultFB = 0);
 
-    int windowWitdh() { return mWindowWidth; }
-    int windowHeight() { return mWindowHeight; }
-    std::array<int, 2> windowDimensions() { return {mWindowWidth, mWindowHeight}; }
+    int windowWitdh() const { return mWindowWidth; }
+    int windowHeight() const { return mWindowHeight; }
+    std::array<int, 2> windowDimensions() const { return {mWindowWidth, mWindowHeight}; }
 
-    bool isRenderModeActive() { return mMode == Mode::Render; }
-    bool isMarkModeActive() { return mMode == Mode::Mark; }
-    bool isEraseModeActive() { return mMode == Mode::Erase; }
-    bool isPickModeActive() { return mMode == Mode::Pick; }
-    bool isReadModeActive() { return mMode == Mode::Read; }
-    bool isSliceModeActive() { return mMode == Mode::Slice; }
-    bool isResized() { return mResized; }
-    float markToolRadius();
+    bool isRenderModeActive() const { return mMode == Mode::Render; }
+    bool isMarkModeActive() const { return mMode == Mode::Mark; }
+    bool isEraseModeActive() const { return mMode == Mode::Erase; }
+    bool isPickModeActive() const { return mMode == Mode::Pick; }
+    bool isReadModeActive() const { return mMode == Mode::Read; }
+    bool isSliceModeActive() const { return mMode == Mode::Slice; }
+    bool isResized() const { return mResized; }
+    float markToolRadius() const;
     
     void setState(State state);
     
@@ -110,10 +110,10 @@ public:
     void setViewportCamera(Camera* camera) { mCamera = camera; }
     void toggleMode(Mode mode) { (mMode != mode) ? mMode = mode : mMode = Mode::Render; }
     void setRenderMode();
-    void setMarkMode(bool mark);// { (paint) ? mMode = Mode::Paint : mMode = Mode::Render; }
-    void setEraseMode(bool erase);// { (erase) ? mMode = Mode::Erase : mMode = Mode::Render; }
-    void setReadMode(bool read);// { (read) ? mMode = Mode::Read : mMode = Mode::Render; }
-    void setPickMode(bool pick);// { (pick) ? mMode = Mode::Pick : mMode = Mode::Render; }
+    void setMarkMode(bool mark);
+    void setEraseMode(bool erase);
+    void setReadMode(bool read);
+    void setPickMode(bool pick);
     void setSliceMode(bool slice);
     void alignMainCameraToModel();
     void alignCameraToModel(Camera *camera, Model3D * model);
@@ -161,21 +161,23 @@ public:
     void updateCurrentPaletteRange(std::pair<float, float> range);
     void setOpacity(unsigned int layerIndex, float opacity);
     void computeExpression(const std::vector<std::string>& expression);
-    void computeShader(Program* shader, const std::vector<glm::byte>& uniformData = {});
+    void computeShader(Program* shader, const std::vector<glm::byte>& uniformData = {}, bool computeImmediately = true);
     
     void computeLayerOperation(unsigned int layerOperation, const std::vector<glm::byte>& uniformData = {});
     
     std::vector<glm::byte> readTexture(Texture* texture);
     template<typename T>
     std::vector<T> readTexture(Texture* texture);
+    
     std::vector<char> readCharTexture(Texture* texture);
     std::vector<uint16_t> readUShortTexture(Texture* texture);
     std::vector<int16_t> readShortTexture(Texture* texture);
     std::vector<uint32_t> readUIntTexture(Texture* texture);
     std::vector<int32_t> readIntTexture(Texture* texture);
     std::vector<half_float::half> readHalfFloatTexture(Texture* texture);
-    std::vector<float> readFloatTexture(Texture* texture);
-    std::vector<glm::byte> readLayerData(unsigned int layerIndex);
+    std::vector<float> readFloatTexture(Texture* texture);    
+    std::vector<double> readLayerData(unsigned int layerIndex);
+    std::vector<double> readLayerDataTexture(Texture* texture);
     std::vector<glm::byte> readLayerMask(unsigned int layerIndex);
     
     void insertTechnique(RenderTechnique* tech, int life = 0);

@@ -81,7 +81,14 @@ public slots:
     void updateOpacity(unsigned int layerIndex, float opacity);
 
     void createHistogram();
+    void computeCellArea();
+    void computeAreaStatistics();
+    void computeNeighborhoodStatistics();
+    void computeCostSurface();
     void computeDistanceField();
+    void computeDistanceBand();
+    void computeCurvature();
+    void computeRugosity();
     void computeNormals();
     void computeOrientation();
     
