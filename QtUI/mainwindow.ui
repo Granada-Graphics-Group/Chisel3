@@ -735,7 +735,7 @@
     <addaction name="actionDistanceFieldOperation"/>
     <addaction name="actionDistanceBandOperation"/>
     <addaction name="actionCurvatureOperation"/>
-    <addaction name="actionRugosityOperation"/>
+    <addaction name="actionRoughnessOperation"/>
     <addaction name="actionNormalOperation"/>
     <addaction name="actionOrientationOperation"/>
    </widget>
@@ -1303,17 +1303,17 @@
     <string>Compute the curvature per texel</string>
    </property>
   </action>
-  <action name="actionRugosityOperation">
+  <action name="actionRoughnessOperation">
    <property name="text">
-    <string>&amp;Rugosity</string>
+    <string>&amp;Roughness</string>
    </property>
    <property name="toolTip">
-    <string>Compute the rugosity per texel</string>
+    <string>Compute the roughness per texel</string>
    </property>
   </action>
   <action name="actionDistanceBandOperation">
    <property name="text">
-    <string>Distance band</string>
+    <string>Distance &amp;band</string>
    </property>
    <property name="toolTip">
     <string>Compute distance band</string>

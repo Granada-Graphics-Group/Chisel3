@@ -455,7 +455,7 @@ RenderTechnique * ResourceManager::createRenderTechnique(std::string name, std::
 {
     if(!containRenderTechnique(name))
     {
-        mRenderTechniques[name] = std::make_unique<RenderTechnique>(name, targets, life);
+        mRenderTechniques[name] = std::make_unique<RenderTechnique>(name, targets, false, life);
         return mRenderTechniques[name].get();
     }
     else

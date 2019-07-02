@@ -295,11 +295,10 @@ void Chisel::deleteLayer(unsigned int index)
     
     mActiveLayers.erase(begin(mActiveLayers) + index);
     
+    mCurrentLayer = nullptr;
+    
     if(!mActiveLayers.size())
-    {
-        mCurrentLayer = nullptr;
         mCurrentPalette = mResourceManager->palette(0);
-    }
 }
 
 void Chisel::deleteLayer(std::string name)
@@ -686,6 +685,8 @@ Layer* Chisel::computeCellArea(const std::pair<int, int> layerResolution)
     addActiveLayer(cellAreaLayer);        
     mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
     mRenderer->padLayerTextures(0);
+    
+    return cellAreaLayer;
 }
 
 std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int functionLayerIndex, int functionFieldIndex, unsigned int baseLayerIndex, StatOps operation)
@@ -1487,24 +1488,32 @@ Layer* Chisel::computeCurvatureLayer(const std::pair<int, int> layerResolution, 
     auto width = normalLayers[0]->dataTexture()->width();
     auto height = normalLayers[0]->dataTexture()->height();
     
-    std::vector<float> neighborhoodStatsData(normalMask.size(), 0);
+    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+    auto maxArea = *std::max_element(begin(areaData), end(areaData));
+    
+    std::vector<float> curvatureData(normalMask.size(), 0);
     std::vector<glm::byte> valueTextureData(normalMask.size() * sizeof(float), 0);
     std::vector<glm::byte> maskTextureData(normalMask.size(), 0);
 
     std::array<int, 8> neighborOffsets = { -1, 1, width, -width, -1 + width, -1 - width, 1 + width, 1 - width };
     
-    std::vector<uint64_t> surfaceCostData(normalMask.size(), std::numeric_limits<uint64_t>::max());            
+    std::vector<uint64_t> texelCostData(normalMask.size(), std::numeric_limits<uint64_t>::max());
+    std::vector<double> metricCostData(normalMask.size(), std::numeric_limits<double>::max());
+    
     std::vector<char> inspectedTexels(normalMask.size(), 2);
     
-    for(auto i = 0; i < normalMask.size(); ++i)
+    for(auto i = 0; i < 2/*normalMask.size()*/; ++i)
         if(normalMask[i] && neighborhoodData[2 * i] < 0)
         {
-            std::vector<double> statisticsData;
+            std::vector<uint64_t> validIndices;
+            std::vector<glm::vec3> normals;
+                       
             std::vector<uint64_t> dirtyIndices;
             std::set<std::pair<uint64_t, uint64_t>> activeTexels;
             
             activeTexels.insert({0,i});
-            surfaceCostData[i] = 0;
+            texelCostData[i] = 0;            
+            metricCostData[i] = 0;
             inspectedTexels[i] = 1;
                         
             do
@@ -1557,22 +1566,28 @@ Layer* Chisel::computeCurvatureLayer(const std::pair<int, int> layerResolution, 
                             
                             if(neighborTexelIndex != 0 && neighborTexelIndex < width * height)
                             {
-                                float costToNeighbor = surfaceCostData[currentTexelIndex] + 1;
+                                float texelCostToNeighbor = texelCostData[currentTexelIndex] + 1;                                
+                                float metricCostToNeighbor = metricCostData[currentTexelIndex];
+                                
+                                if(i < 4)
+                                    metricCostToNeighbor += std::sqrt(areaData[currentTexelIndex])/2.0 + std::sqrt(areaData[neighborTexelIndex])/2.0;
+                                else
+                                    metricCostToNeighbor += std::sqrt(2 * areaData[currentTexelIndex])/2.0 + std::sqrt(2 * areaData[neighborTexelIndex])/2.0;                                
                                                             
-                                if(costToNeighbor <= distance && surfaceCostData[neighborTexelIndex] > costToNeighbor)
+                                if(texelCostToNeighbor <= distance && texelCostData[neighborTexelIndex] > texelCostToNeighbor)
                                 {
                                     if(inspectedTexels[neighborTexelIndex] > 1)
                                     {
-                                        activeTexels.insert({costToNeighbor, neighborTexelIndex});
+                                        activeTexels.insert({texelCostToNeighbor, neighborTexelIndex});
                                         inspectedTexels[neighborTexelIndex] = 1;
                                     }
                                     else if(inspectedTexels[neighborTexelIndex] == 1)
                                     {
-                                        auto found = activeTexels.find({surfaceCostData[neighborTexelIndex], neighborTexelIndex});
+                                        auto found = activeTexels.find({texelCostData[neighborTexelIndex], neighborTexelIndex});
                                         if(found != end(activeTexels))
                                         {
                                             activeTexels.erase(found);
-                                            activeTexels.insert({costToNeighbor, neighborTexelIndex});
+                                            activeTexels.insert({texelCostToNeighbor, neighborTexelIndex});
                                         }                                
                                     }
                                     
@@ -1580,37 +1595,328 @@ Layer* Chisel::computeCurvatureLayer(const std::pair<int, int> layerResolution, 
                                         auto a = 0;
                                     else
                                     {
-                                        surfaceCostData[neighborTexelIndex] = costToNeighbor;
+                                        texelCostData[neighborTexelIndex] = texelCostToNeighbor;
+                                        metricCostData[neighborTexelIndex] = metricCostToNeighbor;
                                         dirtyIndices.push_back(neighborTexelIndex);
                                     }
                                 }
                             }
                         }
                     
-                    inspectedTexels[currentTexelIndex] = 0;                                
-                    //statisticsData.push_back(functionData[currentTexelIndex]);
+                    inspectedTexels[currentTexelIndex] = 0;
+                    
+                    normals.push_back({normalData[0][currentTexelIndex], normalData[1][currentTexelIndex], normalData[2][currentTexelIndex]});
+                    validIndices.push_back(currentTexelIndex);
+
                     dirtyIndices.push_back(currentTexelIndex);
                 }
             }while(!activeTexels.empty());
+            
+            std::vector<double> radii;
+            std::vector<double> weights;             
+            
+            for(auto j = 1; j < normals.size(); ++j)
+            {
+                double angle = std::atan2(glm::dot(normals[j], glm::normalize(glm::cross(normals[0], glm::cross(normals[0], normals[j])))), glm::dot(normals[j], normals[0]));
+                
+                auto neighborIndex = validIndices[j];
+                
+                radii.push_back(metricCostData[neighborIndex] * 0.5 / std::fabs(std::sin(angle * 0.5)));
+                weights.push_back(areaData[neighborIndex] / maxArea * 1.0/metricCostData[neighborIndex]);
+            }
+                        
+            double radiiSum = 0;
+            double weightsSum = 0;
+            
+            for(auto j = 0; j < radii.size(); ++j)
+                if(!std::isnan(radii[j]))
+                {
+                    radiiSum += weights[j] * radii[j];
+                    weightsSum += weights[j];                    
+                }
+                
+            curvatureData[i] = 1.0/(radiiSum/weightsSum);
+            maskTextureData[i] = 255;
 
             for(const auto& index: dirtyIndices)
             {
-                surfaceCostData[index] = std::numeric_limits<uint64_t>::max();
+                texelCostData[index] = std::numeric_limits<uint64_t>::max();
+                metricCostData[index] = std::numeric_limits<double>::max();
+                inspectedTexels[index] = 2;
+            }            
+// 		for(NodeIndex j = 0; j < neighbourIndexesGlobalList.size(); ++j)
+// 		{
+// 				NodeIndex neighbourIndex = neighbourIndexesGlobalList[j];
+// 				double angle = atan2( normalsAtCurrentRes[neighbourIndex] * ((normalsAtCurrentRes[neighbourIndex].CrossProduct(normalsAtCurrentRes[i])).CrossProduct(normalsAtCurrentRes[i])).normalize(), normalsAtCurrentRes[neighbourIndex] * normalsAtCurrentRes[i] );
+// 
+// 				double distance = metricDistance[j] * 0.5;
+// 
+// 				radiusList.push_back(distance / fabs(sin(angle * 0.5)));
+// 				weightList.push_back(areaVoxelLayer->getDataAt(j)/ max * 1.0 / distance);
+// 		}
+// 
+// 		double radiusMean = 0;
+// 		double weightMean = 0;
+// 
+// 		for(int j = 0; j < radiusList.size(); ++j)
+// 			if( !chisel::utilities::GlobalFunctions::isNan(radiusList[j]) )
+// 			{
+// 				radiusMean += weightList[j] * radiusList[j];
+// 				weightMean += weightList[j];
+// 			}            
+        }
+    
+    for(auto layer : normalLayers)
+        deleteLayer(layer->name());
+        //mResourceManager->deleteLayer(layer);    
+    
+    auto curvatureByteData = reinterpret_cast<glm::byte*>(curvatureData.data());
+    std::copy(curvatureByteData, curvatureByteData + curvatureData.size() * sizeof(float), begin(valueTextureData));
+
+    auto curvatureLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName("Curvature"), Layer::Type::Float32, layerResolution, valueTextureData, maskTextureData, mResourceManager->palette(0));
+    addActiveLayer(curvatureLayer);
+    setCurrentLayer(0);
+    
+    mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+    mRenderer->padLayerTextures(0); 
+    
+    return curvatureLayer;
+}
+
+Layer* Chisel::computeRoughnessLayer(const std::pair<int, int> layerResolution, double distance)
+{
+    auto normalLayers = computeNormalLayer(layerResolution);    
+    auto posLayers = computePositionLayer(layerResolution);
+    
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");    
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
+    
+    std::array<std::vector<float>, 3> normalData;
+    normalData[0] = mRenderer->readFloatTexture(normalLayers[0]->dataTexture());
+    normalData[1] = mRenderer->readFloatTexture(normalLayers[1]->dataTexture());
+    normalData[2] = mRenderer->readFloatTexture(normalLayers[2]->dataTexture());
+    auto normalMask = mRenderer->readTexture(normalLayers[0]->maskTexture());
+    
+    std::array<std::vector<float>, 3> posData;
+    posData[0] = mRenderer->readFloatTexture(posLayers[0]->dataTexture());
+    posData[1] = mRenderer->readFloatTexture(posLayers[1]->dataTexture());
+    posData[2] = mRenderer->readFloatTexture(posLayers[2]->dataTexture());
+        
+    auto width = normalLayers[0]->dataTexture()->width();
+    auto height = normalLayers[0]->dataTexture()->height();
+    
+    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+    auto maxArea = *std::max_element(begin(areaData), end(areaData));
+    
+    std::vector<float> roughnessData(normalMask.size(), 0);
+    std::vector<glm::byte> valueTextureData(normalMask.size() * sizeof(float), 0);
+    std::vector<glm::byte> maskTextureData(normalMask.size(), 0);
+
+    std::array<int, 8> neighborOffsets = { -1, 1, width, -width, -1 + width, -1 - width, 1 + width, 1 - width };
+    
+    std::vector<uint64_t> texelCostData(normalMask.size(), std::numeric_limits<uint64_t>::max());
+    std::vector<double> metricCostData(normalMask.size(), std::numeric_limits<double>::max());
+    
+    std::vector<char> inspectedTexels(normalMask.size(), 2);
+    
+    for(auto i = 0; i < 2/*normalMask.size()*/; ++i)
+        if(normalMask[i] && neighborhoodData[2 * i] < 0)
+        {
+            std::vector<uint64_t> validIndices;
+            std::vector<glm::vec3> normals;
+                       
+            std::vector<uint64_t> dirtyIndices;
+            std::set<std::pair<uint64_t, uint64_t>> activeTexels;
+            
+            activeTexels.insert({0,i});
+            texelCostData[i] = 0;            
+            metricCostData[i] = 0;
+            inspectedTexels[i] = 1;
+                        
+            do
+            {
+                auto currentTexelIndex = activeTexels.cbegin()->second;
+                activeTexels.erase(activeTexels.cbegin());
+                
+                if(normalMask[currentTexelIndex])
+                {
+                    /*if(surfaceCostData[currentTexelIndex] < radius)     */               
+                        for(int idx = 0; idx < 8; ++idx)
+                        {
+                            // módulo de texel index para saber si tiene sentido el vecino ?
+                                    
+                            auto neighborTexelIndex = 0;            
+                            int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+                            
+                            
+                            if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << idx)) != 0)
+                            {
+                                neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
+                            }
+                            else
+                            {                        
+                                auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[idx]);
+                                
+                                if(indirectIndex > 0)
+                                {
+                                    neighborTexelIndex = neighborhoodData[indirectIndex + 1] * width + neighborhoodData[indirectIndex];
+                                                        
+                                    if(neighborTexelIndex < 0)
+                                    {
+                                        auto a = neighborhoodData[indirectIndex];
+                                        auto b = neighborhoodData[indirectIndex + 1];
+                                        auto c  = 0;
+                                        auto d = neighborhoodData[2 * currentTexelIndex];
+                                        auto e = neighborhoodData[2 * currentTexelIndex + 1];
+                                        neighborTexelIndex = 0;
+                                        
+                                        LOG("<> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
+                                    }
+                                    
+                                    if(neighborhoodData[2 * neighborTexelIndex] > 0)
+                                    {
+                                        neighborTexelIndex = 0;
+                                        LOG("---> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
+                                    }
+                                }
+                            }
+                            
+                            if(neighborTexelIndex != 0 && neighborTexelIndex < width * height)
+                            {
+                                float texelCostToNeighbor = texelCostData[currentTexelIndex] + 1;                                
+                                float metricCostToNeighbor = metricCostData[currentTexelIndex];
+                                
+                                if(i < 4)
+                                    metricCostToNeighbor += std::sqrt(areaData[currentTexelIndex])/2.0 + std::sqrt(areaData[neighborTexelIndex])/2.0;
+                                else
+                                    metricCostToNeighbor += std::sqrt(2 * areaData[currentTexelIndex])/2.0 + std::sqrt(2 * areaData[neighborTexelIndex])/2.0;                                
+                                                            
+                                if(texelCostToNeighbor <= distance && texelCostData[neighborTexelIndex] > texelCostToNeighbor)
+                                {
+                                    if(inspectedTexels[neighborTexelIndex] > 1)
+                                    {
+                                        activeTexels.insert({texelCostToNeighbor, neighborTexelIndex});
+                                        inspectedTexels[neighborTexelIndex] = 1;
+                                    }
+                                    else if(inspectedTexels[neighborTexelIndex] == 1)
+                                    {
+                                        auto found = activeTexels.find({texelCostData[neighborTexelIndex], neighborTexelIndex});
+                                        if(found != end(activeTexels))
+                                        {
+                                            activeTexels.erase(found);
+                                            activeTexels.insert({texelCostToNeighbor, neighborTexelIndex});
+                                        }                                
+                                    }
+                                    
+                                    if(neighborhoodData[2 * neighborTexelIndex] == 0 && neighborhoodData[2 * neighborTexelIndex + 1] == 0)
+                                        auto a = 0;
+                                    else
+                                    {
+                                        texelCostData[neighborTexelIndex] = texelCostToNeighbor;
+                                        metricCostData[neighborTexelIndex] = metricCostToNeighbor;
+                                        dirtyIndices.push_back(neighborTexelIndex);
+                                    }
+                                }
+                            }
+                        }
+                    
+                    inspectedTexels[currentTexelIndex] = 0;
+                    
+                    normals.push_back({normalData[0][currentTexelIndex], normalData[1][currentTexelIndex], normalData[2][currentTexelIndex]});
+                    validIndices.push_back(currentTexelIndex);
+
+                    dirtyIndices.push_back(currentTexelIndex);
+                }
+            }while(!activeTexels.empty());
+            
+            std::vector<double> radii;
+            std::vector<double> weights;             
+            
+            for(auto j = 1; j < normals.size(); ++j)
+            {
+                double angle = std::atan2(glm::dot(normals[j], glm::normalize(glm::cross(normals[0], glm::cross(normals[0], normals[j])))), glm::dot(normals[j], normals[0]));
+                
+                if(std::fabs(angle) > 1e-8)
+                {
+                    auto neighborIndex = validIndices[j];
+                    
+                    radii.push_back(metricCostData[neighborIndex] * 0.5 / std::fabs(std::sin(angle * 0.5)));
+                    weights.push_back(areaData[neighborIndex] / maxArea * 1.0/metricCostData[neighborIndex]);
+                }
+            }
+                        
+            double radiusMean = 0;
+            
+            for(auto j = 0; j < radii.size(); ++j)
+                if(!std::isnan(radii[j]))
+                    radiusMean += radii[j];
+            
+            if(radiusMean) radiusMean /= radii.size();
+            
+            auto center = glm::dvec3{posData[0][i], posData[1][i], posData[2][i]} - radiusMean * glm::dvec3(normals[0]);
+
+            std::vector<double> diffs;
+            
+            for(auto j = 1; j < normals.size(); ++j)
+            {
+                auto neighborIndex = validIndices[j];                
+                glm::dvec3 neighPos{posData[0][neighborIndex], posData[1][neighborIndex], posData[2][neighborIndex]};
+                auto distCenterToNeighbor = glm::distance(center, neighPos);
+                
+                diffs.push_back(std::fabs(radiusMean - distCenterToNeighbor));
+            }
+            
+            double diffMean = 0;
+            
+            for(auto diff : diffs)
+                diffMean += diff;
+            
+            roughnessData[i] = (!std::isnan(diffMean)) ? diffMean / diffs.size() : 0;                
+            maskTextureData[i] = 255;
+
+            for(const auto& index: dirtyIndices)
+            {
+                texelCostData[index] = std::numeric_limits<uint64_t>::max();
+                metricCostData[index] = std::numeric_limits<double>::max();
                 inspectedTexels[index] = 2;
             }
         }
+
+    for(auto layer : normalLayers)
+        deleteLayer(layer->name());
+    
+    for(auto layer : posLayers)
+        deleteLayer(layer->name());
+        
+    auto roughnessByteData = reinterpret_cast<glm::byte*>(roughnessData.data());
+    std::copy(roughnessByteData, roughnessByteData + roughnessData.size() * sizeof(float), begin(valueTextureData));
+
+    auto roughnessLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName("Roughness"), Layer::Type::Float32, layerResolution, valueTextureData, maskTextureData, mResourceManager->palette(0));
+    addActiveLayer(roughnessLayer);
+
+    mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+    mRenderer->padLayerTextures(0); 
+    
+    return roughnessLayer;
 }
 
-Layer* Chisel::computeRugosityLayer(const std::pair<int, int> layerResolution, double distance)
+std::array<Layer*, 3> Chisel::computePositionLayer(const std::pair<int, int> layerResolution)
 {
+    auto posLayerX = createLayer(mResourceManager->createValidLayerName("PositionX"), Layer::Type::Float32, layerResolution);
+    auto posLayerY = createLayer(mResourceManager->createValidLayerName("PositionY"), Layer::Type::Float32, layerResolution);
+    auto posLayerZ = createLayer(mResourceManager->createValidLayerName("PositionZ"), Layer::Type::Float32, layerResolution);
     
+    mRenderer->computeLayerOperation(2);
+    mRenderer->padLayerTextures(0);
+
+    return {posLayerX, posLayerY, posLayerZ};
 }
 
 std::array<Layer*, 3> Chisel::computeNormalLayer(const std::pair<int, int> layerResolution)
 {
-    auto normalLayerX = createLayer(mResourceManager->createValidLayerName("NormalsX"), Layer::Type::Float32, layerResolution);
-    auto normalLayerY = createLayer(mResourceManager->createValidLayerName("NormalsY"), Layer::Type::Float32, layerResolution);
-    auto normalLayerZ = createLayer(mResourceManager->createValidLayerName("NormalsZ"), Layer::Type::Float32, layerResolution);
+    auto normalLayerX = createLayer(mResourceManager->createValidLayerName("NormalX"), Layer::Type::Float32, layerResolution);
+    auto normalLayerY = createLayer(mResourceManager->createValidLayerName("NormalY"), Layer::Type::Float32, layerResolution);
+    auto normalLayerZ = createLayer(mResourceManager->createValidLayerName("NormalZ"), Layer::Type::Float32, layerResolution);
     
     mRenderer->computeLayerOperation(0);
     mRenderer->padLayerTextures(0);

@@ -63,7 +63,7 @@ void PaletteGraphicsView::updatePaletteScene()
         {
             if(mPalette->type() == Palette::Type::Discrete)
             {
-                auto count = ctrlPoints.rbegin()->first - ctrlPoints.begin()->first + 1;
+                auto count = std::floor(ctrlPoints.rbegin()->first - ctrlPoints.begin()->first) + 1;
                 auto colorHeight = viewRect.height() / count;
                 
                 if(colorHeight >= 1)

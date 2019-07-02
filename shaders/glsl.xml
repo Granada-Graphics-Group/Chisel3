@@ -108,6 +108,12 @@
             <shader type="fragment"   name="custompadding.frag"/>
         </shaders>
     </program>
+    <program name="DrawPositions">
+        <shaders>
+            <shader type="vertex"   name="drawpositions.vert"/>
+            <shader type="fragment"   name="drawpositions.frag"/>
+        </shaders>
+    </program>    
     <program name="DrawNormals">
         <shaders>
             <shader type="vertex"   name="drawnormals.vert"/>

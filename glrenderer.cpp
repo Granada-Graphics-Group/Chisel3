@@ -1765,10 +1765,23 @@ void GLRenderer::computeLayerOperation(unsigned int layerOperation, const std::v
         renderTarget->updateUniformData(0, uniformData.size(), uniformData.data());        
         renderTarget->setColorTextures({orientationlayer.mValue, orientationlayer.mMask});
     }
+    else if(layerOperation == 2)
+    {
+        const auto& layerX = mLayers[0];
+        const auto& layerY = mLayers[1];
+        const auto& layerZ = mLayers[2];
+        
+        auto operationProgram = mManager->shaderProgram("DrawPositions");
+        auto renderTarget = mLayerOperationTech->targets()[0];
+        renderTarget->passes()[0]->sceneMaterial()->setShader(operationProgram);        
+        renderTarget->setColorTextures({layerX.mValue, layerX.mMask, layerY.mValue, layerY.mMask, layerZ.mValue, layerZ.mMask});      
+    }
     
-    mLayerOperationTech->settingUP();    
+    mLayerOperationTech->settingUP();
+    mLayerOperationTech->setSync(true);
     
     insertTechnique(mLayerOperationTech, 1);
+    render();
 }
 
 std::vector<glm::byte> GLRenderer::readTexture(Texture* texture)

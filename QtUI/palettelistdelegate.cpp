@@ -35,7 +35,7 @@ void PaletteListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
 
     const auto& ctrlPoints = palette->controlPoints();    
     auto interpolating = palette->isInterpolating();
-    auto discreteCount = interpolating ? ctrlPoints.rbegin()->first - ctrlPoints.begin()->first + 1 : ctrlPoints.size();
+    auto discreteCount = interpolating ? std::floor(ctrlPoints.rbegin()->first - ctrlPoints.begin()->first) + 1 : ctrlPoints.size();
     auto colorWidth = rect.width() / discreteCount;
     auto iColorWidth = ceil(colorWidth);    
     auto iColorHeight = ceil(rect.height() / 4);

@@ -200,7 +200,7 @@ std::array< float, int(16384) > Palette::paletteTextureData(Type type)
     
     if(type == Type::Discrete)
     {
-        auto count = mControlPoints.rbegin()->first - mControlPoints.begin()->first + 1;
+        auto count = std::floor(mControlPoints.rbegin()->first - mControlPoints.begin()->first) + 1;
         auto colorWidth = 4096 / count;
 
         for (int i = 0; i < count; ++i)

@@ -1,7 +1,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "createlayerdialog.h"
 #include "ui_mainwindow.h"
 
 #include <QMainWindow>
@@ -88,7 +87,7 @@ public slots:
     void computeDistanceField();
     void computeDistanceBand();
     void computeCurvature();
-    void computeRugosity();
+    void computeRoughness();
     void computeNormals();
     void computeOrientation();
     

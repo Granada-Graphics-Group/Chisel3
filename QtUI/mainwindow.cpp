@@ -30,6 +30,8 @@
 #include "lightingdialog.h"
 #include "histogramdialog.h"
 #include "fbxexporterdialog.h"
+#include "createlayerdialog.h"
+#include "areastatisticsdialog.h"
 
 #include <chrono>
 
@@ -764,11 +766,18 @@ void MainWindow::createHistogram()
 void MainWindow::computeCellArea()
 {
     mUi->Visualizer->makeCurrent();
-    mChisel->computeCellArea({2048, 2048});    
+    mChisel->computeCellArea({2048, 2048});
+    
+    setState(State::LayerCreated);
 }
 
 void MainWindow::computeAreaStatistics()
 {
+    setState(State::CreateLayer);
+
+    AreaStatisticsDialog areaStatsDialog(mChisel->resourceManager(), this);
+    areaStatsDialog.exec();
+
     mUi->Visualizer->makeCurrent();
     mChisel->computeAreaStatistics(0, 0, 1, StatOps::MaxValue);
 }
@@ -799,12 +808,18 @@ void MainWindow::computeDistanceBand()
 
 void MainWindow::computeCurvature()
 {
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeCurvatureLayer({2048, 2048}, 1);
     
+    setState(State::LayerCreated);
 }
 
-void MainWindow::computeRugosity()
+void MainWindow::computeRoughness()
 {
-    
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeRoughnessLayer({2048, 2048}, 1);    
+   
+    setState(State::LayerCreated);
 }
 
 void MainWindow::computeNormals()
@@ -1920,7 +1935,7 @@ void MainWindow::createActions()
     connect(mUi->actionDistanceFieldOperation, &QAction::triggered, this, &MainWindow::computeDistanceField);
     connect(mUi->actionDistanceBandOperation, &QAction::triggered, this, &MainWindow::computeDistanceBand);
     connect(mUi->actionCurvatureOperation, &QAction::triggered, this, &MainWindow::computeCurvature);
-    connect(mUi->actionRugosityOperation, &QAction::triggered, this, &MainWindow::computeRugosity);
+    connect(mUi->actionRoughnessOperation, &QAction::triggered, this, &MainWindow::computeRoughness);
     connect(mUi->actionNormalOperation, &QAction::triggered, this, &MainWindow::computeNormals);
     connect(mUi->actionOrientationOperation, &QAction::triggered, this, &MainWindow::computeOrientation);
         

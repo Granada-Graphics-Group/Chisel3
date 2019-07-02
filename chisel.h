@@ -153,7 +153,8 @@ public:
     Layer* computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost);
     Layer* computeDistanceFieldLayer(unsigned int index, double distance);
     Layer* computeCurvatureLayer(const std::pair<int, int> layerResolution, double distance);
-    Layer* computeRugosityLayer(const std::pair<int, int> layerResolution, double distance);
+    Layer* computeRoughnessLayer(const std::pair<int, int> layerResolution, double distance);
+    std::array<Layer*, 3> computePositionLayer(const std::pair<int, int> layerResolution);
     std::array<Layer*, 3> computeNormalLayer(const std::pair<int, int> layerResolution);
     Layer* computeOrientationLayer(const std::pair<int, int> layerResolution, glm::vec3 reference);
     
