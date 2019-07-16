@@ -51,6 +51,7 @@ set(Chisel_SRCS  lib/headers/pugixml-1.6/src/pugixml.cpp
                     shader.cpp GLSLFileLoader.cpp 
                     fbobject.cpp fbxexporter.cpp
                     texturealgorithms.cpp
+                    geomhelper.cpp
                     chisel.cpp main.cpp
    )
    

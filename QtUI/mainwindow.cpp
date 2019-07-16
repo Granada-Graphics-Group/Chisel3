@@ -31,7 +31,16 @@
 #include "histogramdialog.h"
 #include "fbxexporterdialog.h"
 #include "createlayerdialog.h"
+#include "cellareadialog.h"
 #include "areastatisticsdialog.h"
+#include "neighborstatisticsdialog.h"
+#include "costsurfacedialog.h"
+#include "distancefielddialog.h"
+#include "distancebanddialog.h"
+#include "curvaturedialog.h"
+#include "roughnessdialog.h"
+#include "normalsdialog.h"
+#include "orientationdialog.h"
 
 #include <chrono>
 
@@ -751,8 +760,86 @@ void MainWindow::updateOpacity(unsigned int layerIndex, float opacity)
     mUi->Visualizer->update();     
 }
 
+void MainWindow::openOperationDialog(MainWindow::Operation op)
+{
+    disconnect(mOperationDialogConnection);
+    
+    switch(op)
+    {
+        case Operation::CellArea:
+        {
+            mOperationDialog.reset(new CellAreaDialog(mChisel.get(), this));
+            connect(static_cast<CellAreaDialog *>(mOperationDialog.get()), &CellAreaDialog::cellArea, this, &MainWindow::computeCellArea);
+        }
+        break;
+        case Operation::AreaStats:
+        {
+            mOperationDialog.reset(new AreaStatisticsDialog(mChisel.get(), this));
+            connect(static_cast<AreaStatisticsDialog *>(mOperationDialog.get()), &AreaStatisticsDialog::areaStatistics, this, &MainWindow::computeAreaStatistics);            
+        }
+        break;
+        case Operation::NeighborStats:
+        {
+            mOperationDialog.reset(new NeighborStatisticsDialog(mChisel.get(), this));
+            connect(static_cast<NeighborStatisticsDialog *>(mOperationDialog.get()), &NeighborStatisticsDialog::neighborStatistics, this, &MainWindow::computeNeighborhoodStatistics);            
+        }
+        break;
+        case Operation::CostSurface:
+        {
+            mOperationDialog.reset(new CostSurfaceDialog(mChisel.get(), this));
+            connect(static_cast<CostSurfaceDialog *>(mOperationDialog.get()), &CostSurfaceDialog::costSurface, this, &MainWindow::computeCostSurface);                        
+        }
+        break;
+        case Operation::DistanceField:
+        {
+            mOperationDialog.reset(new DistanceFieldDialog(mChisel.get(), this));
+            connect(static_cast<DistanceFieldDialog *>(mOperationDialog.get()), &DistanceFieldDialog::distanceField, this, &MainWindow::computeDistanceField);                 
+        }
+        break;
+        case Operation::DistanceBand:
+        {
+            mOperationDialog.reset(new DistanceBandDialog(mChisel.get(), this));
+            connect(static_cast<DistanceBandDialog *>(mOperationDialog.get()), &DistanceBandDialog::distanceBand, this, &MainWindow::computeDistanceBand);                             
+        }
+        break;
+        case Operation::Curvature:
+        {
+            mOperationDialog.reset(new CurvatureDialog(mChisel.get(), this));
+            connect(static_cast<CurvatureDialog *>(mOperationDialog.get()), &CurvatureDialog::curvature, this, &MainWindow::computeCurvature);            
+        }
+        break;
+        case Operation::Roughness:
+        {
+            mOperationDialog.reset(new RoughnessDialog(mChisel.get(), this));
+            connect(static_cast<RoughnessDialog *>(mOperationDialog.get()), &RoughnessDialog::roughness, this, &MainWindow::computeRoughness);
+        }
+        break;
+        case Operation::Normals:
+        {
+            mOperationDialog.reset(new NormalsDialog(mChisel.get(), this));
+            connect(static_cast<NormalsDialog *>(mOperationDialog.get()), &NormalsDialog::normals, this, &MainWindow::computeNormals);
+        }
+        break;
+        case Operation::Orientation:
+        {
+            mOperationDialog.reset(new OrientationDialog(mChisel.get(), this));
+            connect(static_cast<OrientationDialog *>(mOperationDialog.get()), &OrientationDialog::orientation, this, &MainWindow::computeOrientation);
+        }
+        break;
+        case Operation::Resampling:
+        {
+
+        }
+        break;
+    }
+    
+    mOperationDialog->open();
+}
+
 void MainWindow::createHistogram()
 {
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    
     auto index = mUi->activeLayerTreeView->currentIndex();
     mUi->Visualizer->makeCurrent();
 
@@ -761,92 +848,147 @@ void MainWindow::createHistogram()
 
     mHistogramDialog->resize(1600, 900);
     mHistogramDialog->show();
+    
+    QGuiApplication::restoreOverrideCursor();    
 }
 
-void MainWindow::computeCellArea()
+void MainWindow::computeCellArea(std::string name, std::pair<int, int> resolution)
 {
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+                
     mUi->Visualizer->makeCurrent();
-    mChisel->computeCellArea({2048, 2048});
+    mChisel->computeCellAreaLayer(name, resolution);
     
     setState(State::LayerCreated);
+    
+    QGuiApplication::restoreOverrideCursor();    
 }
 
-void MainWindow::computeAreaStatistics()
+void MainWindow::computeAreaStatistics(unsigned int layerIndex, unsigned int fieldIndex, unsigned int baseLayerIndex, unsigned int operationIndex)
 {
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+                
     setState(State::CreateLayer);
 
-    AreaStatisticsDialog areaStatsDialog(mChisel->resourceManager(), this);
-    areaStatsDialog.exec();
-
     mUi->Visualizer->makeCurrent();
-    mChisel->computeAreaStatistics(0, 0, 1, StatOps::MaxValue);
-}
-
-void MainWindow::computeNeighborhoodStatistics()
-{
-    mUi->Visualizer->makeCurrent();
-    mChisel->computeNeighborhoodStatistics(0, -1, 1, StatOps::MeanValue);
-}
-
-void MainWindow::computeCostSurface()
-{
+    mChisel->computeAreaStatistics(layerIndex, fieldIndex, baseLayerIndex, static_cast<StatOps>(operationIndex));
     
+    QGuiApplication::restoreOverrideCursor();    
 }
 
-void MainWindow::computeDistanceField()
+void MainWindow::computeNeighborhoodStatistics(std::string name, unsigned int layerIndex, unsigned int fieldIndex, double radius, unsigned int operationIndex)
 {
-    auto index = mUi->activeLayerTreeView->currentIndex();
-    
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+                
     mUi->Visualizer->makeCurrent();
-    mChisel->computeDistanceFieldLayer(index.row(), 1.0);
-}
-
-void MainWindow::computeDistanceBand()
-{
-    
-}
-
-void MainWindow::computeCurvature()
-{
-    mUi->Visualizer->makeCurrent();
-    mChisel->computeCurvatureLayer({2048, 2048}, 1);
+    mChisel->computeNeighborhoodStatistics(name, layerIndex, fieldIndex, radius, static_cast<StatOps>(operationIndex));
     
     setState(State::LayerCreated);
+    
+    QGuiApplication::restoreOverrideCursor();    
 }
 
-void MainWindow::computeRoughness()
+void MainWindow::computeCostSurface(std::string name, unsigned int baseLayerIndex, unsigned int costLayerIndex, double radius)
+{
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+                
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeCostSurfaceLayer(name, baseLayerIndex, costLayerIndex, radius);
+    
+    setState(State::LayerCreated);
+
+    QGuiApplication::restoreOverrideCursor();
+}
+
+void MainWindow::computeDistanceField(std::string name, unsigned int baseLayerIndex, double radius)
+{
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeDistanceFieldLayer(name, baseLayerIndex, radius);
+    
+    setState(State::LayerCreated);
+    
+    QGuiApplication::restoreOverrideCursor();
+}
+
+void MainWindow::computeDistanceBand(std::string name, unsigned int baseLayerIndex, double radius)
 {
     mUi->Visualizer->makeCurrent();
-    mChisel->computeRoughnessLayer({2048, 2048}, 1);    
+    mChisel->computeDistanceBandLayer(name, baseLayerIndex, radius);
+    
+    setState(State::LayerCreated);    
+}
+
+void MainWindow::computeCurvature(std::string name, std::pair<int, int> resolution, double radius)
+{
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeCurvatureLayer(name, resolution, radius);
+    
+    setState(State::LayerCreated);
+    
+    QGuiApplication::restoreOverrideCursor();    
+}
+
+void MainWindow::computeRoughness(std::string name, std::pair<int, int> resolution, double radius)
+{
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+            
+    mUi->Visualizer->makeCurrent();
+    mChisel->computeRoughnessLayer(name, resolution, radius);    
    
     setState(State::LayerCreated);
+    
+    QGuiApplication::restoreOverrideCursor();    
 }
 
-void MainWindow::computeNormals()
+void MainWindow::computeNormals(std::string name, std::pair<int, int> resolution)
 {
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+            
     mUi->Visualizer->makeCurrent();
     
-    mChisel->computeNormalLayer({2048, 2048});
+    mChisel->computeNormalLayer(name, resolution);
 
     mUi->Visualizer->update();
     
     selectLayer(mChisel->activeLayerModel()->index(0, 0));
     
     setState(State::LayerCreated);
-
+    
+    QGuiApplication::restoreOverrideCursor();    
 }
 
-void MainWindow::computeOrientation()
+void MainWindow::computeOrientation(std::string name, std::pair<int, int> resolution, glm::vec3 reference)
 {
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+                
     mUi->Visualizer->makeCurrent();
     
-    mChisel->computeOrientationLayer({2048, 2048}, {1, 0, 0});
+    mChisel->computeOrientationLayer(name, resolution, reference);
     
     mUi->Visualizer->update();
     
     selectLayer(mChisel->activeLayerModel()->index(0, 0));
     
     setState(State::LayerCreated);
+
+    QGuiApplication::restoreOverrideCursor();    
+}
+
+void MainWindow::computeResampling(std::string name, unsigned int layerIndex, std::pair<int, int> resolution)
+{
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+    mUi->Visualizer->makeCurrent();
+
+
+
+//    setState(State::LayerCreated);
+
+    QGuiApplication::restoreOverrideCursor();
 }
 
 void MainWindow::updateLayerToolBoxState(int index)
@@ -1171,6 +1313,8 @@ void MainWindow::openChiselProject()
         
         if(file.exists())
         {
+            QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+            
             mUi->Visualizer->makeCurrent();
             mChisel->loadChiselFile(file.baseName().toStdString(), file.absolutePath().toStdString() + "/");
             mUi->Visualizer->update();
@@ -1224,6 +1368,8 @@ void MainWindow::openChiselProject()
                 setState(State::LayerLoaded);
             else
                 setState(State::ModelLoaded);
+            
+            QGuiApplication::restoreOverrideCursor();
         }
     }
 }
@@ -1235,6 +1381,8 @@ void MainWindow::import3DModel()
     
     if(file.exists())
     {
+        QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        
         using clock_type = typename std::conditional< std::chrono::high_resolution_clock::is_steady,
                                                   std::chrono::high_resolution_clock,
                                                   std::chrono::steady_clock >::type ;
@@ -1246,6 +1394,8 @@ void MainWindow::import3DModel()
         mUi->Visualizer->update();
         
         setState(State::ModelLoaded);
+        
+        QGuiApplication::restoreOverrideCursor();
     }    
 }
 
@@ -1926,37 +2076,20 @@ void MainWindow::createActions()
     connect(mUi->actionImportPalette, &QAction::triggered, this, &MainWindow::importPalette);
     connect(mUi->actionExportPalette, &QAction::triggered, this, &MainWindow::exportPalette);
     connect(mUi->actionAddPaletteToCollection, &QAction::triggered, this, &MainWindow::addPaletteToCollection);
-
-    connect(mUi->actionCreateHistogram, &QAction::triggered, this, &MainWindow::createHistogram);
-    connect(mUi->actionCellAreaOperation, &QAction::triggered, this, &MainWindow::computeCellArea);
-    connect(mUi->actionAreaStatisticsOperation, &QAction::triggered, this, &MainWindow::computeAreaStatistics);
-    connect(mUi->actionNeighborhoodStatisticsOperation, &QAction::triggered, this, &MainWindow::computeNeighborhoodStatistics);
-    connect(mUi->actionCostSurfaceOperation, &QAction::triggered, this, &MainWindow::computeCostSurface);
-    connect(mUi->actionDistanceFieldOperation, &QAction::triggered, this, &MainWindow::computeDistanceField);
-    connect(mUi->actionDistanceBandOperation, &QAction::triggered, this, &MainWindow::computeDistanceBand);
-    connect(mUi->actionCurvatureOperation, &QAction::triggered, this, &MainWindow::computeCurvature);
-    connect(mUi->actionRoughnessOperation, &QAction::triggered, this, &MainWindow::computeRoughness);
-    connect(mUi->actionNormalOperation, &QAction::triggered, this, &MainWindow::computeNormals);
-    connect(mUi->actionOrientationOperation, &QAction::triggered, this, &MainWindow::computeOrientation);
-        
-/*    mSignalMapper = new QSignalMapper(this);
-    mSignalMapper->setMapping(mUi->actionSilhouette, Technique::Silhouette);
-    mSignalMapper->setMapping(mUi->actionTransform, Technique::Transform);
-    mSignalMapper->setMapping(mUi->actionHatching, Technique::Hatching);
-    mSignalMapper->setMapping(mUi->actionBlending, Technique::Blending);
-
-    connect(mUi->actionSilhouette, &QAction::triggered, mSignalMapper, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::map));
-    connect(mUi->actionTransform, &QAction::triggered, mSignalMapper, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::map));
-    connect(mUi->actionHatching, &QAction::triggered, mSignalMapper, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::map));
-    connect(mUi->actionBlending, &QAction::triggered, mSignalMapper, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::map));
     
-    connect(mUi->actionSilhouette, SIGNAL(triggered(bool)), mSignalMapper, SLOT(map()));
-    connect(mUi->actionTransform, SIGNAL(triggered(bool)), mSignalMapper, SLOT(map()));
-    connect(mUi->actionHatching, SIGNAL(triggered(bool)), mSignalMapper, SLOT(map()));
-    connect(mUi->actionBlending, SIGNAL(triggered(bool)), mSignalMapper, SLOT(map()));
+    connect(mUi->actionCellAreaOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::CellArea); });
+    connect(mUi->actionAreaStatisticsOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::AreaStats); });
+    connect(mUi->actionNeighborhoodStatisticsOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::NeighborStats); });
+    connect(mUi->actionCostSurfaceOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::CostSurface); });
+    connect(mUi->actionDistanceFieldOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::DistanceField); });
+    connect(mUi->actionDistanceBandOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::DistanceBand); });
+    connect(mUi->actionCurvatureOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::Curvature); });
+    connect(mUi->actionRoughnessOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::Roughness); });
+    connect(mUi->actionNormalOperation, &QAction::triggered, [this]()  { openOperationDialog(Operation::Normals); });
+    connect(mUi->actionOrientationOperation, &QAction::triggered,  [this]() { openOperationDialog(Operation::Orientation); });
+    connect(mUi->actionResamplingOperation, &QAction::triggered, [this]() { openOperationDialog(Operation::Resampling); });
     
-    connect(mSignalMapper, static_cast<void (QSignalMapper::*)(int)>(&QSignalMapper::mapped), mComposer, &TechniqueComposer::insertTechnique);
-    connect(mSignalMapper, SIGNAL(mapped(int)), mComposer, SLOT(insertTechnique(int)));*/
+    connect(mUi->actionCreateHistogram, &QAction::triggered, this, &MainWindow::createHistogram);        
 }
 
 void MainWindow::createToolBar()

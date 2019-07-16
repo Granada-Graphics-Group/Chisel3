@@ -1,23 +1,15 @@
 #include "areastatisticsdialog.h"
-#include "resourcemanager.h"
-#include "balloonmessagedialog.h"
 
-
-AreaStatisticsDialog::AreaStatisticsDialog(ResourceManager* manager, QWidget* parent)
+AreaStatisticsDialog::AreaStatisticsDialog(Chisel* chisel, QWidget* parent)
 :
-    QDialog(parent),
-    mManager(manager)
+    OperationDialog(chisel, parent)
 {
-    mUi = std::make_unique<Ui::AreaStatisticsDialog>();
-    mUi->setupUi(this);
+    setWindowTitle("Area Statistics");
     
-    mErrorDialog = std::make_unique<BalloonMessageDialog>(this);
-    mErrorDialog->setWindowFlags(mErrorDialog->windowFlags() | Qt::WindowTransparentForInput | Qt::WindowDoesNotAcceptFocus);
-    mErrorDialog->setTipOrientation(BalloonDialog::TipOrientation::Left);    
-    mErrorDialog->setAttribute(Qt::WA_ShowWithoutActivating);
-    mErrorDialog->setBackgroundColor(Qt::darkRed);
+    mUi->nameWidget->hide();    
+    mUi->radiusWidget->hide();
     
-    connect(mUi->nameTextEdit, &QLineEdit::textChanged, this, &AreaStatisticsDialog::validateLayerName);    
+    adjustSize();
 }
 
 
@@ -25,7 +17,7 @@ AreaStatisticsDialog::AreaStatisticsDialog(ResourceManager* manager, QWidget* pa
 
 void AreaStatisticsDialog::accept()
 {
-    if(mValidName)
+    if(isNameValid())
     {   
         std::pair<int, int> resolution;
         
@@ -38,68 +30,13 @@ void AreaStatisticsDialog::accept()
                 resolution = {4096, 4096};
                 break;
         }
-            
-        //emit createNewLayerSignal(mUi->nameTextEdit->text(), type, resolution, -1);
+        
+        emit areaStatistics(    mUi->functionLayerComboBox->currentIndex(),
+                                (mUi->fieldComboBox->count() > 0) ? mUi->fieldComboBox->currentData().toInt() : -1,
+                                mUi->baseLayerComboBox->currentIndex(),
+                                mUi->operationLayerComboBox->currentIndex()
+                           );
+        
         QDialog::accept();
     }    
-}
-
-
-// *** Protected Methods *** //
-
-void AreaStatisticsDialog::moveEvent(QMoveEvent* event)
-{
-    QDialog::moveEvent(event);
-    
-    if(!mErrorDialog->isEmpty())
-    {
-        auto height = mUi->nameTextEdit->height() - mErrorDialog->height();
-        mErrorDialog->move(mapToGlobal(mUi->nameTextEdit->pos() + QPoint(mUi->nameTextEdit->width(), height/2.0)));
-    }
-}
-
-void AreaStatisticsDialog::mouseMoveEvent(QMouseEvent* event)
-{
-    QDialog::mouseMoveEvent(event);
-    if(!mErrorDialog->isEmpty())
-    {
-        auto height = mUi->nameTextEdit->height() - mErrorDialog->height();
-        mErrorDialog->move(mapToGlobal(mUi->nameTextEdit->pos() + QPoint(mUi->nameTextEdit->width(), height/2.0)));
-    }    
-}
-
-
-// *** Private slots *** //
-
-void AreaStatisticsDialog::validateLayerName()
-{
-    auto candidate = mUi->nameTextEdit->text().toStdString();
-    
-    if(mManager->isValidName(candidate))
-    {
-        if(!mManager->layerExists(candidate))
-        {
-            if(mErrorDialog->isVisible()) mErrorDialog->hide();
-            mErrorDialog->clearMessage();            
-            mValidName = true;            
-        }
-        else
-        {
-            mErrorDialog->setMessage("The layer already exists", Qt::white);        
-            auto height = mUi->nameTextEdit->height() - mErrorDialog->height();
-            mErrorDialog->move(mapToGlobal(mUi->nameTextEdit->pos() + QPoint(mUi->nameTextEdit->width(), height/2.0)));
-            mErrorDialog->adjustSize();
-            mErrorDialog->show();             
-        }
-    }
-    else
-    {
-        mValidName = false;
-
-        mErrorDialog->setMessage("Invalid Layer Name", Qt::white);
-        auto height = mUi->nameTextEdit->height() - mErrorDialog->height();
-        mErrorDialog->move(mapToGlobal(mUi->nameTextEdit->pos() + QPoint(mUi->nameTextEdit->width(), height/2.0)));
-        mErrorDialog->adjustSize();
-        mErrorDialog->show();           
-    }   
 }

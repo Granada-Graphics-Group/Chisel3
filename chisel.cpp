@@ -552,10 +552,21 @@ std::map<std::string, std::vector<uint32_t> > Chisel::segmentModelWithLayer(unsi
     return segmentation;
 }
 
+std::vector<float> Chisel::computeAreaPerCell(std::pair<int, int> layerResolution)
+{
+    auto areaTexture = mRenderer->computeAreaPerTexelTexture(layerResolution);
+    auto areaData = mRenderer->readFloatTexture(areaTexture);
+    //mResourceManager->deleteTexture(areaTexture);
+    
+    return areaData;
+}
+
+
 float Chisel::computeSurfaceArea()
 {
-    auto areaTexture = mResourceManager->texture("AreaPerPixel");
-    auto data = mRenderer->readFloatTexture(areaTexture);
+    auto data = computeAreaPerCell(mCurrentLayer->resolution());
+//     auto areaTexture = mResourceManager->texture("AreaPerPixel");
+//     auto data = mRenderer->readFloatTexture(areaTexture);
     
     double area = 0;
 
@@ -567,8 +578,9 @@ float Chisel::computeSurfaceArea()
 
 float Chisel::computeLayerArea(unsigned int index)
 {
-    auto areaTexture = mResourceManager->texture("AreaPerPixel");
-    auto data = mRenderer->readFloatTexture(areaTexture);
+//     auto areaTexture = mResourceManager->texture("AreaPerPixel");
+//     auto data = mRenderer->readFloatTexture(areaTexture);
+    auto data = computeAreaPerCell(mCurrentLayer->resolution());
     auto mask = mRenderer->readLayerMask(index);
 
     double area = 0;
@@ -585,8 +597,9 @@ std::vector<std::array<float, 2>> Chisel::computeLayerValueArea(unsigned int ind
     auto layer = mActiveLayers[index];
     auto mask = mRenderer->readLayerMask(index);
 
-    auto areaTexture = mResourceManager->texture("AreaPerPixel");
-    auto areaData = mRenderer->readFloatTexture(areaTexture);
+//     auto areaTexture = mResourceManager->texture("AreaPerPixel");
+//     auto areaData = mRenderer->readFloatTexture(areaTexture);
+    auto areaData = computeAreaPerCell(mCurrentLayer->resolution());
 
     std::map<float, double> mappedAreaPerValue;
     std::vector<std::array<float, 2>> areaPerValue;
@@ -672,17 +685,32 @@ void Chisel::updateTableAreaFields(unsigned int index)
     }
 }
 
-Layer* Chisel::computeCellArea(const std::pair<int, int> layerResolution)
+std::vector<float> Chisel::computeTopology(std::pair<int, int> layerResolution)
 {
-    auto layerName = mResourceManager->createValidLayerName("CellArea");
-    auto areaTexture = mResourceManager->texture("AreaPerPixel");
-    auto copyAreaTexture = mResourceManager->copyTexture(areaTexture, layerName + ".Data");
+    auto topologyTexture = mRenderer->computeTopologyTexture(layerResolution);
+    auto data = mRenderer->readFloatTexture(topologyTexture);
     
-    std::vector<glm::byte> maskTextureData(copyAreaTexture->width() * copyAreaTexture->height(), 255);
+    for (int i = 0; i < data.size(); ++i)
+        if (data[i] != 0)
+            auto a = 1;
+
+    return data;
+}
+
+
+Layer* Chisel::computeCellAreaLayer(std::string layerName, const std::pair<int, int> layerResolution)
+{    
+    //auto areaTexture = mResourceManager->texture("AreaPerPixel");
+    //auto copyAreaTexture = mResourceManager->copyTexture(areaTexture, layerName + ".Data");
     
-    auto cellAreaLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName("CellArea"), Layer::Type::Float32, layerResolution, copyAreaTexture, maskTextureData, mResourceManager->palette(0));
+    std::vector<glm::byte> maskTextureData(layerResolution.first * layerResolution.second, 255);
+    std::vector<glm::byte> valueTextureData(layerResolution.first * layerResolution.second * 4, 0);
     
-    addActiveLayer(cellAreaLayer);        
+    auto cellAreaLayer = mResourceManager->createLayer(layerName, Layer::Type::Float32, layerResolution, valueTextureData, maskTextureData, mResourceManager->palette(0));    
+    addActiveLayer(cellAreaLayer);
+
+    mRenderer->computeLayerOperation(3);
+
     mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
     mRenderer->padLayerTextures(0);
     
@@ -698,8 +726,7 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
     if(functionLayer->registerType() && functionFieldIndex > -1)
     {
         auto regLayer = static_cast<RegisterLayer*>(functionLayer);
-        auto field = regLayer->field(functionFieldIndex);
-        fieldLayer = mResourceManager->createLayerFromTableField(regLayer, regLayer->field(0));
+        fieldLayer = mResourceManager->createLayerFromTableField(regLayer, regLayer->field(functionFieldIndex));
         mMainWindow->visualizer()->update();
         functionData = mRenderer->readLayerDataTexture(fieldLayer->dataTexture());
     }
@@ -810,7 +837,7 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
             break;
         case StatOps::NoNull:
         {
-            auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+            auto areaData = computeAreaPerCell(functionLayer->resolution());//mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
             
             for(auto i = 0;i < functionData.size(); ++i)
                 if(baseMask[i] != 0 && functionMask[i] != 0)
@@ -819,7 +846,7 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
             break;
         case StatOps::Null:
         {
-            auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+            auto areaData = computeAreaPerCell(functionLayer->resolution());//mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
 
             for(auto i = 0;i < functionData.size(); ++i)
                 if(baseMask[i] != 0 && functionMask[i] == 0)
@@ -967,16 +994,17 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
     return doubleAreaStatistics;
 }
 
-Layer* Chisel::computeNeighborhoodStatistics(unsigned int functionLayerIndex, int functionFieldIndex, unsigned int radius, StatOps operation)
+Layer* Chisel::computeNeighborhoodStatistics(std::string layerName, unsigned int functionLayerIndex, int functionFieldIndex, unsigned int radius, StatOps operation)
 {
+    setCurrentLayer(functionLayerIndex);
+
     auto functionLayer = mActiveLayers[functionLayerIndex];
     std::vector<double> functionData;
     
     if(functionLayer->registerType() && functionFieldIndex > -1)
     {
         auto regLayer = static_cast<RegisterLayer*>(functionLayer);
-        auto field = regLayer->field(functionFieldIndex);
-        auto fieldLayer = mResourceManager->createLayerFromTableField(regLayer, regLayer->field(0));
+        auto fieldLayer = mResourceManager->createLayerFromTableField(regLayer, regLayer->field(functionFieldIndex));
         mMainWindow->visualizer()->update();
         functionData = mRenderer->readLayerDataTexture(fieldLayer->dataTexture());
         mResourceManager->deleteLayer(fieldLayer);
@@ -1135,13 +1163,12 @@ Layer* Chisel::computeNeighborhoodStatistics(unsigned int functionLayerIndex, in
                     auto const add_square = [&mean](double sum, double i)
                     {                        
                         auto d = i - mean;
-                        return sum + d*d;
+                        return sum + d * d;
                     };
                                         
                     neighborhoodStatsData[i] = std::accumulate(begin(statisticsData), end(statisticsData), 0.0, add_square) / (statisticsData.size() - 1);
                 }
                 break;
-
                 case StatOps::StdDeviation:
                 {
                     auto mean = std::accumulate(begin(statisticsData), end(statisticsData), 0.0) / statisticsData.size();
@@ -1149,7 +1176,7 @@ Layer* Chisel::computeNeighborhoodStatistics(unsigned int functionLayerIndex, in
                     auto const add_square = [&mean](double sum, double i)
                     {                        
                         auto d = i - mean;
-                        return sum + d*d;
+                        return sum + d * d;
                     };
                                         
                     auto variance = std::accumulate(begin(statisticsData), end(statisticsData), 0.0, add_square) / (statisticsData.size() - 1);
@@ -1159,13 +1186,13 @@ Layer* Chisel::computeNeighborhoodStatistics(unsigned int functionLayerIndex, in
                 break;
                 case StatOps::NoNull:
                 {
-                    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+                    //auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
                     
                 }
                 break;
                 case StatOps::Null:
                 {
-                    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+                    //auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
                 }
                 break;
             }  
@@ -1174,7 +1201,7 @@ Layer* Chisel::computeNeighborhoodStatistics(unsigned int functionLayerIndex, in
     auto statsByteData = reinterpret_cast<glm::byte*>(neighborhoodStatsData.data());
     std::copy(statsByteData, statsByteData + valueTextureData.size(), begin(valueTextureData));
         
-    auto neighborhoodStatsLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName(functionLayer->name() + "Stats"), Layer::Type::Float32, functionLayer->resolution(), valueTextureData, maskTextureData, functionLayer->palette());
+    auto neighborhoodStatsLayer = mResourceManager->createLayer(layerName, Layer::Type::Float32, functionLayer->resolution(), valueTextureData, maskTextureData, functionLayer->palette());
     
     addActiveLayer(neighborhoodStatsLayer);        
     mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
@@ -1183,19 +1210,15 @@ Layer* Chisel::computeNeighborhoodStatistics(unsigned int functionLayerIndex, in
     return neighborhoodStatsLayer;
 }
 
-Layer* Chisel::computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost)
+Layer* Chisel::computeCostSurfaceLayer(std::string layerName, unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost)
 {
     auto seedLayer = mActiveLayers[seedLayerIndex];
     auto seedTexture = seedLayer->maskTexture();
-    auto costTexture = mActiveLayers[costLayerIndex]->dataTexture();
     auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
-    auto outlineMaskTexture = mResourceManager->texture("SeamMaskTargetColor0");
-    if(outlineMaskTexture == nullptr) outlineMaskTexture = mResourceManager->texture("SeamMaskTexture");
     
     auto seedData = mRenderer->readLayerMask(seedLayerIndex);
-    auto frictionData = mRenderer->readFloatTexture(costTexture);
+    auto frictionData = mRenderer->readLayerData(costLayerIndex);
     auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
-    auto outlineData = mRenderer->readTexture(outlineMaskTexture);
     std::vector<float> surfaceCostData(frictionData.size(), std::numeric_limits<float>::max());
     
     std::vector<glm::byte> valueTextureData(surfaceCostData.size() * sizeof(float), 0);
@@ -1309,7 +1332,7 @@ Layer* Chisel::computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int
         auto surfaceCostByteData = reinterpret_cast<glm::byte*>(surfaceCostData.data());
         std::copy(surfaceCostByteData, surfaceCostByteData + surfaceCostData.size() * sizeof(float), begin(valueTextureData));
         
-        auto surfaceCostLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName(seedLayer->name() + "SurfaceCost"), Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
+        auto surfaceCostLayer = mResourceManager->createLayer(layerName, Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
         addActiveLayer(surfaceCostLayer);
         
         mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
@@ -1323,19 +1346,19 @@ Layer* Chisel::computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int
 }
 
 
-Layer* Chisel::computeDistanceFieldLayer(unsigned int index, double distance)
+Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int index, double distance)
 {
+    setCurrentLayer(index);
+
     auto seedLayer = mActiveLayers[index];
     auto seedTexture = seedLayer->maskTexture();
-    auto areaTexture = mResourceManager->texture("AreaPerPixel");
-    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
-    auto outlineMaskTexture = mResourceManager->texture("SeamMaskTargetColor0");
-    if(outlineMaskTexture == nullptr) outlineMaskTexture = mResourceManager->texture("SeamMaskTexture");
+
+//     auto areaTexture = mResourceManager->texture("AreaPerPixel");
+//     auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
     
     auto seedData = mRenderer->readLayerMask(index);
-    auto areaData = mRenderer->readFloatTexture(areaTexture);
-    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
-    auto outlineData = mRenderer->readTexture(outlineMaskTexture);
+    auto areaData = computeAreaPerCell(seedLayer->resolution());//mRenderer->readFloatTexture(areaTexture);
+    auto neighborhoodData = computeTopology(seedLayer->resolution()); //mRenderer->readFloatTexture(neighborhoodTexture);
     std::vector<float> distanceData(areaData.size(), std::numeric_limits<float>::max());
     
     std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
@@ -1424,7 +1447,7 @@ Layer* Chisel::computeDistanceFieldLayer(unsigned int index, double distance)
                     else
                         distanceToNeighbor += std::sqrt(2 * areaData[currentTexelIndex])/2.0 + std::sqrt(2 * areaData[neighborTexelIndex])/2.0;
                         
-                    if(distanceData[neighborTexelIndex] > distanceToNeighbor)
+                    if(distanceToNeighbor <= distance && distanceData[neighborTexelIndex] > distanceToNeighbor)
                     {
                         if(inspectedTexels[neighborTexelIndex] > 1)
                         {
@@ -1459,7 +1482,7 @@ Layer* Chisel::computeDistanceFieldLayer(unsigned int index, double distance)
         auto distanceByteData = reinterpret_cast<glm::byte*>(distanceData.data());
         std::copy(distanceByteData, distanceByteData + distanceData.size() * sizeof(float), begin(valueTextureData));
         
-        auto distanceLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName(seedLayer->name() + "Distance"), Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
+        auto distanceLayer = mResourceManager->createLayer(layerName, Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
         addActiveLayer(distanceLayer);
         
         mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
@@ -1472,9 +1495,162 @@ Layer* Chisel::computeDistanceFieldLayer(unsigned int index, double distance)
     return nullptr;
 }
 
-Layer* Chisel::computeCurvatureLayer(const std::pair<int, int> layerResolution, double distance)
+Layer * Chisel::computeDistanceBandLayer(std::string layerName, unsigned int index, double distance)
 {
-    auto normalLayers = computeNormalLayer(layerResolution);
+    setCurrentLayer(index);
+
+    auto seedLayer = mActiveLayers[index];
+    auto seedTexture = seedLayer->maskTexture();
+
+    //     auto areaTexture = mResourceManager->texture("AreaPerPixel");
+    //     auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+
+    auto seedData = mRenderer->readLayerMask(index);
+    auto areaData = computeAreaPerCell(seedLayer->resolution());//mRenderer->readFloatTexture(areaTexture);
+    auto neighborhoodData = computeTopology(seedLayer->resolution()); //mRenderer->readFloatTexture(neighborhoodTexture);
+    std::vector<float> distanceData(areaData.size(), std::numeric_limits<float>::max());
+
+    std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
+    std::vector<glm::byte> maskTextureData(distanceData.size(), 0);
+
+    std::set<std::pair<double, uint64_t>> activeTexels;
+    std::vector<char> inspectedTexels(areaData.size(), 2);
+    //glm::ivec2 immediateOffsets[8] = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}, {-1, 1}, {-1, -1}, {1, 1}, {1, -1}};    
+    //std::array<int, 8> neighborOffsets = { -seedTexture->width(), seedTexture->width(), 1, -1, -seedTexture->width() + 1, -seedTexture->width() - 1, seedTexture->width() + 1, seedTexture->width() - 1 };
+    std::array<int, 8> neighborOffsets = { -1, 1, seedTexture->width(), -seedTexture->width(), -1 + seedTexture->width(), -1 - seedTexture->width(), 1 + seedTexture->width(), 1 - seedTexture->width() };
+
+    for (auto i = 0; i < seedData.size(); ++i)
+        if (seedData[i] && neighborhoodData[2 * i] < 0)
+        {
+            activeTexels.insert({ 0,i });
+            distanceData[i] = 0.0f;
+            inspectedTexels[i] = 1;
+        }
+
+    if (activeTexels.size())
+    {
+        do
+        {
+            auto currentTexelIndex = activeTexels.cbegin()->second;
+            auto currentDistance = distanceData[currentTexelIndex];
+            activeTexels.erase(activeTexels.cbegin());
+
+            //         LOG("Current texel[ ", currentTexelIndex % seedTexture->width(), ", ", currentTexelIndex / seedTexture->width(), "] - Value: ", -neighborhoodData[2 * currentTexelIndex]);
+
+            if (currentTexelIndex == 0)
+                auto ca = 1;
+
+            for (int i = 0; i < 8; ++i)
+            {
+                // módulo de texel index para saber si tiene sentido el vecino ?
+
+                auto neighborTexelIndex = 0;
+                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+
+
+                if (neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << i)) != 0)
+                {
+                    //LOG("- Inside: ", a, " bit and: ", c);
+                    neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
+
+                    //LOG("-> Neigh texel[ ", neighborTexelIndex / seedTexture->width(), ", ", neighborTexelIndex % seedTexture->width(), "]");
+
+                }
+                else
+                {
+
+                    auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[i]);
+                    //                 LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[tempIndex], ", ", neighborhoodData[tempIndex + 1], "]");
+
+                    if (indirectIndex > 0)
+                    {
+                        neighborTexelIndex = neighborhoodData[indirectIndex + 1] * seedTexture->width() + neighborhoodData[indirectIndex];
+                        //                     LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
+
+                        if (neighborTexelIndex < 0)
+                        {
+                            auto a = neighborhoodData[indirectIndex];
+                            auto b = neighborhoodData[indirectIndex + 1];
+                            auto c = 0;
+                            auto d = neighborhoodData[2 * currentTexelIndex];
+                            auto e = neighborhoodData[2 * currentTexelIndex + 1];
+                            neighborTexelIndex = 0;
+
+                            LOG("<> Current texel[", currentTexelIndex % seedTexture->width(), ", ", currentTexelIndex / seedTexture->width(), "] = ", neighborhoodDataValue, " :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
+                        }
+
+                        if (neighborhoodData[2 * neighborTexelIndex] > 0)
+                        {
+                            neighborTexelIndex = 0;
+                            LOG("---> Current texel[", currentTexelIndex % seedTexture->width(), ", ", currentTexelIndex / seedTexture->width(), "] = ", neighborhoodDataValue, " :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
+                        }
+                    }
+                }
+
+                if (neighborTexelIndex != 0 && neighborTexelIndex < seedTexture->width() * seedTexture->height())
+                {
+                    float distanceToNeighbor = currentDistance;
+
+                    if (i < 4)
+                        distanceToNeighbor += std::sqrt(areaData[currentTexelIndex]) / 2.0 + std::sqrt(areaData[neighborTexelIndex]) / 2.0;
+                    else
+                        distanceToNeighbor += std::sqrt(2 * areaData[currentTexelIndex]) / 2.0 + std::sqrt(2 * areaData[neighborTexelIndex]) / 2.0;
+
+                    if (distanceData[neighborTexelIndex] > distanceToNeighbor)
+                    {
+                        if (inspectedTexels[neighborTexelIndex] > 1)
+                        {
+                            activeTexels.insert({ distanceToNeighbor, neighborTexelIndex });
+                            inspectedTexels[neighborTexelIndex] = 1;
+                        }
+                        else if (inspectedTexels[neighborTexelIndex] == 1)
+                        {
+                            auto found = activeTexels.find({ distanceData[neighborTexelIndex], neighborTexelIndex });
+                            if (found != end(activeTexels))
+                            {
+                                activeTexels.erase(found);
+                                activeTexels.insert({ distanceToNeighbor, neighborTexelIndex });
+                            }
+
+                        }
+
+                        if (neighborhoodData[2 * neighborTexelIndex] == 0 && neighborhoodData[2 * neighborTexelIndex + 1] == 0)
+                            auto a = 0;
+                        else
+                            distanceData[neighborTexelIndex] = distanceToNeighbor;
+                    }
+                }
+            }
+
+            inspectedTexels[currentTexelIndex] = 0;
+            maskTextureData[currentTexelIndex] = 255;
+
+            //         LOG("Active texels size: ", activeTexels.size());
+        } while (!activeTexels.empty());
+
+        for (auto& texel : distanceData)
+            if (texel > 0)
+                texel = (texel <= distance) ? 1 : 2;
+
+        auto distanceByteData = reinterpret_cast<glm::byte*>(distanceData.data());
+        std::copy(distanceByteData, distanceByteData + distanceData.size() * sizeof(float), begin(valueTextureData));
+
+        auto distanceLayer = mResourceManager->createLayer(layerName, Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
+        addActiveLayer(distanceLayer);
+
+        mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
+
+        mRenderer->padLayerTextures(0);
+
+        return distanceLayer;
+    }
+
+    return nullptr;
+}
+
+Layer* Chisel::computeCurvatureLayer(std::string layerName, const std::pair<int, int> layerResolution, double distance)
+{
+    auto normalLayers = computeNormalLayer("Normals", layerResolution);
     
     auto neighborhoodTexture = mResourceManager->texture("Neighborhood");    
     auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
@@ -1488,7 +1664,7 @@ Layer* Chisel::computeCurvatureLayer(const std::pair<int, int> layerResolution, 
     auto width = normalLayers[0]->dataTexture()->width();
     auto height = normalLayers[0]->dataTexture()->height();
     
-    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+    auto areaData = computeAreaPerCell(layerResolution);//mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
     auto maxArea = *std::max_element(begin(areaData), end(areaData));
     
     std::vector<float> curvatureData(normalMask.size(), 0);
@@ -1673,7 +1849,7 @@ Layer* Chisel::computeCurvatureLayer(const std::pair<int, int> layerResolution, 
     auto curvatureByteData = reinterpret_cast<glm::byte*>(curvatureData.data());
     std::copy(curvatureByteData, curvatureByteData + curvatureData.size() * sizeof(float), begin(valueTextureData));
 
-    auto curvatureLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName("Curvature"), Layer::Type::Float32, layerResolution, valueTextureData, maskTextureData, mResourceManager->palette(0));
+    auto curvatureLayer = mResourceManager->createLayer(layerName, Layer::Type::Float32, layerResolution, valueTextureData, maskTextureData, mResourceManager->palette(0));
     addActiveLayer(curvatureLayer);
     setCurrentLayer(0);
     
@@ -1683,10 +1859,10 @@ Layer* Chisel::computeCurvatureLayer(const std::pair<int, int> layerResolution, 
     return curvatureLayer;
 }
 
-Layer* Chisel::computeRoughnessLayer(const std::pair<int, int> layerResolution, double distance)
+Layer* Chisel::computeRoughnessLayer(std::string layerName, const std::pair<int, int> layerResolution, double distance)
 {
-    auto normalLayers = computeNormalLayer(layerResolution);    
-    auto posLayers = computePositionLayer(layerResolution);
+    auto normalLayers = computeNormalLayer("Normals", layerResolution);    
+    auto posLayers = computePositionLayer("Position", layerResolution);
     
     auto neighborhoodTexture = mResourceManager->texture("Neighborhood");    
     auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
@@ -1705,7 +1881,7 @@ Layer* Chisel::computeRoughnessLayer(const std::pair<int, int> layerResolution, 
     auto width = normalLayers[0]->dataTexture()->width();
     auto height = normalLayers[0]->dataTexture()->height();
     
-    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+    auto areaData = computeAreaPerCell(layerResolution);//mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
     auto maxArea = *std::max_element(begin(areaData), end(areaData));
     
     std::vector<float> roughnessData(normalMask.size(), 0);
@@ -1891,7 +2067,7 @@ Layer* Chisel::computeRoughnessLayer(const std::pair<int, int> layerResolution, 
     auto roughnessByteData = reinterpret_cast<glm::byte*>(roughnessData.data());
     std::copy(roughnessByteData, roughnessByteData + roughnessData.size() * sizeof(float), begin(valueTextureData));
 
-    auto roughnessLayer = mResourceManager->createLayer(mResourceManager->createValidLayerName("Roughness"), Layer::Type::Float32, layerResolution, valueTextureData, maskTextureData, mResourceManager->palette(0));
+    auto roughnessLayer = mResourceManager->createLayer(layerName, Layer::Type::Float32, layerResolution, valueTextureData, maskTextureData, mResourceManager->palette(0));
     addActiveLayer(roughnessLayer);
 
     mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
@@ -1900,11 +2076,11 @@ Layer* Chisel::computeRoughnessLayer(const std::pair<int, int> layerResolution, 
     return roughnessLayer;
 }
 
-std::array<Layer*, 3> Chisel::computePositionLayer(const std::pair<int, int> layerResolution)
+std::array<Layer*, 3> Chisel::computePositionLayer(std::string layerName, const std::pair<int, int> layerResolution)
 {
-    auto posLayerX = createLayer(mResourceManager->createValidLayerName("PositionX"), Layer::Type::Float32, layerResolution);
-    auto posLayerY = createLayer(mResourceManager->createValidLayerName("PositionY"), Layer::Type::Float32, layerResolution);
-    auto posLayerZ = createLayer(mResourceManager->createValidLayerName("PositionZ"), Layer::Type::Float32, layerResolution);
+    auto posLayerX = createLayer(mResourceManager->createValidLayerName(layerName + "X"), Layer::Type::Float32, layerResolution);
+    auto posLayerY = createLayer(mResourceManager->createValidLayerName(layerName + "Y"), Layer::Type::Float32, layerResolution);
+    auto posLayerZ = createLayer(mResourceManager->createValidLayerName(layerName + "Z"), Layer::Type::Float32, layerResolution);
     
     mRenderer->computeLayerOperation(2);
     mRenderer->padLayerTextures(0);
@@ -1912,11 +2088,11 @@ std::array<Layer*, 3> Chisel::computePositionLayer(const std::pair<int, int> lay
     return {posLayerX, posLayerY, posLayerZ};
 }
 
-std::array<Layer*, 3> Chisel::computeNormalLayer(const std::pair<int, int> layerResolution)
+std::array<Layer*, 3> Chisel::computeNormalLayer(std::string layerName, const std::pair<int, int> layerResolution)
 {
-    auto normalLayerX = createLayer(mResourceManager->createValidLayerName("NormalX"), Layer::Type::Float32, layerResolution);
-    auto normalLayerY = createLayer(mResourceManager->createValidLayerName("NormalY"), Layer::Type::Float32, layerResolution);
-    auto normalLayerZ = createLayer(mResourceManager->createValidLayerName("NormalZ"), Layer::Type::Float32, layerResolution);
+    auto normalLayerX = createLayer(mResourceManager->createValidLayerName(layerName + "X"), Layer::Type::Float32, layerResolution);
+    auto normalLayerY = createLayer(mResourceManager->createValidLayerName(layerName + "Y"), Layer::Type::Float32, layerResolution);
+    auto normalLayerZ = createLayer(mResourceManager->createValidLayerName(layerName + "Z"), Layer::Type::Float32, layerResolution);
     
     mRenderer->computeLayerOperation(0);
     mRenderer->padLayerTextures(0);
@@ -1924,9 +2100,9 @@ std::array<Layer*, 3> Chisel::computeNormalLayer(const std::pair<int, int> layer
     return {normalLayerX, normalLayerY, normalLayerZ};
 }
 
-Layer* Chisel::computeOrientationLayer(const std::pair<int, int> layerResolution, glm::vec3 reference)
+Layer* Chisel::computeOrientationLayer(std::string layerName, const std::pair<int, int> layerResolution, glm::vec3 reference)
 {   
-    auto orientationLayer = createLayer(mResourceManager->createValidLayerName("Orientation"), Layer::Type::Float32, layerResolution);
+    auto orientationLayer = createLayer(layerName, Layer::Type::Float32, layerResolution);
     
     std::vector<glm::byte> uniformData(4 * sizeof(float), 0);    
     auto referenceDataPtr = reinterpret_cast<glm::byte*>(glm::value_ptr(reference));    

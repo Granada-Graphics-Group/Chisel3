@@ -89,6 +89,8 @@ public:
     void computeShader(Program* shader, const std::vector<glm::byte>& uniformData = {}, bool computeImmediately = true);
     
     void computeLayerOperation(uint32_t layerOperation, const std::vector<glm::byte>& uniformData = {});
+    Texture* computeAreaPerTexelTexture(std::pair<int, int> resolution);
+    Texture* computeTopologyTexture(std::pair<int, int> resolution);
     
     void loadChiselScene(Scene3D* scene);
     void swapChiselScene(Scene3D* scene);
@@ -150,6 +152,7 @@ private:
     
     std::function<void(uint32_t)> mPadLayerTextures;
     std::function<void(uint32_t)> mComputeLayerOperation;
+    std::function<void(std::pair<int, int>)> mComputeAreaPerPixelTexture;
     //std::unique_ptr<VulkanRenderer> mVkRenderer;
 };
 

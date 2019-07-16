@@ -164,6 +164,8 @@ public:
     void computeShader(Program* shader, const std::vector<glm::byte>& uniformData = {}, bool computeImmediately = true);
     
     void computeLayerOperation(unsigned int layerOperation, const std::vector<glm::byte>& uniformData = {});
+    Texture* computeAreaPerTexelTexture(std::pair<int, int> resolution);
+    Texture* computeTopologyTexture(std::pair<int, int> resolution);
     
     std::vector<glm::byte> readTexture(Texture* texture);
     template<typename T>
@@ -188,6 +190,7 @@ public:
     void swapScene(Scene3D* oldScene, Scene3D* newScene);
     void loadChiselScene(Scene3D* scene);
     void swapChiselscene(Scene3D* newScene);
+    void createTopologyScene(Mesh* mesh);
     void setSceneDirty(int index);
         
     void invalidateVertexDataFrom(int index);
@@ -249,8 +252,8 @@ private:
             
     Camera* mCamera = nullptr;
     glm::vec3 mCameraInitPosition;
-    std::unique_ptr<Camera> mOrthoCamera;
-    std::unique_ptr<Camera> mNormOrthoCamera;
+    Camera* mOrthoCamera;
+    Camera* mNormOrthoCamera;
     bool mUpdateCamera = false;
     
     ResourceManager* mManager;

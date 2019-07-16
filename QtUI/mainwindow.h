@@ -12,6 +12,11 @@ class LayerOperationWidget;
 class DataBaseEditorWidget;
 class LightingDialog;
 class HistogramDialog;
+class CellAreaDialog;
+class AreaStatisticsDialog;
+class NeighborStatisticsDialog;
+class CostSurfaceDialog;
+class OperationDialog;
 class ActiveLayerModel;
 class Chisel;
 
@@ -29,6 +34,21 @@ public:
         LayerLoaded,
         EditingToolsEnabled,
         EditingToolsDisabled
+    };
+    
+    enum class Operation: unsigned int
+    {
+        CellArea = 0,
+        AreaStats,
+        NeighborStats,
+        CostSurface,
+        DistanceField,
+        DistanceBand,
+        Curvature,
+        Roughness,
+        Normals,
+        Orientation,
+        Resampling
     };
     
     MainWindow(QWidget* parent = 0);
@@ -79,17 +99,20 @@ public slots:
     void toggleLayerVisibility(const QModelIndex& index);
     void updateOpacity(unsigned int layerIndex, float opacity);
 
+    void openOperationDialog(Operation op);
+    
     void createHistogram();
-    void computeCellArea();
-    void computeAreaStatistics();
-    void computeNeighborhoodStatistics();
-    void computeCostSurface();
-    void computeDistanceField();
-    void computeDistanceBand();
-    void computeCurvature();
-    void computeRoughness();
-    void computeNormals();
-    void computeOrientation();
+    void computeCellArea(std::string name, std::pair<int, int> resolution);
+    void computeAreaStatistics(unsigned int layerIndex, unsigned int fieldIndex, unsigned int baseLayerIndex, unsigned int operationIndex);
+    void computeNeighborhoodStatistics(std::string name, unsigned int layerIndex, unsigned int fieldIndex, double radius, unsigned int operationIndex);
+    void computeCostSurface(std::string name, unsigned int baseLayerIndex, unsigned int costLayerIndex, double radius);
+    void computeDistanceField(std::string name, unsigned int baseLayerIndex, double radius);
+    void computeDistanceBand(std::string name, unsigned int baseLayerIndex, double radius);
+    void computeCurvature(std::string name, std::pair<int, int> resolution, double radius);
+    void computeRoughness(std::string name, std::pair<int, int> resolution, double radius);
+    void computeNormals(std::string name, std::pair<int, int> resolution);
+    void computeOrientation(std::string name, std::pair<int, int> resolution, glm::vec3 reference);
+    void computeResampling(std::string name, unsigned int layerIndex, std::pair<int, int> resolution);
     
     void updateLayerToolBoxState(int index);
     void saveNewPalette();
@@ -172,6 +195,8 @@ private:
     std::unique_ptr<DataBaseEditorWidget> mDataBaseEditorWidget;
     LightingDialog* mLightingDialog = nullptr;
     HistogramDialog* mHistogramDialog = nullptr;
+    std::unique_ptr<OperationDialog> mOperationDialog;
+    QMetaObject::Connection mOperationDialogConnection;
     std::unique_ptr<QActionGroup> mEditingToolGroup;
     QAction* mLastEditingToolAction = nullptr;
     QAction* mSeparatorAction = nullptr;    

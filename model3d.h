@@ -41,6 +41,7 @@ public:
     void setPosition(const glm::vec3& position);
     void setScale(const glm::vec3& scale);
     void setModelMatrix(glm::mat4 matrix);
+    void setMaterials(std::vector< Material* >& materials) { mMaterials = materials;  }
     void insertMaterial(Material *material){ mMaterials.push_back(material); };
     
     void lookAt(const glm::vec3 & center);

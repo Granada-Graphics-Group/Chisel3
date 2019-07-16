@@ -147,7 +147,19 @@ std::string ResourceManager::createValidPaletteName(const std::string name) cons
 
 std::vector<std::string> ResourceManager::existingLayerNames() const
 {
-    return mChisel->diskLayerModel()->filenames();
+    auto diskLayers = mChisel->diskLayerModel()->filenames();
+    std::vector<std::string> activeLayers;
+    std::vector<std::string> existingLayers;
+    
+    for(const auto& layer: mLayers)
+        activeLayers.push_back(layer->name());
+
+    std::sort(begin(diskLayers), end(diskLayers));
+    std::sort(begin(activeLayers), end(activeLayers));
+    
+    std::set_union(begin(activeLayers), end(activeLayers), begin(diskLayers), end(diskLayers), std::inserter(existingLayers, begin(existingLayers)));
+    
+    return existingLayers;
 }
 
 std::vector<std::string> ResourceManager::existingPaletteNames() const
@@ -264,6 +276,11 @@ bool ResourceManager::containCamera(std::string camera) const
     return mCameras.find(camera) != end(mCameras);
 }
 
+bool ResourceManager::containScene(std::string scene) const
+{
+    return mScenes.find(scene) != end(mScenes);
+}
+
 bool ResourceManager::containRenderPass(std::string renderPass) const
 {
     return mRenderPasses.find(renderPass) != end(mRenderPasses);
@@ -351,6 +368,21 @@ Model3D * ResourceManager::createModel(std::string modelName)
         return nullptr;    
 }
 
+Model3D* ResourceManager::createModel(std::string modelName, Mesh * mesh, std::vector<Material*> materials)
+{
+    auto newModel = createModel(modelName);
+
+    if (newModel)
+    {
+        newModel->setMesh(mesh);
+        newModel->setMaterials(materials);
+
+        return newModel;
+    }
+    else
+        return nullptr;
+}
+
 Material* ResourceManager::createMaterial(std::string name, std::string shaderName)
 {
     if(!containMaterial(name))
@@ -384,6 +416,17 @@ Camera* ResourceManager::createCamera(std::string name)
         return nullptr;        
 }
 
+Camera* ResourceManager::createCamera(std::string name, glm::mat4 projectionMatrix, glm::mat4 viewMatrix)
+{
+    if(!containCamera(name))
+    {
+        mCameras[name] = std::make_unique<Camera>(name, projectionMatrix, viewMatrix);
+        return mCameras[name].get();
+    }
+    else
+        return nullptr;    
+}
+
 Camera* ResourceManager::createCamera(std::string name, Model3D* model)
 {
     auto camera = createCamera(name);
@@ -402,6 +445,17 @@ Camera* ResourceManager::createCamera(std::string name, Model3D* model)
     }
     
     return camera;
+}
+
+Scene3D* ResourceManager::createScene(std::string name, std::vector<Camera *> cameras, std::vector<Model3D *> models)
+{
+    if(!containScene(name))
+    {
+        mScenes[name] = std::make_unique<Scene3D>(name, cameras, models);
+        return mScenes[name].get();
+    }
+    else
+        return nullptr;
 }
 
 Mesh* ResourceManager::copyMesh(const Mesh& sourceMesh, std::string meshName)
@@ -1967,6 +2021,36 @@ void ResourceManager::unloadScene3D(std::string name)
         mModels.erase(model->name());
         
     mScenes.erase(name);
+}
+
+void ResourceManager::loadTopology(std::string name, std::string path)
+{
+    std::string absoluteFileName = ((path.length() > 0) ? path : mCHISelPath) + ((name.length() > 0) ? name : mCHISelName) + mFileExtensions[TOP];
+    std::ifstream input(absoluteFileName, std::ios::binary);
+
+    cereal::PortableBinaryInputArchive archive(input);
+    
+    auto topologyMesh = std::make_unique<Mesh>(":neighborhoodMesh");
+    
+    archive(*topologyMesh.get());
+        
+    mMeshes[topologyMesh->name()] = std::move(topologyMesh);
+    
+/*    auto neighborhoodModel = createModel(":neighborhoodModel", topologyMesh, {material("Dummy")});
+                
+    auto neighborEdgesScene = createScene(":neighborEgdesScene", {mNormOrthoCamera}, {neighborhoodModel});
+    neighborEdgesScene->setPrimitive(Primitive::Lines);  */   
+}
+
+void ResourceManager::saveTopology(std::string name, std::string path)
+{
+    std::string absoluteFileName = ((path.length() > 0) ? path : mCHISelPath) + ((name.length() > 0) ? name : mCHISelName) + mFileExtensions[TOP];
+    std::ofstream output(absoluteFileName, std::ios::binary);
+
+    cereal::PortableBinaryOutputArchive archive(output);
+
+    auto topologyMesh = mesh(":neighborhoodMesh");
+    archive(*topologyMesh);    
 }
 
 void ResourceManager::exportScene(std::string name, std::string extension, std::string path)

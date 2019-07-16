@@ -308,6 +308,16 @@ void Renderer::computeLayerOperation(uint32_t layerOperation, const std::vector<
     mGLRenderer->computeLayerOperation(layerOperation, uniformData);
 }
 
+Texture * Renderer::computeAreaPerTexelTexture(std::pair<int, int> resolution)
+{
+    return mGLRenderer->computeAreaPerTexelTexture(resolution);
+}
+
+Texture * Renderer::computeTopologyTexture(std::pair<int, int> resolution)
+{
+    return mGLRenderer->computeTopologyTexture(resolution);
+}
+
 void Renderer::loadChiselScene(Scene3D* scene)
 {
     mGLRenderer->loadChiselScene(scene);

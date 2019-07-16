@@ -10,241 +10,278 @@
     <x>0</x>
     <y>0</y>
     <width>446</width>
-    <height>238</height>
+    <height>409</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>446</width>
+    <height>0</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>Create Layer</string>
+   <string>Area Statistics</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="layerNameLayout">
-     <item>
-      <widget class="QLabel" name="nameLabel">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>40</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Name</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="nameTextEdit"/>
-     </item>
-    </layout>
+    <widget class="QWidget" name="nameWidget" native="true">
+     <layout class="QHBoxLayout" name="layerNameLayout">
+      <item>
+       <widget class="QLabel" name="nameLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Na&amp;me</string>
+        </property>
+        <property name="buddy">
+         <cstring>nameTextEdit</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="nameTextEdit"/>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="resolutionLayout">
-     <item>
-      <widget class="QLabel" name="resolutionLabel">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>40</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Resolution</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="resolutionComboBox">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>40</height>
-        </size>
-       </property>
-       <item>
-        <property name="text">
-         <string>2048x2048</string>
+    <widget class="QWidget" name="resolutionWidget" native="true">
+     <layout class="QHBoxLayout" name="resolutionLayout">
+      <item>
+       <widget class="QLabel" name="resolutionLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>4096x4096</string>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>40</height>
+         </size>
         </property>
-       </item>
-      </widget>
-     </item>
-    </layout>
+        <property name="text">
+         <string>&amp;Resolution</string>
+        </property>
+        <property name="buddy">
+         <cstring>resolutionComboBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="resolutionComboBox">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>40</height>
+         </size>
+        </property>
+        <item>
+         <property name="text">
+          <string>2048x2048</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>4096x4096</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <spacer name="verticalSpacer_2">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
+    <widget class="QWidget" name="functionLayerWidget" native="true">
+     <layout class="QHBoxLayout" name="functionLayerLayout">
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="functionLayerLabel">
+        <property name="text">
+         <string>Function &amp;Layer</string>
+        </property>
+        <property name="buddy">
+         <cstring>functionLayerComboBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="functionLayerComboBox"/>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="functionLayerLayout">
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="QLabel" name="functionLayerLabel">
-       <property name="text">
-        <string>Function Layer</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="functionLayerComboBox"/>
-     </item>
-    </layout>
+    <widget class="QWidget" name="fieldWidget" native="true">
+     <layout class="QHBoxLayout" name="fieldLayout">
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <spacer name="fieldSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>30</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="fieldLabel">
+        <property name="text">
+         <string>Fie&amp;ld</string>
+        </property>
+        <property name="buddy">
+         <cstring>fieldComboBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="fieldComboBox"/>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="fieldLayout">
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <item>
-      <spacer name="fieldSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>30</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QLabel" name="fieldLabel">
-       <property name="text">
-        <string>Field</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="fieldComboBox"/>
-     </item>
-    </layout>
+    <widget class="QWidget" name="baseLayerWidget" native="true">
+     <layout class="QHBoxLayout" name="baseLayerLayout">
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="baseLayerLabel">
+        <property name="text">
+         <string>&amp;Base Layer</string>
+        </property>
+        <property name="buddy">
+         <cstring>baseLayerComboBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="baseLayerComboBox"/>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="baseLayerLayout">
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="QLabel" name="baseLayerLabel">
-       <property name="text">
-        <string>Base Layer</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="baseLayerComboBox"/>
-     </item>
-    </layout>
+    <widget class="QWidget" name="radiusWidget" native="true">
+     <layout class="QHBoxLayout" name="radiusLayout">
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="radiusLabel">
+        <property name="text">
+         <string>&amp;Radius</string>
+        </property>
+        <property name="buddy">
+         <cstring>radiusSpinBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="radiusSpinBox"/>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="radiusLayout">
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="QLabel" name="radiusLabel">
-       <property name="text">
-        <string>Radius</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDoubleSpinBox" name="radiusSpinBox"/>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="operationLayout">
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="QLabel" name="operationLayerLabel">
-       <property name="text">
-        <string>Operation</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="operationLayerComboBox">
-       <item>
+    <widget class="QWidget" name="operationWidget" native="true">
+     <layout class="QHBoxLayout" name="operationLayout">
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="operationLayerLabel">
         <property name="text">
-         <string>Maximum</string>
+         <string>Ope&amp;ration</string>
         </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Minimum</string>
+        <property name="buddy">
+         <cstring>operationLayerComboBox</cstring>
         </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Mean</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Variance</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Standard Deviation</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Null</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>No null</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-    </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="operationLayerComboBox">
+        <item>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Mean</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Variance</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Standard Deviation</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Null</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>No null</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
+     </property>
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>10</height>
       </size>
      </property>
     </spacer>
@@ -294,8 +331,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>394</x>
-     <y>296</y>
+     <x>348</x>
+     <y>396</y>
     </hint>
     <hint type="destinationlabel">
      <x>266</x>
@@ -310,8 +347,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>484</x>
-     <y>296</y>
+     <x>438</x>
+     <y>396</y>
     </hint>
     <hint type="destinationlabel">
      <x>266</x>

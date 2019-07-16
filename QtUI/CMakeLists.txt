@@ -25,7 +25,10 @@ set(QtUI_SRCS   mainwindow.cpp
                 palettegraphicsview.cpp
                 paletteeditorwidget.cpp palettecreatorwidget.cpp palettetableview.cpp palettemodel.cpp 
                 palettelistdelegate.cpp palettelistmodel.cpp palettelistview.cpp 
-                createlayerdialog.cpp lightingdialog.cpp computelayerdialog.cpp areastatisticsdialog.cpp
+                createlayerdialog.cpp lightingdialog.cpp 
+                operationdialog.cpp cellareadialog.cpp areastatisticsdialog.cpp neighborstatisticsdialog.cpp
+                costsurfacedialog.cpp distancefielddialog.cpp distancebanddialog.cpp
+                curvaturedialog.cpp roughnessdialog.cpp orientationdialog.cpp normalsdialog.cpp
                 databaseresourceview.cpp databaseresourcemodel.cpp
                 databasetableschemaview.cpp databasetableschemamodel.cpp databasetableschemadelegate.cpp
                 databasetabledataview.cpp databaserowdataview.cpp databasetabledatamodel.cpp databasetabledatadelegate.cpp customspinbox.cpp

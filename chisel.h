@@ -141,22 +141,25 @@ public:
     void setLayerDirty(unsigned int index);
     void setLayerAreaFieldDirty(unsigned int index);
 
-    std::map<std::string, std::vector<uint32_t>> segmentModelWithLayer(unsigned int index);    
+    std::map<std::string, std::vector<uint32_t>> segmentModelWithLayer(unsigned int index);
+    std::vector<float> computeAreaPerCell(std::pair<int, int> layerResolution);
     float computeSurfaceArea();
     float computeLayerArea(unsigned int index);
     std::vector<std::array<float, 2>> computeLayerValueArea(unsigned int index);
     void updateTableAreaFields(unsigned int index);
+    std::vector<float> computeTopology(std::pair<int, int> layerResolution);
     
-    Layer* computeCellArea(const std::pair<int, int> layerResolution);
+    Layer* computeCellAreaLayer(std::string layerName, const std::pair<int, int> layerResolution);
     std::vector<std::array<double, 2>> computeAreaStatistics(unsigned int functionLayerIndex, int functionFieldIndex, unsigned int baseLayerIndex, StatOps operation);
-    Layer* computeNeighborhoodStatistics(unsigned int functionLayerIndex, int functionFieldIndex, unsigned int radius, StatOps operation);
-    Layer* computeCostSurfaceLayer(unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost);
-    Layer* computeDistanceFieldLayer(unsigned int index, double distance);
-    Layer* computeCurvatureLayer(const std::pair<int, int> layerResolution, double distance);
-    Layer* computeRoughnessLayer(const std::pair<int, int> layerResolution, double distance);
-    std::array<Layer*, 3> computePositionLayer(const std::pair<int, int> layerResolution);
-    std::array<Layer*, 3> computeNormalLayer(const std::pair<int, int> layerResolution);
-    Layer* computeOrientationLayer(const std::pair<int, int> layerResolution, glm::vec3 reference);
+    Layer* computeNeighborhoodStatistics(std::string layerName, unsigned int functionLayerIndex, int functionFieldIndex, unsigned int radius, StatOps operation);
+    Layer* computeCostSurfaceLayer(std::string layerName, unsigned int seedLayerIndex, unsigned int costLayerIndex, double maxCost);
+    Layer* computeDistanceFieldLayer(std::string layerName, unsigned int index, double distance);
+    Layer* computeDistanceBandLayer(std::string layerName, unsigned int index, double distance);
+    Layer* computeCurvatureLayer(std::string layerName, const std::pair<int, int> layerResolution, double distance);
+    Layer* computeRoughnessLayer(std::string layerName, const std::pair<int, int> layerResolution, double distance);
+    std::array<Layer*, 3> computePositionLayer(std::string layerName, const std::pair<int, int> layerResolution);
+    std::array<Layer*, 3> computeNormalLayer(std::string layerName, const std::pair<int, int> layerResolution);
+    Layer* computeOrientationLayer(std::string layerName, const std::pair<int, int> layerResolution, glm::vec3 reference);
     
     void createPalette(std::string name);
     void editPalette(unsigned int index);

@@ -92,6 +92,7 @@ public:
     bool containModel(std::string model) const;
     bool containMaterial(std::string material) const;    
     bool containCamera(std::string camera) const;
+    bool containScene(std::string scene) const;
     bool containRenderPass(std::string renderPass) const;
     bool containRenderTarget(std::string renderTarget) const;
     bool containRenderTechnique(std::string renderTechnique) const;
@@ -103,9 +104,12 @@ public:
     Circle* createCircle(std::string name, glm::vec3 center, float radius, int slices);
     Cylinder* createCylinder(std::string name, float bottomRadius, float topRadius, float height, uint32_t radialSlices, uint32_t heightSteps, bool isOpen, glm::vec4 color = {0.5, 0.5, 0.5, 1.0});
     Model3D* createModel(std::string modelName);
+    Model3D* createModel(std::string modelName, Mesh* mesh, std::vector< Material* > materials);
     Material* createMaterial(std::string name, std::string shaderName = "");
     Camera* createCamera(std::string name);
+    Camera* createCamera(std::string name, glm::mat4 projectionMatrix, glm::mat4 viewMatrix = glm::mat4(1.0));
     Camera* createCamera(std::string name, Model3D* model);
+    Scene3D* createScene(std::string name, std::vector<Camera* > cameras, std::vector<Model3D* > models);
     
     Mesh* copyMesh(const Mesh& sourceMesh, std::string meshName);
     
@@ -192,6 +196,8 @@ public:
     void importScene3D(std::string name, std::string extension, std::string path);    
     void saveScene3D(std::string name, std::string path = "");
     void unloadScene3D(std::string name);
+    void loadTopology(std::string name, std::string path = "");
+    void saveTopology(std::string name, std::string path = "");
     void exportScene(std::string name, std::string extension, std::string path);
     void exportModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t>>& segmentation, Camera* camera, bool exportCamera);
     void exportChiselProjectToUnity(std::string name, std::string path = "");
@@ -262,14 +268,15 @@ private:
     {
         CHIS = 0,
         SCENE = 1,
-        DB = 2,
-        LAYER = 3,
-        PALETTE = 4,
-        RESOURCES = 5
+        TOP = 2,
+        DB = 3,
+        LAYER = 4,
+        PALETTE = 5,
+        RESOURCES = 6
     };
     
-    std::vector<std::string> mFileExtensions = { ".chl", ".scn", ".db", ".lay", ".plt", ".*" };
-    std::vector<std::string> mStdPaths = { "", "", "","layers/", "palettes/", "resources/" };
+    std::vector<std::string> mFileExtensions = { ".chl", ".scn", ".top", ".db", ".lay", ".plt", ".*" };
+    std::vector<std::string> mStdPaths = { "", "", "", "", "layers/", "palettes/", "resources/" };
     
     std::string mAppPath;
     std::string mCHISelPath;
