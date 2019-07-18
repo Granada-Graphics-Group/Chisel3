@@ -1,7 +1,6 @@
 #ifndef NEIGHBORSTATISTICSDIALOG_H
 #define NEIGHBORSTATISTICSDIALOG_H
 
-//#include "areastatisticsdialog.h"
 #include "operationdialog.h"
 
 #include <memory>

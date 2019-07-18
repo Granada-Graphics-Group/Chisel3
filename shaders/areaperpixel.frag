@@ -25,7 +25,7 @@ layout(bindless_sampler) uniform sampler2DArray ArrayTexture[20];
 
 void main()
 {
-    ivec3 layerSize = textureSize(ArrayTexture[seamMaskIndices.x], 0);    
+    ivec3 layerSize = textureSize(ArrayTexture[areaIndices.x], 0);    
     ivec2 coord = ivec2((GCoordST) * layerSize.x);
 
     beginInvocationInterlockARB();

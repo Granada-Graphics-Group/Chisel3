@@ -1,0 +1,27 @@
+#ifndef RESAMPLINGDIALOG_H
+#define RESAMPLINGDIALOG_H
+
+#include "operationdialog.h"
+
+#include <memory>
+
+class ResourceManager;
+class Chisel;
+class BalloonMessageDialog;
+
+class ResamplingDialog : public OperationDialog
+{
+    Q_OBJECT
+    
+public:
+    ResamplingDialog(Chisel* chisel, QWidget *parent = 0);
+
+public slots:
+    void accept() override;
+    
+signals:
+    void resampling(std::string name, unsigned int layerIndex, unsigned int fieldIndex, double radius, unsigned int operationIndex);  
+};
+
+
+#endif

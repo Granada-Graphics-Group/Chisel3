@@ -133,7 +133,7 @@ void OperationDialog::filterLayersByResolution(int resolutionIndex)
         
         auto layers = mChisel->layers();
         
-        for(auto i = 0; i < layers.size(); ++i)
+        for(auto i = static_cast<int>(layers.size()) - 1; i > -1; --i)
         {
             if(layers[i]->resolution() == resolution)
             {

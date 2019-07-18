@@ -1014,12 +1014,8 @@ Layer* Chisel::computeNeighborhoodStatistics(std::string layerName, unsigned int
         
     auto functionMask = mRenderer->readLayerMask(functionLayerIndex);
         
-    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
-    auto outlineMaskTexture = mResourceManager->texture("SeamMaskTargetColor0");
-    if(outlineMaskTexture == nullptr) outlineMaskTexture = mResourceManager->texture("SeamMaskTexture");
-    
-    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
-    auto outlineData = mRenderer->readTexture(outlineMaskTexture);    
+    //auto neighborhoodTexture = mResourceManager->texture("Neighborhood");    
+    auto neighborhoodData = computeTopology(functionLayer->resolution());//mRenderer->readFloatTexture(neighborhoodTexture);
     
     std::vector<float> neighborhoodStatsData(functionData.size(), 0);
     std::vector<glm::byte> valueTextureData(functionData.size() * sizeof(float), 0);
@@ -1214,11 +1210,11 @@ Layer* Chisel::computeCostSurfaceLayer(std::string layerName, unsigned int seedL
 {
     auto seedLayer = mActiveLayers[seedLayerIndex];
     auto seedTexture = seedLayer->maskTexture();
-    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+//    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
     
     auto seedData = mRenderer->readLayerMask(seedLayerIndex);
     auto frictionData = mRenderer->readLayerData(costLayerIndex);
-    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
+    auto neighborhoodData = computeTopology(seedLayer->resolution());// mRenderer->readFloatTexture(neighborhoodTexture);
     std::vector<float> surfaceCostData(frictionData.size(), std::numeric_limits<float>::max());
     
     std::vector<glm::byte> valueTextureData(surfaceCostData.size() * sizeof(float), 0);
@@ -1348,17 +1344,12 @@ Layer* Chisel::computeCostSurfaceLayer(std::string layerName, unsigned int seedL
 
 Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int index, double distance)
 {
-    setCurrentLayer(index);
-
     auto seedLayer = mActiveLayers[index];
     auto seedTexture = seedLayer->maskTexture();
-
-//     auto areaTexture = mResourceManager->texture("AreaPerPixel");
-//     auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
     
     auto seedData = mRenderer->readLayerMask(index);
-    auto areaData = computeAreaPerCell(seedLayer->resolution());//mRenderer->readFloatTexture(areaTexture);
-    auto neighborhoodData = computeTopology(seedLayer->resolution()); //mRenderer->readFloatTexture(neighborhoodTexture);
+    auto areaData = computeAreaPerCell(seedLayer->resolution());
+    auto neighborhoodData = computeTopology(seedLayer->resolution());
     std::vector<float> distanceData(areaData.size(), std::numeric_limits<float>::max());
     
     std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
@@ -1475,8 +1466,6 @@ Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int ind
             
             inspectedTexels[currentTexelIndex] = 0;
             maskTextureData[currentTexelIndex] = 255;
-            
-    //         LOG("Active texels size: ", activeTexels.size());
         }while(!activeTexels.empty());
         
         auto distanceByteData = reinterpret_cast<glm::byte*>(distanceData.data());
@@ -1497,17 +1486,12 @@ Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int ind
 
 Layer * Chisel::computeDistanceBandLayer(std::string layerName, unsigned int index, double distance)
 {
-    setCurrentLayer(index);
-
     auto seedLayer = mActiveLayers[index];
     auto seedTexture = seedLayer->maskTexture();
 
-    //     auto areaTexture = mResourceManager->texture("AreaPerPixel");
-    //     auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
-
     auto seedData = mRenderer->readLayerMask(index);
-    auto areaData = computeAreaPerCell(seedLayer->resolution());//mRenderer->readFloatTexture(areaTexture);
-    auto neighborhoodData = computeTopology(seedLayer->resolution()); //mRenderer->readFloatTexture(neighborhoodTexture);
+    auto areaData = computeAreaPerCell(seedLayer->resolution());
+    auto neighborhoodData = computeTopology(seedLayer->resolution());
     std::vector<float> distanceData(areaData.size(), std::numeric_limits<float>::max());
 
     std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
