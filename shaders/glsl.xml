@@ -168,12 +168,14 @@
             <shader type="vertex"   name="cornercap.vert"/>
             <shader type="fragment" name="cornercap.frag"/>
         </shaders>
-    </program>    
-<!--        <program name="Intersect">
+    </program>
+    <program name="Resampling">
         <shaders>
-            <shader type="computer"   name="intersect.comp"/>
+            <shader type="vertex"   name="resampling.vert"/>
+            <shader type="fragment" name="resampling.frag"/>
         </shaders>
-    </program>-->
+    </program>    
+
     <program name="SlicePlane">
         <shaders>
             <shader type="vertex"   name="proj.vert"/>

@@ -22,7 +22,7 @@ layout(bindless_sampler) uniform sampler2DArray ArrayTexture[20];
 
 void main()
 {    
-    ivec3 layerSize = textureSize(ArrayTexture[brushMaskIndices.x], 0);
+    ivec3 layerSize = textureSize(ArrayTexture[paintIndices.x], 0);
     float inside = texture(ArrayTexture[paintIndices.x], vec3(CoordST, paintIndices.y)).x;
     float inside2 = texelFetch(ArrayTexture[paintIndices.x], ivec3(int(CoordST.x * layerSize.x), int(CoordST.y * layerSize.y), paintIndices.y), 0).x;
     
