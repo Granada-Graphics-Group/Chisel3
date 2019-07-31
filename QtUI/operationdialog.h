@@ -26,8 +26,10 @@ public:
 //     virtual void accept() override;
     
 protected slots:
-    void validateLayerName();
+    void validateTargetLayerName();
     void updateDBNumericFields(int layerIndex);
+    std::pair<int, int> targetLayerResolution();
+    std::pair<int, int> functionLayerResolution();
     void filterLayersByResolution(int resolutionIndex);
     void updateExecuteButtonState();
     void updateFieldWidgetVisibility();

@@ -190,6 +190,7 @@ public:
     void swapScene(Scene3D* oldScene, Scene3D* newScene);
     void loadChiselScene(Scene3D* scene);
     void swapChiselscene(Scene3D* newScene);
+    void swapTopologyScene(Scene3D* topScene);
     void createTopologyScene(Mesh* mesh);
     void setSceneDirty(int index);
         
@@ -264,6 +265,7 @@ private:
     Scene3D* mPPScene = nullptr;
     Scene3D* mFontScene = nullptr;
     Scene3D* mSlicePlaneScene = nullptr;
+    Scene3D* mTopologyScene = nullptr;
     int mMainSceneIndex = -1;
     std::vector<Scene3D*> mScenes;
     std::set<int> mDirtyScenes;
@@ -321,11 +323,10 @@ private:
     RenderTechnique* mAreaPerPixelTech = nullptr;
     RenderTechnique* mViewTexTech = nullptr;
     RenderTechnique* mBrushShapeTech = nullptr;
-    RenderTechnique* mImmediateNeighborsTech = nullptr;
     RenderTechnique* mEdgesToOutlineTech = nullptr;
     RenderTechnique* mNeighborEdgesTech = nullptr;
-    RenderTechnique* mNeighborsTech = nullptr;
     RenderTechnique* mCornerCapTech = nullptr;
+    RenderTechnique* mImmediateNeighborsTech = nullptr;    
     RenderTechnique* mLayerOperationTech;
     
     RenderTarget* mDepthTarget = nullptr;

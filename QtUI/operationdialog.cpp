@@ -31,7 +31,7 @@ OperationDialog::OperationDialog(std::string layerName, Chisel* chisel, QWidget*
 
     connect(mUi->resolutionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &OperationDialog::filterLayersByResolution);
     connect(mUi->functionLayerComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &OperationDialog::updateDBNumericFields);
-    connect(mUi->nameTextEdit, &QLineEdit::textChanged, this, &OperationDialog::validateLayerName);
+    connect(mUi->nameTextEdit, &QLineEdit::textChanged, this, &OperationDialog::validateTargetLayerName);
     
     mUi->nameTextEdit->setText(layerName.c_str());
     
@@ -49,7 +49,7 @@ OperationDialog::OperationDialog(std::string layerName, Chisel* chisel, QWidget*
 
 // *** Protected slots *** //
 
-void OperationDialog::validateLayerName()
+void OperationDialog::validateTargetLayerName()
 {
     if(mUi->nameWidget->isVisible())
     {
@@ -109,6 +109,28 @@ void OperationDialog::updateDBNumericFields(int layerIndex)
     }
 
     updateFieldWidgetVisibility();
+}
+
+std::pair<int, int> OperationDialog::targetLayerResolution()
+{
+    std::pair<int, int> resolution;
+    
+    switch(mUi->resolutionComboBox->currentIndex())
+    {
+        case 0:
+            resolution = {2048, 2048};
+            break;
+        case 1:
+            resolution = {4096, 4096};
+            break;
+    }
+
+    return resolution;
+}
+
+std::pair<int, int> OperationDialog::functionLayerResolution()
+{
+    return mChisel->layer(mUi->functionLayerComboBox->currentData().toInt())->resolution();
 }
 
 void OperationDialog::filterLayersByResolution(int resolutionIndex)

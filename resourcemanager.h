@@ -66,6 +66,8 @@ public:
     Material* material(std::string material) const;
     Mesh* mesh(std::string mesh) const;
     Model3D* model(std::string model) const;
+    Scene3D* scene(std::string scene) const;
+    Camera* camera(std::string camera) const;
     
     bool isValidName(const std::string candidate) const;
     std::string createValidName(const std::string candidate, std::vector<std::string> existingNames) const;
@@ -196,8 +198,10 @@ public:
     void importScene3D(std::string name, std::string extension, std::string path);    
     void saveScene3D(std::string name, std::string path = "");
     void unloadScene3D(std::string name);
+    void createTopology(std::string name);
     void loadTopology(std::string name, std::string path = "");
     void saveTopology(std::string name, std::string path = "");
+    void unloadTopology();
     void exportScene(std::string name, std::string extension, std::string path);
     void exportModel(std::string filePath, std::string extension, Model3D* model, const std::map<std::string, std::vector<uint32_t>>& segmentation, Camera* camera, bool exportCamera);
     void exportChiselProjectToUnity(std::string name, std::string path = "");

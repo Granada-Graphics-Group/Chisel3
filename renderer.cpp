@@ -328,6 +328,11 @@ void Renderer::swapChiselScene(Scene3D* scene)
     mGLRenderer->swapChiselscene(scene);
 }
 
+void Renderer::swapTopologyScene(Scene3D * topScene)
+{
+    mGLRenderer->swapTopologyScene(topScene);
+}
+
 void Renderer::removeScene(Scene3D* scene)
 {
     mGLRenderer->removeScene(scene);

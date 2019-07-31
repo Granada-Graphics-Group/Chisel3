@@ -5,14 +5,21 @@ ResamplingDialog::ResamplingDialog(Chisel* chisel, QWidget* parent)
     OperationDialog(chisel, parent)
 {
     setWindowTitle("Resampling");    
-    
+
+    mUi->functionLayerLabel->setText("Source");
     mUi->baseLayerWidget->hide();
-    mUi->operationLayerComboBox->removeItem(mUi->operationLayerComboBox->count() - 1);
-    mUi->operationLayerComboBox->removeItem(mUi->operationLayerComboBox->count() - 1);
+    mUi->operationLayerLabel->setText("Filter");
+    mUi->radiusWidget->hide();
+    mUi->operationLayerComboBox->clear();
+    mUi->operationLayerComboBox->addItem("Mean");
+    
     
     adjustSize();
     
     setValidLayerName("Resampled");
+    
+    disconnect(mUi->resolutionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ResamplingDialog::filterLayersByResolution);
+    connect(mUi->resolutionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ResamplingDialog::updateFilterVisibility);
 }
 
 
@@ -31,4 +38,12 @@ void ResamplingDialog::accept()
         
         QDialog::accept();
     }     
+}
+
+void ResamplingDialog::updateFilterVisibility()
+{
+    if(targetLayerResolution() < functionLayerResolution())
+        mUi->operationWidget->show();
+    else
+        mUi->operationWidget->hide();
 }

@@ -169,12 +169,12 @@
             <shader type="fragment" name="cornercap.frag"/>
         </shaders>
     </program>
-    <program name="Resampling">
+    <!--<program name="Resampling">
         <shaders>
             <shader type="vertex"   name="resampling.vert"/>
             <shader type="fragment" name="resampling.frag"/>
         </shaders>
-    </program>    
+    </program>-->    
 
     <program name="SlicePlane">
         <shaders>

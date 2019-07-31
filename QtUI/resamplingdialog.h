@@ -18,6 +18,7 @@ public:
 
 public slots:
     void accept() override;
+    void updateFilterVisibility();
     
 signals:
     void resampling(std::string name, unsigned int layerIndex, unsigned int fieldIndex, double radius, unsigned int operationIndex);  

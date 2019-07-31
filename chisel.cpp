@@ -202,6 +202,7 @@ void Chisel::saveChiselProject(std::string name, std::string path)
 void Chisel::import3DModel(std::string name, std::string extension, std::string path)
 {
     mResourceManager->importScene3D(name, extension, path);
+    mResourceManager->createTopology(name);
     
     setCurrentPalette(static_cast<unsigned int>(0));
     

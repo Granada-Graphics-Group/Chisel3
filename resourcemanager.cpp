@@ -78,9 +78,9 @@ ResourceManager::~ResourceManager()
 
 Texture * ResourceManager::texture(std::string texture) const
 {
-    auto search = mTextures.find(texture);
+    auto found = mTextures.find(texture);
     
-    return (search != end(mTextures)) ? search->second.get() : nullptr;
+    return (found != end(mTextures)) ? found->second.get() : nullptr;
 }
 
 Program* ResourceManager::shaderProgram(std::string program) const
@@ -99,12 +99,26 @@ Material* ResourceManager::material(std::string material) const
         return nullptr;
 }
 
-Mesh *ResourceManager::mesh(std::string mesh) const
+Mesh* ResourceManager::mesh(std::string mesh) const
 {
     if(mMeshes.find(mesh) != mMeshes.end())
         return mMeshes.at(mesh).get();
     else
         return nullptr;
+}
+
+Scene3D * ResourceManager::scene(std::string scene) const
+{
+    auto found = mScenes.find(scene);
+
+    return (found != end(mScenes)) ? found->second.get() : nullptr;
+}
+
+Camera* ResourceManager::camera(std::string camera) const
+{
+    auto found = mCameras.find(camera);
+    
+    return (found != end(mCameras)) ? found->second.get() : nullptr;
 }
 
 bool ResourceManager::isValidName(const std::string candidate) const
@@ -2023,23 +2037,40 @@ void ResourceManager::unloadScene3D(std::string name)
     mScenes.erase(name);
 }
 
+void ResourceManager::createTopology(std::string name)
+{
+    auto found = mScenes.find(name);
+
+    if (found != end(mScenes))
+    {
+        auto topologyMesh = copyMesh(*(found->second.get()->meshes()[0]), ":neighborhoodMesh");
+        topologyMesh->generateAdjacencyInformation();
+        auto topologyModel = createModel(":neighborhoodModel", topologyMesh, { material("Dummy") });
+        auto topologyScene = createScene(":neighborEgdesScene", { camera("orthoCamera") }, { topologyModel });
+        topologyScene->setPrimitive(Primitive::Lines);
+
+        mRenderer->swapTopologyScene(topologyScene);
+    }
+}
+
 void ResourceManager::loadTopology(std::string name, std::string path)
 {
     std::string absoluteFileName = ((path.length() > 0) ? path : mCHISelPath) + ((name.length() > 0) ? name : mCHISelName) + mFileExtensions[TOP];
     std::ifstream input(absoluteFileName, std::ios::binary);
 
     cereal::PortableBinaryInputArchive archive(input);
-    
-    auto topologyMesh = std::make_unique<Mesh>(":neighborhoodMesh");
-    
-    archive(*topologyMesh.get());
-        
-    mMeshes[topologyMesh->name()] = std::move(topologyMesh);
-    
-/*    auto neighborhoodModel = createModel(":neighborhoodModel", topologyMesh, {material("Dummy")});
-                
-    auto neighborEdgesScene = createScene(":neighborEgdesScene", {mNormOrthoCamera}, {neighborhoodModel});
-    neighborEdgesScene->setPrimitive(Primitive::Lines);  */   
+
+    auto topologyMesh = createMesh(":neighborhoodMesh");
+
+    archive(*topologyMesh);
+
+    auto normOrthoCamera = camera("orthoCamera");
+    auto topologyModel = createModel(":neighborhoodModel", topologyMesh, { material("Dummy") });
+    auto topologyScene = createScene(":neighborEgdesScene", { normOrthoCamera }, { topologyModel });
+
+    topologyScene->setPrimitive(Primitive::Lines);
+
+    mRenderer->swapTopologyScene(topologyScene);
 }
 
 void ResourceManager::saveTopology(std::string name, std::string path)
@@ -2050,7 +2081,19 @@ void ResourceManager::saveTopology(std::string name, std::string path)
     cereal::PortableBinaryOutputArchive archive(output);
 
     auto topologyMesh = mesh(":neighborhoodMesh");
-    archive(*topologyMesh);    
+    archive(*topologyMesh);
+}
+
+void ResourceManager::unloadTopology()
+{
+    auto topologyScene = scene(":neighborEgdesScene");
+    
+    mRenderer->removeScene(topologyScene);
+
+    mMeshes.erase(":neighborhoodMesh");
+    mModels.erase(":neighborhoodModel");
+
+    mScenes.erase(":neighborEgdesScene");
 }
 
 void ResourceManager::exportScene(std::string name, std::string extension, std::string path)
@@ -2131,6 +2174,8 @@ void ResourceManager::loadChiselFile(std::string name, std::string path)
         archive(cereal::make_nvp("scenePath", mStdPaths[SCENE]));
         archive(cereal::make_nvp("sceneName", mCHISelName));
         loadScene3D(mCHISelName, "");
+
+        loadTopology(mCHISelName, "");
         
         std::string databaseName;
         archive(cereal::make_nvp("databasePath", mStdPaths[DB]));
@@ -2198,6 +2243,8 @@ void ResourceManager::saveChiselProject(std::string name, std::string path)
     archive(cereal::make_nvp("scenePath", mStdPaths[SCENE]));
     archive(cereal::make_nvp("sceneName", mCHISelName));
     saveScene3D(mCHISelName);
+
+    saveTopology(mCHISelName);
     
     archive(cereal::make_nvp("databasePath", mStdPaths[DB]));
     if(mSQLiteDatabaseManager->isDatabaseOpen())
@@ -2272,6 +2319,7 @@ void ResourceManager::unloadCHiselFile()
         mPalettes.pop_back();        
     }
     
+    unloadTopology();
     unloadScene3D(mCHISelName);
     
     mChisel->clearChiselSession();

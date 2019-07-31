@@ -538,12 +538,15 @@ void GLRenderer::render()
         for(auto tech : mRenderQueue)
         {
             tech->decreaseLife();
+
+            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, tech->name().size(), tech->name().c_str());
             
             //-LOG("GLRenderer::render:: Technique: ", tech->name(), ", life: ", tech->life());
             updateGenericUniformData();
                         
             for(auto target : tech->targets())
             {
+                glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, target->name().size(), target->name().c_str());
                 //LOG("Target: ", target->name());                
                 updateRenderTargetUniformData(target);
 
@@ -760,6 +763,7 @@ void GLRenderer::render()
 //                     layerImage = layerImage.mirrored(false, true);
 //                     layerImage.save("./brushshape.png");                   
 //                 }
+                glPopDebugGroup();
             }
 
             if(tech->needSync())
@@ -769,6 +773,8 @@ void GLRenderer::render()
                 
             }
             
+            glPopDebugGroup();
+
             if (tech == mSeamMaskTech)
             {
                 mMainScene->updateCamera(mCamera);
@@ -1827,7 +1833,7 @@ Texture* GLRenderer::computeAreaPerTexelTexture(std::pair<int, int> resolution)
     return mAreaPerPixelTexture;
 }
 
-Texture * GLRenderer::computeTopologyTexture(std::pair<int, int> resolution)
+Texture* GLRenderer::computeTopologyTexture(std::pair<int, int> resolution)
 {
     mManager->deleteTexture(mBrushMaskTexture);
     mBrushMaskTexture = mManager->createTexture("BrushMaskTexture", GL_TEXTURE_2D, GL_R8, resolution.first, resolution.second, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, false);
@@ -2105,8 +2111,9 @@ void GLRenderer::swapScene(Scene3D* oldScene, Scene3D* newScene)
     mDepthTarget->passes().back()->setScene(mMainScene);
     mPaintTexPass->setScene(mMainScene);
     mReadFBPass->setScene(mMainScene);
-    mEraseTexTarget->passes().back()->setScene(mMainScene); 
-    mAreaPerPixelTech->targets()[0]->passes().back()->setScene(mMainScene);
+    mEraseTexTarget->passes().back()->setScene(mMainScene);
+    mLayerOperationTech->targets()[0]->passes().back()->setScene(mMainScene);
+    //mAreaPerPixelTech->targets()[0]->passes().back()->setScene(mMainScene);
 
     mLayerCount = 0;
     mLayers.clear();
@@ -2119,7 +2126,7 @@ void GLRenderer::swapScene(Scene3D* oldScene, Scene3D* newScene)
     insertTechnique(mSeamMaskTech, 1);
     insertTechnique(mDepthTech, 1);
     insertTechnique(mProjTech);
-    insertTechnique(mAreaPerPixelTech, 1);
+    //insertTechnique(mAreaPerPixelTech, 1);
     //insertTechnique(mViewTexTech);    
     insertTechnique(mUITech);
 }
@@ -2144,15 +2151,15 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mReadFBTexture = mManager->createTexture("readFBTexture", GL_TEXTURE_2D, GL_RG32F, mWindowWidth, mWindowHeight, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mReadFBTextureI = mManager->createTexture("readFBTextureI", GL_TEXTURE_2D, GL_RG32I, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mReadFBTextureUI = mManager->createTexture("readFBTextureUI", GL_TEXTURE_2D, GL_RG32UI, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
-//         mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, 2048, 2048, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+
 //         mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
 //         mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
 //         mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, 2048, 2048, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
     
         
         auto quad = mManager->createQuad("PPQuad", {0.0, 0.0}, {2048, 2048});
-        auto ppQuadModel = new Model3D("ppModel", quad, {mManager->material("Dummy")});
-        auto ppScene = new Scene3D("ppScene", {mNormOrthoCamera}, {ppQuadModel});        
+        auto ppQuadModel = mManager->createModel("ppModel", quad, {mManager->material("Dummy")});
+        auto ppScene = mManager->createScene("ppScene", {mNormOrthoCamera}, {ppQuadModel});        
         
         //TODO Soportar quizas una camara por defecto en la pasada al igual que el material
         auto depthTexMat = mManager->createMaterial("DepthTexMat", "DepthTex");
@@ -2211,55 +2218,45 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         viewTexPass->setAutoClear(false);
         auto viewTexTarget = mManager->createRenderTarget("vieTexTarget", mManager, { 0, 0, 2048, 2048 }, { viewTexPass }, true, mFBO->id());
         mViewTexTech = mManager->createRenderTechnique("viewTexTech", {viewTexTarget});
+        
 
-//         auto areaPerPixelMat = mManager->createMaterial("AreaPerPixel", "AreaPerPixel");
-//         auto areaPerPixelPass = mManager->createRenderPass("AreaPerPixel", mMainScene, areaPerPixelMat);
-//         areaPerPixelPass->disableDepthTest();
-//         mDummyTex = mManager->createTexture("dummy", GL_TEXTURE_2D, GL_R8, 2048, 2048, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, true);
-//         mAreaPerPixelTarget = mManager->createRenderTarget("AreaPerPixelTarget", mManager, { 0, 0, 2048, 2048 }, { areaPerPixelPass }, {mDummyTex}, nullptr, false);    
-//         mAreaPerPixelTech = mManager->createRenderTechnique("AreaPerPixelTech", {mAreaPerPixelTarget});
-//                 
-//         mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
+        //auto neighborhoodMesh = mManager->copyMesh(*mMainScene->meshes()[0], ":neighborhoodMesh");
+        //neighborhoodMesh->generateAdjacencyInformation();
+        //auto neighborhoodModel = mManager->createModel(":neighborhoodModel", neighborhoodMesh, {mManager->material("Dummy")});
+        //        
+        //auto neighborEdgesScene = mManager->createScene(":neighborEgdesScene", {mNormOrthoCamera}, {neighborhoodModel});
+        //neighborEdgesScene->setPrimitive(Primitive::Lines);
+        //
+        //auto neighborEdgesMat = mManager->createMaterial("NeighborEgdesMat", "NeighborEdges");
+        //auto neighborEdgesPass = mManager->createRenderPass("NeighborEdgesPass", neighborEdgesScene, neighborEdgesMat);
+        //neighborEdgesPass->setAutoClear(false);
+        //mNeighborEdgesTarget = mManager->createRenderTarget("NeighborEdgesTarget", mManager, { 0, 0, 2048, 2048 }, { neighborEdgesPass }, {}, nullptr, false);
+        //mNeighborEdgesTech = mManager->createRenderTechnique("NeighborEdgesTech", {mNeighborEdgesTarget});          
+        //
+        //auto edgesToOutlineMat = mManager->createMaterial("EdgesToOutlineMat", "EdgesToOutline");
+        //auto edgesToOutlinePass = mManager->createRenderPass("EdgesToOutlinePass", ppScene, edgesToOutlineMat);
+        //mEdgesToOutlineTarget = mManager->createRenderTarget("EdgesToOutlineTarget", mManager, { 0, 0, 2048, 2048 }, { edgesToOutlinePass }, {}, nullptr, false);
+        //mEdgesToOutlineTech = mManager->createRenderTechnique("EdgesToOutlineTech", {mEdgesToOutlineTarget}); 
         
-        
-        auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
-        auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
-        immediateNeighborsPass->setAutoClear(false);
-        mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, {}, nullptr, false);
-        mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", {mImmediateNeighborsTarget});
-        
-        auto neighborhoodMesh = mManager->copyMesh(*mMainScene->meshes()[0], ":neighborhoodMesh");
-        neighborhoodMesh->generateAdjacencyInformation();
-        auto neighborhoodModel = mManager->createModel(":neighborhoodModel", neighborhoodMesh, {mManager->material("Dummy")});
-                
-        auto neighborEdgesScene = mManager->createScene(":neighborEgdesScene", {mNormOrthoCamera}, {neighborhoodModel});
-        neighborEdgesScene->setPrimitive(Primitive::Lines);
-        
-        auto neighborEdgesMat = mManager->createMaterial("NeighborEgdesMat", "NeighborEdges");
-        auto neighborEdgesPass = mManager->createRenderPass("NeighborEdgesPass", neighborEdgesScene, neighborEdgesMat);
-        neighborEdgesPass->setAutoClear(false);
-        mNeighborEdgesTarget = mManager->createRenderTarget("NeighborEdgesTarget", mManager, { 0, 0, 2048, 2048 }, { neighborEdgesPass }, {}, nullptr, false);
-        mNeighborEdgesTech = mManager->createRenderTechnique("NeighborEdgesTech", {mNeighborEdgesTarget});          
-        
-        auto edgesToOutlineMat = mManager->createMaterial("EdgesToOutlineMat", "EdgesToOutline");
-        auto edgesToOutlinePass = mManager->createRenderPass("EdgesToOutlinePass", ppScene, edgesToOutlineMat);
-        mEdgesToOutlineTarget = mManager->createRenderTarget("EdgesToOutlineTarget", mManager, { 0, 0, 2048, 2048 }, { edgesToOutlinePass }, {}, nullptr, false);
-        mEdgesToOutlineTech = mManager->createRenderTechnique("EdgesToOutlineTech", {mEdgesToOutlineTarget}); 
-        
-        auto neighborhoodScene = new Scene3D("neighborhoodScene", {mNormOrthoCamera}, {neighborhoodModel});
-        
-        auto neighborsMat = mManager->createMaterial("NeighborsMat", "Neighbors");
-        auto neighborsPass = mManager->createRenderPass("NeighborsPass", neighborhoodScene, neighborsMat);
-        //neighborsPass->disableDepthTest();
-        neighborsPass->setAutoClear(false);
-        mNeighborsTarget = mManager->createRenderTarget("NeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { neighborsPass }, {}, nullptr, false);
-        mNeighborsTech = mManager->createRenderTechnique("NeighborsTech", {mNeighborsTarget});
+//         auto neighborhoodScene = new Scene3D("neighborhoodScene", {mNormOrthoCamera}, {neighborhoodModel});
+//         
+//         auto neighborsMat = mManager->createMaterial("NeighborsMat", "Neighbors");
+//         auto neighborsPass = mManager->createRenderPass("NeighborsPass", neighborhoodScene, neighborsMat);
+//         neighborsPass->setAutoClear(false);
+//         mNeighborsTarget = mManager->createRenderTarget("NeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { neighborsPass }, {}, nullptr, false);
+//         mNeighborsTech = mManager->createRenderTechnique("NeighborsTech", {mNeighborsTarget});
                
-        auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
-        auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
-        cornerCapPass->setAutoClear(false);
-        mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, {}, nullptr, false);
-        mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", {mCornerCapTarget});
+        //auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
+        //auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
+        //cornerCapPass->setAutoClear(false);
+        //mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, {}, nullptr, false);
+        //mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", {mCornerCapTarget});
+
+        //auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
+        //auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
+        //immediateNeighborsPass->setAutoClear(false);
+        //mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, {}, nullptr, false);
+        //mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", {mImmediateNeighborsTarget});
         
         auto layerOperationMat = mManager->createMaterial("LayerOperationMat", "DrawNormals");
         auto layerOperationPass = mManager->createRenderPass("LayerOperationPass", mMainScene, layerOperationMat);
@@ -2315,14 +2312,9 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mScenes.clear();
         
         insertTechnique(mSeamMaskTech, 1);
-        //insertTechnique(mNeighborsTech, 1);
-//         insertTechnique(mNeighborEdgesTech, 1);
-//         insertTechnique(mEdgesToOutlineTech, 1);
-//         insertTechnique(mCornerCapTech, 1);
-//         insertTechnique(mImmediateNeighborsTech, 1);
         insertTechnique(mDepthTech, 1);
         insertTechnique(mProjTech);
-        //insertTechnique(mAreaPerPixelTech, 1);
+
         //insertTechnique(mViewTexTech);
         insertTechnique(mUITech);
         
@@ -2338,6 +2330,42 @@ void GLRenderer::swapChiselscene(Scene3D* newScene)
 {
     //swapScene(mMainScene, newScene);
     loadChiselScene(newScene);
+}
+
+void GLRenderer::swapTopologyScene(Scene3D * topScene)
+{
+    if (mTopologyScene != nullptr)
+    {
+        mTopologyScene = topScene;
+        mNeighborEdgesTarget->passes()[0]->setScene(mTopologyScene);
+    }
+    else
+    {
+        auto ppScene = mManager->scene("ppScene");
+        mTopologyScene = topScene;
+        auto neighborEdgesMat = mManager->createMaterial("NeighborEgdesMat", "NeighborEdges");
+        auto neighborEdgesPass = mManager->createRenderPass("NeighborEdgesPass", mTopologyScene, neighborEdgesMat);
+        neighborEdgesPass->setAutoClear(false);
+        mNeighborEdgesTarget = mManager->createRenderTarget("NeighborEdgesTarget", mManager, { 0, 0, 2048, 2048 }, { neighborEdgesPass }, {}, nullptr, false);
+        mNeighborEdgesTech = mManager->createRenderTechnique("NeighborEdgesTech", { mNeighborEdgesTarget });
+
+        auto edgesToOutlineMat = mManager->createMaterial("EdgesToOutlineMat", "EdgesToOutline");
+        auto edgesToOutlinePass = mManager->createRenderPass("EdgesToOutlinePass", ppScene, edgesToOutlineMat);
+        mEdgesToOutlineTarget = mManager->createRenderTarget("EdgesToOutlineTarget", mManager, { 0, 0, 2048, 2048 }, { edgesToOutlinePass }, {}, nullptr, false);
+        mEdgesToOutlineTech = mManager->createRenderTechnique("EdgesToOutlineTech", { mEdgesToOutlineTarget });
+
+        auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
+        auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
+        cornerCapPass->setAutoClear(false);
+        mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, {}, nullptr, false);
+        mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", { mCornerCapTarget });
+
+        auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
+        auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
+        immediateNeighborsPass->setAutoClear(false);
+        mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, {}, nullptr, false);
+        mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", { mImmediateNeighborsTarget });
+    }
 }
 
 void GLRenderer::createTopologyScene(Mesh* mesh)

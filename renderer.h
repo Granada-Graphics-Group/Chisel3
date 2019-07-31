@@ -94,6 +94,7 @@ public:
     
     void loadChiselScene(Scene3D* scene);
     void swapChiselScene(Scene3D* scene);
+    void swapTopologyScene(Scene3D* topScene);
     void removeScene(Scene3D* scene);
         
     void toggleVertexColorVisibility(bool checked);
