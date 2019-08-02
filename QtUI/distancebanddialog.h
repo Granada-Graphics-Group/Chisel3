@@ -15,7 +15,7 @@ public slots:
     void validateRange();
     
 signals:
-    void distanceBand(std::string name, unsigned int functionLayerIndex, double radius); 
+    void distanceBand(std::string name, unsigned int baseLayerIndex, double radius); 
 };
 
 #endif

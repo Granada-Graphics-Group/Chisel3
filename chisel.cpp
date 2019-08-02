@@ -202,7 +202,7 @@ void Chisel::saveChiselProject(std::string name, std::string path)
 void Chisel::import3DModel(std::string name, std::string extension, std::string path)
 {
     mResourceManager->importScene3D(name, extension, path);
-    mResourceManager->createTopology(name);
+    //mResourceManager->createTopology(name);
     
     setCurrentPalette(static_cast<unsigned int>(0));
     
@@ -252,7 +252,8 @@ void Chisel::duplicateLayer(unsigned int index)
 {
     auto newLayer = mResourceManager->duplicateLayer(mActiveLayers[index]);
     mResourceManager->saveLayer(newLayer);    
-    insertActiveLayer(index + 1, newLayer);    
+    insertActiveLayer(index, newLayer);
+    //setCurrentLayer(index);
     //setCurrentLayer(index + 1);  
 }
 
@@ -289,14 +290,14 @@ void Chisel::unloadTempLayers()
 
 void Chisel::deleteLayer(unsigned int index)
 {
+    mCurrentLayer = nullptr;
+
     mActiveLayerModel->removeLayers(index, index);
     
     mResourceManager->deleteLayer(mActiveLayers[index]);
     mRenderer->eraseLayer(index);
     
     mActiveLayers.erase(begin(mActiveLayers) + index);
-    
-    mCurrentLayer = nullptr;
     
     if(!mActiveLayers.size())
         mCurrentPalette = mResourceManager->palette(0);
@@ -332,19 +333,19 @@ void Chisel::exportLayerAsImage(unsigned int layerIndex, const std::string& path
 }
 
 void Chisel::insertActiveLayer(unsigned int index, Layer* layer)
-{
-    mDiskLayerModel->setFileState(layer->name(), true);
-    
-    mActiveLayers.insert(begin(mActiveLayers) + index, layer); 
-    mActiveLayerModel->insertLayer(index, QString::fromStdString(layer->name()), layer->type() == Layer::Type::Register, layer->resolution(), layer->typeString());
-    mTempFieldLayers.insert(begin(mTempFieldLayers) + index, nullptr);
-        
+{        
     mRenderer->insertLayer(index, layer->dataTexture(), layer->maskTexture(), layer->paletteTexture());
     
     auto palette = layer->palette();
     auto paletteTextureData = layer->discrete() ? palette->paletteTextureData(Palette::Type::Discrete) : palette->paletteTextureData(Palette::Type::Linear);        
     mRenderer->updatePaletteTexture(index, paletteTextureData, { palette->minValue(), palette->maxValue() });        
     palette->setDirty(false);
+
+    mDiskLayerModel->setFileState(layer->name(), true);
+
+    mActiveLayers.insert(begin(mActiveLayers) + index, layer);
+    mActiveLayerModel->insertLayer(index, QString::fromStdString(layer->name()), layer->type() == Layer::Type::Register, layer->resolution(), layer->typeString());
+    mTempFieldLayers.insert(begin(mTempFieldLayers) + index, nullptr);
     
     mDirtyFlag = true;    
 }
@@ -723,6 +724,10 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
     auto functionLayer = mActiveLayers[functionLayerIndex];
     Layer* fieldLayer = nullptr;
     std::vector<double> functionData;
+
+    mRenderer->updateLayerSizeDependentEditingResources(functionLayer->resolution());
+    mRenderer->updateAreaAndTopologyTechs(functionLayer->resolution());
+    mGLWidget->repaint();
     
     if(functionLayer->registerType() && functionFieldIndex > -1)
     {
@@ -838,7 +843,7 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
             break;
         case StatOps::NoNull:
         {
-            auto areaData = computeAreaPerCell(functionLayer->resolution());//mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+            auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
             
             for(auto i = 0;i < functionData.size(); ++i)
                 if(baseMask[i] != 0 && functionMask[i] != 0)
@@ -847,7 +852,7 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
             break;
         case StatOps::Null:
         {
-            auto areaData = computeAreaPerCell(functionLayer->resolution());//mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+            auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
 
             for(auto i = 0;i < functionData.size(); ++i)
                 if(baseMask[i] != 0 && functionMask[i] == 0)
@@ -997,10 +1002,12 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
 
 Layer* Chisel::computeNeighborhoodStatistics(std::string layerName, unsigned int functionLayerIndex, int functionFieldIndex, unsigned int radius, StatOps operation)
 {
-    setCurrentLayer(functionLayerIndex);
-
     auto functionLayer = mActiveLayers[functionLayerIndex];
     std::vector<double> functionData;
+
+    mRenderer->updateLayerSizeDependentEditingResources(functionLayer->resolution());
+    mRenderer->updateAreaAndTopologyTechs(functionLayer->resolution());
+    mGLWidget->repaint();
     
     if(functionLayer->registerType() && functionFieldIndex > -1)
     {
@@ -1014,9 +1021,9 @@ Layer* Chisel::computeNeighborhoodStatistics(std::string layerName, unsigned int
         functionData = mRenderer->readLayerData(functionLayerIndex);
         
     auto functionMask = mRenderer->readLayerMask(functionLayerIndex);
-        
-    //auto neighborhoodTexture = mResourceManager->texture("Neighborhood");    
-    auto neighborhoodData = computeTopology(functionLayer->resolution());//mRenderer->readFloatTexture(neighborhoodTexture);
+
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");    
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
     
     std::vector<float> neighborhoodStatsData(functionData.size(), 0);
     std::vector<glm::byte> valueTextureData(functionData.size() * sizeof(float), 0);
@@ -1024,11 +1031,12 @@ Layer* Chisel::computeNeighborhoodStatistics(std::string layerName, unsigned int
 
     auto width = functionLayer->dataTexture()->width();
     auto height = functionLayer->dataTexture()->height();
+    auto texelCount = width * height;
     std::array<int, 8> neighborOffsets = { -1, 1, width, -width, -1 + width, -1 - width, 1 + width, 1 - width };
     
     std::vector<uint64_t> surfaceCostData(functionData.size(), std::numeric_limits<uint64_t>::max());            
     std::vector<char> inspectedTexels(functionData.size(), 2);
-    
+
     for(auto i = 0; i < functionMask.size(); ++i)
         if(functionMask[i] && neighborhoodData[2 * i] < 0)
         {
@@ -1050,45 +1058,26 @@ Layer* Chisel::computeNeighborhoodStatistics(std::string layerName, unsigned int
                     /*if(surfaceCostData[currentTexelIndex] < radius)     */               
                         for(int idx = 0; idx < 8; ++idx)
                         {
-                            // módulo de texel index para saber si tiene sentido el vecino ?
-                                    
-                            auto neighborTexelIndex = 0;            
-                            int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
-                            
-                            
-                            if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << idx)) != 0)
+                            int neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
+
+                            if (neighborTexelIndex > 0 && neighborTexelIndex < texelCount)
                             {
-                                neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
-                            }
-                            else
-                            {                        
-                                auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[idx]);
-                                
-                                if(indirectIndex > 0)
+                                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+
+                                if (neighborhoodDataValue >= 0 || (-neighborhoodDataValue & (1 << idx)) == 0)
                                 {
+                                    int indirectIndex = 2 * neighborTexelIndex;
                                     neighborTexelIndex = neighborhoodData[indirectIndex + 1] * width + neighborhoodData[indirectIndex];
-                                                        
-                                    if(neighborTexelIndex < 0)
-                                    {
-                                        auto a = neighborhoodData[indirectIndex];
-                                        auto b = neighborhoodData[indirectIndex + 1];
-                                        auto c  = 0;
-                                        auto d = neighborhoodData[2 * currentTexelIndex];
-                                        auto e = neighborhoodData[2 * currentTexelIndex + 1];
+
+                                    auto validTexel = neighborTexelIndex > 0 && neighborTexelIndex < texelCount;
+                                    if (!validTexel || validTexel && neighborhoodData[2 * neighborTexelIndex] > 0)
                                         neighborTexelIndex = 0;
-                                        
-                                        LOG("<> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
-                                    }
-                                    
-                                    if(neighborhoodData[2 * neighborTexelIndex] > 0)
-                                    {
-                                        neighborTexelIndex = 0;
-                                        LOG("---> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
-                                    }
                                 }
                             }
-                            
-                            if(neighborTexelIndex != 0 && neighborTexelIndex < width * height)
+                            else
+                                neighborTexelIndex = 0;
+
+                            if (neighborTexelIndex != 0)
                             {
                                 float costToNeighbor = surfaceCostData[currentTexelIndex] + 1;
                                                             
@@ -1211,11 +1200,16 @@ Layer* Chisel::computeCostSurfaceLayer(std::string layerName, unsigned int seedL
 {
     auto seedLayer = mActiveLayers[seedLayerIndex];
     auto seedTexture = seedLayer->maskTexture();
-//    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
-    
+
+    mRenderer->updateLayerSizeDependentEditingResources(seedLayer->resolution());
+    mRenderer->updateAreaAndTopologyTechs(seedLayer->resolution());
+    mGLWidget->repaint();
+
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+
     auto seedData = mRenderer->readLayerMask(seedLayerIndex);
     auto frictionData = mRenderer->readLayerData(costLayerIndex);
-    auto neighborhoodData = computeTopology(seedLayer->resolution());// mRenderer->readFloatTexture(neighborhoodTexture);
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
     std::vector<float> surfaceCostData(frictionData.size(), std::numeric_limits<float>::max());
     
     std::vector<glm::byte> valueTextureData(surfaceCostData.size() * sizeof(float), 0);
@@ -1235,59 +1229,36 @@ Layer* Chisel::computeCostSurfaceLayer(std::string layerName, unsigned int seedL
     
     if(activeTexels.size())
     {
+        auto texelCount = seedLayer->width() * seedLayer->height();
+        auto validateTexel = [&texelCount](const auto& texel) { return texel > 0 && texel < texelCount; };
+
         do
         {
             auto currentTexelIndex = activeTexels.cbegin()->second;
             activeTexels.erase(activeTexels.cbegin());
-            
-            for(int i = 0; i < 8; ++i)
+
+            for (int i = 0; i < 8; ++i)
             {
-                // módulo de texel index para saber si tiene sentido el vecino ?
-                        
-                auto neighborTexelIndex = 0;            
-                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
-                
-                
-                if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << i)) != 0)
+                int neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
+
+                if (validateTexel(neighborTexelIndex))
                 {
-                    //LOG("- Inside: ", a, " bit and: ", c);
-                    neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
-                    
-                    //LOG("-> Neigh texel[ ", neighborTexelIndex / seedTexture->width(), ", ", neighborTexelIndex % seedTexture->width(), "]");
-                    
-                }
-                else
-                {
-                    
-                    auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[i]);
-    //                 LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[tempIndex], ", ", neighborhoodData[tempIndex + 1], "]");
-                    
-                    if(indirectIndex > 0)
+                    int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+
+                    if (neighborhoodDataValue >= 0 || (-neighborhoodDataValue & (1 << i)) == 0)
                     {
+                        int indirectIndex = 2 * neighborTexelIndex;
                         neighborTexelIndex = neighborhoodData[indirectIndex + 1] * seedTexture->width() + neighborhoodData[indirectIndex];
-    //                     LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
-                                            
-                        if(neighborTexelIndex < 0)
-                        {
-                            auto a = neighborhoodData[indirectIndex];
-                            auto b = neighborhoodData[indirectIndex + 1];
-                            auto c  = 0;
-                            auto d = neighborhoodData[2 * currentTexelIndex];
-                            auto e = neighborhoodData[2 * currentTexelIndex + 1];
+
+                        auto validTexel = validateTexel(neighborTexelIndex);
+                        if (!validTexel || validTexel && neighborhoodData[2 * neighborTexelIndex] > 0)
                             neighborTexelIndex = 0;
-                            
-                            LOG("<> Current texel[", currentTexelIndex % seedTexture->width(),", ", currentTexelIndex / seedTexture->width(),  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
-                        }
-                        
-                        if(neighborhoodData[2 * neighborTexelIndex] > 0)
-                        {
-                            neighborTexelIndex = 0;
-                            LOG("---> Current texel[", currentTexelIndex % seedTexture->width(),", ", currentTexelIndex / seedTexture->width(),  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
-                        }
                     }
                 }
-                
-                if(neighborTexelIndex != 0 && neighborTexelIndex < seedTexture->width() * seedTexture->height())
+                else
+                    neighborTexelIndex = 0;
+
+                if (neighborTexelIndex != 0)
                 {
                     float costToNeighbor = surfaceCostData[currentTexelIndex];
                     
@@ -1345,12 +1316,20 @@ Layer* Chisel::computeCostSurfaceLayer(std::string layerName, unsigned int seedL
 
 Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int index, double distance)
 {
+    //qApp->processEvents();
     auto seedLayer = mActiveLayers[index];
     auto seedTexture = seedLayer->maskTexture();
     
+    mRenderer->updateLayerSizeDependentEditingResources(seedLayer->resolution());
+    mRenderer->updateAreaAndTopologyTechs(seedLayer->resolution());
+    mGLWidget->repaint();
+
+    auto areaTexture = mResourceManager->texture("AreaPerPixel");
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+
     auto seedData = mRenderer->readLayerMask(index);
-    auto areaData = computeAreaPerCell(seedLayer->resolution());
-    auto neighborhoodData = computeTopology(seedLayer->resolution());
+    auto areaData = mRenderer->readFloatTexture(areaTexture);//computeAreaPerCell(seedLayer->resolution());
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);//computeTopology(seedLayer->resolution());
     std::vector<float> distanceData(areaData.size(), std::numeric_limits<float>::max());
     
     std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
@@ -1372,67 +1351,38 @@ Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int ind
     
     if(activeTexels.size())
     {
+        auto texelCount = seedLayer->width() * seedLayer->height();
+        auto validateTexel = [&texelCount](const auto& texel) { return texel > 0 && texel < texelCount; };
+
         do
         {
             auto currentTexelIndex = activeTexels.cbegin()->second;
-            auto currentDistance = distanceData[currentTexelIndex];
             activeTexels.erase(activeTexels.cbegin());
-            
-    //         LOG("Current texel[ ", currentTexelIndex % seedTexture->width(), ", ", currentTexelIndex / seedTexture->width(), "] - Value: ", -neighborhoodData[2 * currentTexelIndex]);
-            
-            if (currentTexelIndex == 0)
-                auto ca = 1;
             
             for(int i = 0; i < 8; ++i)
             {
-                // módulo de texel index para saber si tiene sentido el vecino ?
-                        
-                auto neighborTexelIndex = 0;            
-                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
-                
-                
-                if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << i)) != 0)
+                int neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
+
+                if (validateTexel(neighborTexelIndex))
                 {
-                    //LOG("- Inside: ", a, " bit and: ", c);
-                    neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
-                    
-                    //LOG("-> Neigh texel[ ", neighborTexelIndex / seedTexture->width(), ", ", neighborTexelIndex % seedTexture->width(), "]");
-                    
-                }
-                else
-                {
-                    
-                    auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[i]);
-    //                 LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[tempIndex], ", ", neighborhoodData[tempIndex + 1], "]");
-                    
-                    if(indirectIndex > 0)
+                    int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+
+                    if (neighborhoodDataValue >= 0 || (-neighborhoodDataValue & (1 << i)) == 0)
                     {
+                        int indirectIndex = 2 * neighborTexelIndex;
                         neighborTexelIndex = neighborhoodData[indirectIndex + 1] * seedTexture->width() + neighborhoodData[indirectIndex];
-    //                     LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
-                                            
-                        if(neighborTexelIndex < 0)
-                        {
-                            auto a = neighborhoodData[indirectIndex];
-                            auto b = neighborhoodData[indirectIndex + 1];
-                            auto c  = 0;
-                            auto d = neighborhoodData[2 * currentTexelIndex];
-                            auto e = neighborhoodData[2 * currentTexelIndex + 1];
+
+                        auto validTexel = validateTexel(neighborTexelIndex);
+                        if (!validTexel || validTexel && neighborhoodData[2 * neighborTexelIndex] > 0)
                             neighborTexelIndex = 0;
-                            
-                            LOG("<> Current texel[", currentTexelIndex % seedTexture->width(),", ", currentTexelIndex / seedTexture->width(),  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
-                        }
-                        
-                        if(neighborhoodData[2 * neighborTexelIndex] > 0)
-                        {
-                            neighborTexelIndex = 0;
-                            LOG("---> Current texel[", currentTexelIndex % seedTexture->width(),", ", currentTexelIndex / seedTexture->width(),  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
-                        }
                     }
                 }
-                
-                if(neighborTexelIndex != 0 && neighborTexelIndex < seedTexture->width() * seedTexture->height())
+                else
+                    neighborTexelIndex = 0;
+
+                if(neighborTexelIndex != 0)
                 {
-                    float distanceToNeighbor = currentDistance;
+                    float distanceToNeighbor = distanceData[currentTexelIndex];
                     
                     if(i < 4)
                         distanceToNeighbor += std::sqrt(areaData[currentTexelIndex])/2.0 + std::sqrt(areaData[neighborTexelIndex])/2.0;
@@ -1490,9 +1440,16 @@ Layer * Chisel::computeDistanceBandLayer(std::string layerName, unsigned int ind
     auto seedLayer = mActiveLayers[index];
     auto seedTexture = seedLayer->maskTexture();
 
+    mRenderer->updateLayerSizeDependentEditingResources(seedLayer->resolution());
+    mRenderer->updateAreaAndTopologyTechs(seedLayer->resolution());
+    mGLWidget->repaint();
+
+    auto areaTexture = mResourceManager->texture("AreaPerPixel");
+    auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+
     auto seedData = mRenderer->readLayerMask(index);
-    auto areaData = computeAreaPerCell(seedLayer->resolution());
-    auto neighborhoodData = computeTopology(seedLayer->resolution());
+    auto areaData = mRenderer->readFloatTexture(areaTexture);
+    auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
     std::vector<float> distanceData(areaData.size(), std::numeric_limits<float>::max());
 
     std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
@@ -1514,67 +1471,38 @@ Layer * Chisel::computeDistanceBandLayer(std::string layerName, unsigned int ind
 
     if (activeTexels.size())
     {
+        auto texelCount = seedLayer->width() * seedLayer->height();
+        auto validateTexel = [&texelCount](const auto& texel) { return texel > 0 && texel < texelCount; };
+
         do
         {
             auto currentTexelIndex = activeTexels.cbegin()->second;
-            auto currentDistance = distanceData[currentTexelIndex];
             activeTexels.erase(activeTexels.cbegin());
-
-            //         LOG("Current texel[ ", currentTexelIndex % seedTexture->width(), ", ", currentTexelIndex / seedTexture->width(), "] - Value: ", -neighborhoodData[2 * currentTexelIndex]);
-
-            if (currentTexelIndex == 0)
-                auto ca = 1;
 
             for (int i = 0; i < 8; ++i)
             {
-                // módulo de texel index para saber si tiene sentido el vecino ?
+                int neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
 
-                auto neighborTexelIndex = 0;
-                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
-
-
-                if (neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << i)) != 0)
+                if (validateTexel(neighborTexelIndex))
                 {
-                    //LOG("- Inside: ", a, " bit and: ", c);
-                    neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
+                    int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
 
-                    //LOG("-> Neigh texel[ ", neighborTexelIndex / seedTexture->width(), ", ", neighborTexelIndex % seedTexture->width(), "]");
-
-                }
-                else
-                {
-
-                    auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[i]);
-                    //                 LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[tempIndex], ", ", neighborhoodData[tempIndex + 1], "]");
-
-                    if (indirectIndex > 0)
+                    if (neighborhoodDataValue >= 0 || (-neighborhoodDataValue & (1 << i)) == 0)
                     {
+                        int indirectIndex = 2 * neighborTexelIndex;
                         neighborTexelIndex = neighborhoodData[indirectIndex + 1] * seedTexture->width() + neighborhoodData[indirectIndex];
-                        //                     LOG(": Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
 
-                        if (neighborTexelIndex < 0)
-                        {
-                            auto a = neighborhoodData[indirectIndex];
-                            auto b = neighborhoodData[indirectIndex + 1];
-                            auto c = 0;
-                            auto d = neighborhoodData[2 * currentTexelIndex];
-                            auto e = neighborhoodData[2 * currentTexelIndex + 1];
+                        auto validTexel = validateTexel(neighborTexelIndex);
+                        if (!validTexel || validTexel && neighborhoodData[2 * neighborTexelIndex] > 0)
                             neighborTexelIndex = 0;
-
-                            LOG("<> Current texel[", currentTexelIndex % seedTexture->width(), ", ", currentTexelIndex / seedTexture->width(), "] = ", neighborhoodDataValue, " :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
-                        }
-
-                        if (neighborhoodData[2 * neighborTexelIndex] > 0)
-                        {
-                            neighborTexelIndex = 0;
-                            LOG("---> Current texel[", currentTexelIndex % seedTexture->width(), ", ", currentTexelIndex / seedTexture->width(), "] = ", neighborhoodDataValue, " :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[i]) % seedTexture->width(), ", ", (currentTexelIndex + neighborOffsets[i]) / seedTexture->width(), "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");
-                        }
                     }
                 }
+                else
+                    neighborTexelIndex = 0;
 
-                if (neighborTexelIndex != 0 && neighborTexelIndex < seedTexture->width() * seedTexture->height())
+                if (neighborTexelIndex != 0)
                 {
-                    float distanceToNeighbor = currentDistance;
+                    float distanceToNeighbor = distanceData[currentTexelIndex];
 
                     if (i < 4)
                         distanceToNeighbor += std::sqrt(areaData[currentTexelIndex]) / 2.0 + std::sqrt(areaData[neighborTexelIndex]) / 2.0;
@@ -1635,6 +1563,10 @@ Layer * Chisel::computeDistanceBandLayer(std::string layerName, unsigned int ind
 
 Layer* Chisel::computeCurvatureLayer(std::string layerName, const std::pair<int, int> layerResolution, double distance)
 {
+    mRenderer->updateLayerSizeDependentEditingResources(layerResolution);
+    mRenderer->updateAreaAndTopologyTechs(layerResolution);
+    mGLWidget->repaint();
+
     auto normalLayers = computeNormalLayer("Normals", layerResolution);
     
     auto neighborhoodTexture = mResourceManager->texture("Neighborhood");    
@@ -1648,8 +1580,9 @@ Layer* Chisel::computeCurvatureLayer(std::string layerName, const std::pair<int,
 
     auto width = normalLayers[0]->dataTexture()->width();
     auto height = normalLayers[0]->dataTexture()->height();
+    auto texelCount = width * height;
     
-    auto areaData = computeAreaPerCell(layerResolution);//mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
     auto maxArea = *std::max_element(begin(areaData), end(areaData));
     
     std::vector<float> curvatureData(normalMask.size(), 0);
@@ -1663,7 +1596,7 @@ Layer* Chisel::computeCurvatureLayer(std::string layerName, const std::pair<int,
     
     std::vector<char> inspectedTexels(normalMask.size(), 2);
     
-    for(auto i = 0; i < 2/*normalMask.size()*/; ++i)
+    for(auto i = 0; i < normalMask.size(); ++i)
         if(normalMask[i] && neighborhoodData[2 * i] < 0)
         {
             std::vector<uint64_t> validIndices;
@@ -1687,45 +1620,26 @@ Layer* Chisel::computeCurvatureLayer(std::string layerName, const std::pair<int,
                     /*if(surfaceCostData[currentTexelIndex] < radius)     */               
                         for(int idx = 0; idx < 8; ++idx)
                         {
-                            // módulo de texel index para saber si tiene sentido el vecino ?
-                                    
-                            auto neighborTexelIndex = 0;            
-                            int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
-                            
-                            
-                            if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << idx)) != 0)
+                            int neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
+
+                            if (neighborTexelIndex > 0 && neighborTexelIndex < texelCount)
                             {
-                                neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
-                            }
-                            else
-                            {                        
-                                auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[idx]);
-                                
-                                if(indirectIndex > 0)
+                                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+
+                                if (neighborhoodDataValue >= 0 || (-neighborhoodDataValue & (1 << idx)) == 0)
                                 {
+                                    int indirectIndex = 2 * neighborTexelIndex;
                                     neighborTexelIndex = neighborhoodData[indirectIndex + 1] * width + neighborhoodData[indirectIndex];
-                                                        
-                                    if(neighborTexelIndex < 0)
-                                    {
-                                        auto a = neighborhoodData[indirectIndex];
-                                        auto b = neighborhoodData[indirectIndex + 1];
-                                        auto c  = 0;
-                                        auto d = neighborhoodData[2 * currentTexelIndex];
-                                        auto e = neighborhoodData[2 * currentTexelIndex + 1];
+
+                                    auto validTexel = neighborTexelIndex > 0 && neighborTexelIndex < texelCount;
+                                    if (!validTexel || validTexel && neighborhoodData[2 * neighborTexelIndex] > 0)
                                         neighborTexelIndex = 0;
-                                        
-                                        LOG("<> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
-                                    }
-                                    
-                                    if(neighborhoodData[2 * neighborTexelIndex] > 0)
-                                    {
-                                        neighborTexelIndex = 0;
-                                        LOG("---> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
-                                    }
                                 }
                             }
-                            
-                            if(neighborTexelIndex != 0 && neighborTexelIndex < width * height)
+                            else
+                                neighborTexelIndex = 0;
+
+                            if (neighborTexelIndex != 0)
                             {
                                 float texelCostToNeighbor = texelCostData[currentTexelIndex] + 1;                                
                                 float metricCostToNeighbor = metricCostData[currentTexelIndex];
@@ -1846,6 +1760,10 @@ Layer* Chisel::computeCurvatureLayer(std::string layerName, const std::pair<int,
 
 Layer* Chisel::computeRoughnessLayer(std::string layerName, const std::pair<int, int> layerResolution, double distance)
 {
+    mRenderer->updateLayerSizeDependentEditingResources(layerResolution);
+    mRenderer->updateAreaAndTopologyTechs(layerResolution);
+    mGLWidget->repaint();
+
     auto normalLayers = computeNormalLayer("Normals", layerResolution);    
     auto posLayers = computePositionLayer("Position", layerResolution);
     
@@ -1865,8 +1783,9 @@ Layer* Chisel::computeRoughnessLayer(std::string layerName, const std::pair<int,
         
     auto width = normalLayers[0]->dataTexture()->width();
     auto height = normalLayers[0]->dataTexture()->height();
+    auto texelCount = width * height;
     
-    auto areaData = computeAreaPerCell(layerResolution);//mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+    auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
     auto maxArea = *std::max_element(begin(areaData), end(areaData));
     
     std::vector<float> roughnessData(normalMask.size(), 0);
@@ -1880,7 +1799,7 @@ Layer* Chisel::computeRoughnessLayer(std::string layerName, const std::pair<int,
     
     std::vector<char> inspectedTexels(normalMask.size(), 2);
     
-    for(auto i = 0; i < 2/*normalMask.size()*/; ++i)
+    for(auto i = 0; i < normalMask.size(); ++i)
         if(normalMask[i] && neighborhoodData[2 * i] < 0)
         {
             std::vector<uint64_t> validIndices;
@@ -1904,45 +1823,26 @@ Layer* Chisel::computeRoughnessLayer(std::string layerName, const std::pair<int,
                     /*if(surfaceCostData[currentTexelIndex] < radius)     */               
                         for(int idx = 0; idx < 8; ++idx)
                         {
-                            // módulo de texel index para saber si tiene sentido el vecino ?
-                                    
-                            auto neighborTexelIndex = 0;            
-                            int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
-                            
-                            
-                            if(neighborhoodDataValue < 0 && (-neighborhoodDataValue & (1 << idx)) != 0)
+                            int neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
+
+                            if (neighborTexelIndex > 0 && neighborTexelIndex < texelCount)
                             {
-                                neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
-                            }
-                            else
-                            {                        
-                                auto indirectIndex = 2 * (currentTexelIndex + neighborOffsets[idx]);
-                                
-                                if(indirectIndex > 0)
+                                int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+
+                                if (neighborhoodDataValue >= 0 || (-neighborhoodDataValue & (1 << idx)) == 0)
                                 {
+                                    int indirectIndex = 2 * neighborTexelIndex;
                                     neighborTexelIndex = neighborhoodData[indirectIndex + 1] * width + neighborhoodData[indirectIndex];
-                                                        
-                                    if(neighborTexelIndex < 0)
-                                    {
-                                        auto a = neighborhoodData[indirectIndex];
-                                        auto b = neighborhoodData[indirectIndex + 1];
-                                        auto c  = 0;
-                                        auto d = neighborhoodData[2 * currentTexelIndex];
-                                        auto e = neighborhoodData[2 * currentTexelIndex + 1];
+
+                                    auto validTexel = neighborTexelIndex > 0 && neighborTexelIndex < texelCount;
+                                    if (!validTexel || validTexel && neighborhoodData[2 * neighborTexelIndex] > 0)
                                         neighborTexelIndex = 0;
-                                        
-                                        LOG("<> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                        
-                                    }
-                                    
-                                    if(neighborhoodData[2 * neighborTexelIndex] > 0)
-                                    {
-                                        neighborTexelIndex = 0;
-                                        LOG("---> Current texel[", currentTexelIndex % width,", ", currentTexelIndex / width,  "] = ", neighborhoodDataValue ," :: Neigh texel[ ", (currentTexelIndex + neighborOffsets[idx]) % width, ", ", (currentTexelIndex + neighborOffsets[idx]) / width, "] -> [ ", neighborhoodData[indirectIndex], ", ", neighborhoodData[indirectIndex + 1], "]");                         
-                                    }
                                 }
                             }
-                            
-                            if(neighborTexelIndex != 0 && neighborTexelIndex < width * height)
+                            else
+                                neighborTexelIndex = 0;
+
+                            if (neighborTexelIndex != 0)
                             {
                                 float texelCostToNeighbor = texelCostData[currentTexelIndex] + 1;                                
                                 float metricCostToNeighbor = metricCostData[currentTexelIndex];

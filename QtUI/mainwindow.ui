@@ -55,8 +55,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>98</width>
-         <height>78</height>
+         <width>268</width>
+         <height>733</height>
         </rect>
        </property>
        <attribute name="label">
@@ -624,8 +624,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>98</width>
-            <height>28</height>
+            <width>223</width>
+            <height>731</height>
            </rect>
           </property>
           <attribute name="label">
@@ -696,8 +696,6 @@
     <addaction name="actionLoadLayer"/>
     <addaction name="actionUnloadLayer"/>
     <addaction name="actionEraseLayer"/>
-    <addaction name="separator"/>
-    <addaction name="actionOperateLayer"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -727,7 +725,7 @@
      <string>Ope&amp;rations</string>
     </property>
     <addaction name="actionCreateHistogram"/>
-    <addaction name="actionSliceModelTool"/>
+    <addaction name="separator"/>
     <addaction name="actionCellAreaOperation"/>
     <addaction name="actionAreaStatisticsOperation"/>
     <addaction name="actionNeighborhoodStatisticsOperation"/>
@@ -739,6 +737,9 @@
     <addaction name="actionNormalOperation"/>
     <addaction name="actionOrientationOperation"/>
     <addaction name="actionResamplingOperation"/>
+    <addaction name="separator"/>
+    <addaction name="actionSliceModelTool"/>
+    <addaction name="actionOperateLayer"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -1009,10 +1010,10 @@
      <normaloff>:/icons/operateLayer.png</normaloff>:/icons/operateLayer.png</iconset>
    </property>
    <property name="text">
-    <string>&amp;Operate</string>
+    <string>Arit&amp;hmetic logic</string>
    </property>
    <property name="toolTip">
-    <string>Operate layer</string>
+    <string>Arithmetic logic operations</string>
    </property>
    <property name="iconVisibleInMenu">
     <bool>false</bool>
@@ -1322,7 +1323,7 @@
   </action>
   <action name="actionResamplingOperation">
    <property name="text">
-    <string>Resampling</string>
+    <string>Resa&amp;mpling</string>
    </property>
    <property name="toolTip">
     <string>Resample the selected layer to different resolutions</string>

@@ -178,7 +178,7 @@ public:
     void updateSubMeshData(const std::vector<GLuint>& newData, int offset = 0);
     void insertVertex(glm::vec3 position, glm::vec3 normal, glm::vec2 textureCoord);
     void insertFace(uint32_t index1, uint32_t index2, uint32_t index3);
-    void generateAdjacencyInformation();    
+    void generateUVIslandBorders(Mesh& mesh);    
 
     void clearUpdatedBuffers();
     void clearBuffers();

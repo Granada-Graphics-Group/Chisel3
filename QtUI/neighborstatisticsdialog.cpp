@@ -23,7 +23,7 @@ void NeighborStatisticsDialog::accept()
     if(isNameValid())
     {   
         emit neighborStatistics(mUi->nameTextEdit->text().toStdString(),                                 
-                                mUi->functionLayerComboBox->currentIndex(),
+                                mUi->functionLayerComboBox->currentData().toInt(),
                                 (mUi->fieldComboBox->count() > 0) ? mUi->fieldComboBox->currentData().toInt() : -1,
                                 mUi->radiusSpinBox->value(),
                                 mUi->operationLayerComboBox->currentIndex()

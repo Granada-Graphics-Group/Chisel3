@@ -112,7 +112,7 @@ public slots:
     void computeRoughness(std::string name, std::pair<int, int> resolution, double radius);
     void computeNormals(std::string name, std::pair<int, int> resolution);
     void computeOrientation(std::string name, std::pair<int, int> resolution, glm::vec3 reference);
-    void computeResampling(std::string name, unsigned int layerIndex, std::pair<int, int> resolution);
+    void computeResampling(std::string name, unsigned int layerIndex, unsigned int fieldIndex, std::pair<int, int> resolution, unsigned int operationIndex);
     
     void updateLayerToolBoxState(int index);
     void saveNewPalette();

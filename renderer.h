@@ -52,6 +52,8 @@ public:
     void resize(int width, int height);
     
     void updateSizeDependentResources();
+    void updateLayerSizeDependentEditingResources(std::pair<int, int> resolution);
+    void updateAreaAndTopologyTechs(std::pair<int, int> resolution);
     void setRenderMode();
     void setMarkMode(bool mark);
     void setEraseMode(bool erase);

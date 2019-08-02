@@ -141,7 +141,7 @@ bool Mesh::resizeBufferCount()
     return resize;
 }
 
-void Mesh::generateAdjacencyInformation()
+void Mesh::generateUVIslandBorders(Mesh& mesh)
 {
     std::unordered_map<glm::vec3, uint32_t> uniqueVertices;
     std::vector<uint32_t> indices;
@@ -207,7 +207,7 @@ void Mesh::generateAdjacencyInformation()
 //     }
 
     if (map.size() != 3 * mFaces.size())
-        LOG_WARN("Mesh::generateAdjacencyInformation: duplicated egdes are possible");
+        LOG_WARN("Mesh::generateUVIslandBorders: duplicated egdes are possible");
     
     uint64_t noPairEdgeCount = 0;
 //     std::set<std::array<uint32_t, 2>> borderHalfEdges;
@@ -501,18 +501,19 @@ void Mesh::generateAdjacencyInformation()
         }
         else
         {
-            LOG_WARN("Mesh::generateAdjacencyInformation: ", currenHEIndex, " has no pair");            
+            LOG_WARN("Mesh::generateUVIslandBorders: ", currenHEIndex, " has no pair");            
             noPairEdgeCount++;
         }
     }
     
-    updateData(GLBuffer::Vertex, 0, edgeVertices.size() * sizeof(float), edgeVertices.data());
-    updateData(GLBuffer::UV, 0, edgeUVs.size() * sizeof(float), edgeUVs.data());
-    updateData(GLBuffer::Color, 0, edgeNormals.size() * sizeof(float), edgeNormals.data());
-    updateData(GLBuffer::Index, 0, edgeIndices.size() * sizeof(uint32_t), edgeIndices.data());
+    mesh.updateData(GLBuffer::Vertex, 0, edgeVertices.size() * sizeof(float), edgeVertices.data());
+    mesh.updateData(GLBuffer::Normal, 0, edgeVertices.size() * sizeof(float), edgeVertices.data());
+    mesh.updateData(GLBuffer::UV, 0, edgeUVs.size() * sizeof(float), edgeUVs.data());
+    mesh.updateData(GLBuffer::Color, 0, edgeNormals.size() * sizeof(float), edgeNormals.data());
+    mesh.updateData(GLBuffer::Index, 0, edgeIndices.size() * sizeof(uint32_t), edgeIndices.data());
     
     std::vector<uint32_t> subMeshIndexes(1, static_cast<uint32_t>(edgeIndices.size()));
-    updateSubMeshData(subMeshIndexes);
+    mesh.updateSubMeshData(subMeshIndexes);
 
     // ------------------------------ //
     
@@ -532,76 +533,6 @@ void Mesh::generateAdjacencyInformation()
     
     std::vector<uint32_t> subMeshIndexes3(1, static_cast<uint32_t>(nfaceIndices.size()));
     updateSubMeshData(subMeshIndexes3);  */  
-    
-    
-    //updateData(GLBuffer::Index2, 0, borderHalfEdges.size() * sizeof(uint32_t), borderHalfEdges.data());
-    
-/*    qDebug()<< "Numero limítrofes: " << numeroLimitrofes;
-
-    if (numeroLimitrofes)
-    {
-        for (unsigned long long indiceCara = 0; indiceCara < mFaces.size(); indiceCara++)
-        {
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara + 2]->origen());
-
-            if (vecHE[3 * indiceCara + 2]->pareja())
-                verticesRepresentacion.push_back(vecHE[3 * indiceCara + 2]->pareja()->siguiente()->siguiente()->origen());
-            else
-                verticesRepresentacion.push_back(verticesRepresentacion.back());
-
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara]->origen());
-
-            if (vecHE[3 * indiceCara]->pareja())
-                verticesRepresentacion.push_back(vecHE[3 * indiceCara]->pareja()->siguiente()->siguiente()->origen());
-            else
-                verticesRepresentacion.push_back(verticesRepresentacion[verticesRepresentacion.size()-2]);
-
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara + 1]->origen());
-
-            if (vecHE[3 * indiceCara + 1]->pareja())
-                verticesRepresentacion.push_back(vecHE[3 * indiceCara + 1]->pareja()->siguiente()->siguiente()->origen());
-            else
-                verticesRepresentacion.push_back(verticesRepresentacion[verticesRepresentacion.size()-3]);
-        }
-    }
-    else
-    {
-
-        for (unsigned long long indiceCara = 0; indiceCara < mFaces.size(); indiceCara ++)
-        {
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara + 2]->origen());
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara + 2]->pareja()->siguiente()->siguiente()->origen());
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara]->origen());
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara]->pareja()->siguiente()->siguiente()->origen());
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara + 1]->origen());
-            verticesRepresentacion.push_back(vecHE[3 * indiceCara + 1]->pareja()->siguiente()->siguiente()->origen());
-        }
-    }
-
-    for (unsigned long long i=0; i < verticesRepresentacion.size(); i++)
-    {
-        vertices.push_back(verticesRepresentacion[i]->vertice().x);
-        vertices.push_back(verticesRepresentacion[i]->vertice().y);
-        vertices.push_back(verticesRepresentacion[i]->vertice().z);
-
-        //qDebug() << "Vertice[" << i << "]: " << vecVertices[heRepresentacion[i]]->vertice().x << " " << vecVertices[heRepresentacion[i]]->vertice().y << " " << vecVertices[heRepresentacion[i]]->vertice().z;
-
-        normales.push_back(verticesRepresentacion[i]->normal().x);
-        normales.push_back(verticesRepresentacion[i]->normal().y);
-        normales.push_back(verticesRepresentacion[i]->normal().z);
-
-        //qDebug() << "Normal[" << i << "]: " << vecVertices[heRepresentacion[i]]->normal().x << " " << vecVertices[heRepresentacion[i]]->normal().y << " " << vecVertices[heRepresentacion[i]]->normal().z;
-
-        coordTextura.push_back(verticesRepresentacion[i]->coordenadaTextura().x);
-        coordTextura.push_back(verticesRepresentacion[i]->coordenadaTextura().y);
-    }*/
-
-    /*qDebug() << "Vertice: " << mFaces.back()->halfEdge()->origen()->vertice().x << " " << mFaces.back()->halfEdge()->origen()->vertice().y << " " << mFaces.back()->halfEdge()->origen()->vertice().z;
-
-    qDebug() << "Vertice: " << mFaces.back()->halfEdge()->origen()->normal().x << " " << mFaces.back()->halfEdge()->origen()->normal().y << " " << mFaces.back()->halfEdge()->origen()->normal().z;
-
-    qDebug() << "Vertice: " << mFaces.back()->halfEdge()->origen()->coordenadaTextura().x << " " << mFaces.back()->halfEdge()->origen()->coordenadaTextura().y;*/
-
 }
 
 int Mesh::sceneIndex(Scene3D* scene) const

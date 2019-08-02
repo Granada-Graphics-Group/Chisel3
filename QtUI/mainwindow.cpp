@@ -41,6 +41,7 @@
 #include "roughnessdialog.h"
 #include "normalsdialog.h"
 #include "orientationdialog.h"
+#include "resamplingdialog.h"
 
 #include <chrono>
 
@@ -482,6 +483,8 @@ void MainWindow::updatePaletteInformation()
 //         mUi->paletteListView->setCurrentIndex(mChisel->paletteListModel()->index(static_cast<int>(mChisel->currentPaletteIndex()), 0));
 //     //mUi->paletteListView->setCurrentIndex(QModelIndex());
 //     blocker.unblock();
+
+    mUi->toolBoxPalette->setItemText(1, QString::fromStdString(mChisel->currentPalette()->name()));
     
     mUi->paletteEditor->updateButtonUsability();
     mUi->paletteEditor->setInterpolationButtonChecked(mChisel->currentPalette()->isInterpolating());
@@ -828,7 +831,8 @@ void MainWindow::openOperationDialog(MainWindow::Operation op)
         break;
         case Operation::Resampling:
         {
-
+            mOperationDialog.reset(new ResamplingDialog(mChisel.get(), this));
+            connect(static_cast<ResamplingDialog *>(mOperationDialog.get()), &ResamplingDialog::resampling, this, &MainWindow::computeResampling);
         }
         break;
     }
@@ -914,10 +918,14 @@ void MainWindow::computeDistanceField(std::string name, unsigned int baseLayerIn
 
 void MainWindow::computeDistanceBand(std::string name, unsigned int baseLayerIndex, double radius)
 {
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
     mUi->Visualizer->makeCurrent();
     mChisel->computeDistanceBandLayer(name, baseLayerIndex, radius);
     
-    setState(State::LayerCreated);    
+    setState(State::LayerCreated);
+
+    QGuiApplication::restoreOverrideCursor();
 }
 
 void MainWindow::computeCurvature(std::string name, std::pair<int, int> resolution, double radius)
@@ -978,7 +986,7 @@ void MainWindow::computeOrientation(std::string name, std::pair<int, int> resolu
     QGuiApplication::restoreOverrideCursor();    
 }
 
-void MainWindow::computeResampling(std::string name, unsigned int layerIndex, std::pair<int, int> resolution)
+void MainWindow::computeResampling(std::string name, unsigned int layerIndex, unsigned int fieldIndex, std::pair<int, int> resolution, unsigned int operationIndex)
 {
     QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
@@ -1423,12 +1431,16 @@ void MainWindow::exportChiselProjectToUnity()
 
 void MainWindow::saveChiselProject()
 {
+    QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
     mUi->Visualizer->makeCurrent();
     
     if(mChisel->isChiselPathValid())
         mChisel->saveChiselProject();
     else
         saveChiselProjectAs();
+
+    QGuiApplication::restoreOverrideCursor();
 }
 
 void MainWindow::saveChiselProjectAs()
@@ -1559,7 +1571,9 @@ void MainWindow::duplicateLayer()
 {
     mUi->Visualizer->makeCurrent();
     
-    mChisel->duplicateLayer(mUi->activeLayerTreeView->currentIndex().row());
+    auto currentIndex = mUi->activeLayerTreeView->currentIndex();
+    mChisel->duplicateLayer(currentIndex.row());
+    selectLayer(currentIndex);
 
     mUi->Visualizer->update();    
 }

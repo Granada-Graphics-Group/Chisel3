@@ -23,7 +23,7 @@ void DistanceFieldDialog::accept()
     if(isNameValid())
     {   
         emit distanceField( mUi->nameTextEdit->text().toStdString(),
-                            mUi->functionLayerComboBox->currentData().toInt(),
+                            mUi->baseLayerComboBox->currentData().toInt(),
                             mUi->radiusSpinBox->value()
                         );
         

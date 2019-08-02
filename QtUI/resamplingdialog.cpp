@@ -30,9 +30,9 @@ void ResamplingDialog::accept()
     if(isNameValid())
     {   
         emit resampling(mUi->nameTextEdit->text().toStdString(),                                 
-                        mUi->functionLayerComboBox->currentIndex(),
+                        mUi->functionLayerComboBox->currentData().toInt(),
                         (mUi->fieldComboBox->count() > 0) ? mUi->fieldComboBox->currentData().toInt() : -1,
-                        mUi->radiusSpinBox->value(),
+                        targetLayerResolution(),
                         mUi->operationLayerComboBox->currentIndex()
                        );
         

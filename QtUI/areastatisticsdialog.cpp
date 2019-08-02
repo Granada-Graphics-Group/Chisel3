@@ -31,9 +31,9 @@ void AreaStatisticsDialog::accept()
                 break;
         }
         
-        emit areaStatistics(    mUi->functionLayerComboBox->currentIndex(),
+        emit areaStatistics(    mUi->functionLayerComboBox->currentData().toInt(),
                                 (mUi->fieldComboBox->count() > 0) ? mUi->fieldComboBox->currentData().toInt() : -1,
-                                mUi->baseLayerComboBox->currentIndex(),
+                                mUi->baseLayerComboBox->currentData().toInt(),
                                 mUi->operationLayerComboBox->currentIndex()
                            );
         

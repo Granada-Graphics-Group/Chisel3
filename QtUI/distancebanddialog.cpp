@@ -9,8 +9,7 @@ DistanceBandDialog::DistanceBandDialog(Chisel* chisel, QWidget* parent)
     
     mUi->fieldWidget->hide();
     mUi->operationWidget->hide();
-    mUi->baseLayerWidget->hide();
-    mUi->commaLabel->show();
+    mUi->functionLayerWidget->hide();
     mUi->radiusLabel->setText("Max Distance");
     adjustSize();
 
@@ -28,7 +27,7 @@ void DistanceBandDialog::accept()
     if(isNameValid())
     {   
         emit distanceBand(  mUi->nameTextEdit->text().toStdString(),
-                            static_cast<unsigned int>(mUi->functionLayerComboBox->currentIndex()),
+                            mUi->baseLayerComboBox->currentData().toInt(),
                             mUi->radiusSpinBox->value()
                          );
         

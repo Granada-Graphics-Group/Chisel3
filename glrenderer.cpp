@@ -1513,12 +1513,15 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
 
 //         removeTechnique(mAreaPerPixelTech);
 
-        mManager->deleteTexture(mBrushMaskTexture);        
-        mBrushMaskTexture = mManager->createTexture("BrushMaskTexture", GL_TEXTURE_2D, GL_R8, mLayerSize.x, mLayerSize.y, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, false);
-        mManager->deleteTexture(mSeamMaskTexture);
-        mSeamMaskTexture = mManager->createTexture("SeamMaskTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
-        mManager->deleteTexture(mDepthTexTexture);
-        mDepthTexTexture = mManager->createTexture("DepthTexTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+        updateLayerSizeDependentEditingResources({ mLayerSize.x, mLayerSize.y });
+        //updateAreaAndTopologyTechs({mLayerSize.x, mLayerSize.y});
+
+//         mManager->deleteTexture(mBrushMaskTexture);        
+//         mBrushMaskTexture = mManager->createTexture("BrushMaskTexture", GL_TEXTURE_2D, GL_R8, mLayerSize.x, mLayerSize.y, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, false);
+//         mManager->deleteTexture(mSeamMaskTexture);
+//         mSeamMaskTexture = mManager->createTexture("SeamMaskTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+//         mManager->deleteTexture(mDepthTexTexture);
+//         mDepthTexTexture = mManager->createTexture("DepthTexTexture", GL_TEXTURE_2D, GL_RGBA8, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
 //         mManager->freeAllImageUnits();
 //         mAreaPerPixelTexture->textureArray()->setImageUnit(-1);
 //         mManager->deleteTexture(mAreaPerPixelTexture);
@@ -1527,21 +1530,21 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
 //         mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, mLayerSize.x, mLayerSize.y, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
 //         
 //         mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
-        
-/*        mManager->deleteTexture(mTempNeighborhoodTexture);
-        mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, mLayerSize.x, mLayerSize.y, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
-        mManager->deleteTexture(mNeighborhoodTexture);
-        mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, mLayerSize.x, mLayerSize.y, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
-        mManager->deleteTexture(mNeighborEdgesTexture);
-        mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false); */       
-        
-        mSeamMaskTarget->setColorTextures({mSeamMaskTexture});
-        mDepthTexTarget->setColorTextures({mDepthTexTexture});
-        mSeamMaskTech->settingUP();
-
+//         
+//         mManager->deleteTexture(mTempNeighborhoodTexture);
+//         mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, mLayerSize.x, mLayerSize.y, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+//         mManager->deleteTexture(mNeighborhoodTexture);
+//         mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, mLayerSize.x, mLayerSize.y, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+//         mManager->deleteTexture(mNeighborEdgesTexture);
+//         mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, mLayerSize.x, mLayerSize.y, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);        
+//         
+//         mSeamMaskTarget->setColorTextures({mSeamMaskTexture});
+//         mDepthTexTarget->setColorTextures({mDepthTexTexture});
+//         mSeamMaskTech->settingUP();
+// 
 //         mAreaPerPixelTarget->setColorTextures({mDummyTex});
 //         mAreaPerPixelTech->settingUP();
-                
+//                 
 //         mNeighborEdgesTarget->setColorTextures({mNeighborEdgesTexture});
 //         mNeighborEdgesTech->settingUP();
 //         
@@ -1553,17 +1556,17 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
 //                 
 //         mImmediateNeighborsTarget->setColorTextures({mNeighborhoodTexture});
 //         mImmediateNeighborsTech->settingUP();
-                        
-        mUniformBuffers[GLUniBuffer::App]->updateCache(sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mSeamMaskTarget->colorTexOutputs()[0]->textureArrayIndices()));
-        mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
-        mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
+//                         
+//         mUniformBuffers[GLUniBuffer::App]->updateCache(sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mSeamMaskTarget->colorTexOutputs()[0]->textureArrayIndices()));
+//         mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
+//         mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
 //         mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
 //         mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
 //         mUniformBuffers[GLUniBuffer::App]->updateCache(8 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborEdgesTexture->textureArrayIndices()));        
 //         mUniformBuffers[GLUniBuffer::App]->updateCache(9 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mTempNeighborhoodTexture->textureArrayIndices()));
-        mUniformBuffers[GLUniBuffer::App]->updateGPU();
-
-        insertTechnique(mSeamMaskTech, 1);
+//         mUniformBuffers[GLUniBuffer::App]->updateGPU();
+// 
+//         insertTechnique(mSeamMaskTech, 1);
 //         insertTechnique(mNeighborEdgesTech, 1);
 //         insertTechnique(mEdgesToOutlineTech, 1);
 //         insertTechnique(mCornerCapTech, 1);
@@ -1581,6 +1584,73 @@ void GLRenderer::updateTechniqueDataWithLayer(const GLLayer& layer)
     mEraseTexTech->settingUP();
     
     mPaintingDataNeedUpdate = true;    
+}
+
+void GLRenderer::updateLayerSizeDependentEditingResources(std::pair<int, int> resolution)
+{
+    mManager->deleteTexture(mBrushMaskTexture);
+    mBrushMaskTexture = mManager->createTexture("BrushMaskTexture", GL_TEXTURE_2D, GL_R8, resolution.first, resolution.second, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, false);
+    mManager->deleteTexture(mSeamMaskTexture);
+    mSeamMaskTexture = mManager->createTexture("SeamMaskTexture", GL_TEXTURE_2D, GL_RGBA8, resolution.first, resolution.second, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+    mManager->deleteTexture(mDepthTexTexture);
+    mDepthTexTexture = mManager->createTexture("DepthTexTexture", GL_TEXTURE_2D, GL_RGBA8, resolution.first, resolution.second, GL_RGBA, GL_UNSIGNED_BYTE, {}, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, false);
+
+    mSeamMaskTarget->setColorTextures({ mSeamMaskTexture });
+    mDepthTexTarget->setColorTextures({ mDepthTexTexture });
+    mSeamMaskTech->settingUP();
+
+    mUniformBuffers[GLUniBuffer::App]->updateCache(sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mSeamMaskTarget->colorTexOutputs()[0]->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateGPU();
+
+    insertTechnique(mSeamMaskTech, 1);
+}
+
+void GLRenderer::updateAreaAndTopologyTechs(std::pair<int, int> resolution)
+{
+    mManager->freeAllImageUnits();
+    mAreaPerPixelTexture->textureArray()->setImageUnit(-1);
+    mManager->deleteTexture(mAreaPerPixelTexture);
+    mManager->deleteTexture(mDummyTex);
+    mDummyTex = mManager->createTexture("dummy", GL_TEXTURE_2D, GL_R8, resolution.first, resolution.second, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, true);
+    mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, resolution.first, resolution.second, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+
+    mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
+
+    mManager->deleteTexture(mTempNeighborhoodTexture);
+    mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, resolution.first, resolution.second, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+    mManager->deleteTexture(mNeighborhoodTexture);
+    mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, resolution.first, resolution.second, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+    mManager->deleteTexture(mNeighborEdgesTexture);
+    mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, resolution.first, resolution.second, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+
+    mAreaPerPixelTarget->setColorTextures({ mDummyTex });
+    mAreaPerPixelTech->settingUP();
+
+    mNeighborEdgesTarget->setColorTextures({ mNeighborEdgesTexture });
+    mNeighborEdgesTech->settingUP();
+
+    mEdgesToOutlineTarget->setColorTextures({ mNeighborhoodTexture, mTempNeighborhoodTexture });
+    mEdgesToOutlineTech->settingUP();
+
+    mCornerCapTarget->setColorTextures({ mNeighborhoodTexture });
+    mCornerCapTech->settingUP();
+
+    mImmediateNeighborsTarget->setColorTextures({ mNeighborhoodTexture });
+    mImmediateNeighborsTech->settingUP();
+
+    mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(8 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborEdgesTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(9 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mTempNeighborhoodTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateGPU();
+
+    insertTechnique(mNeighborEdgesTech, 1);
+    insertTechnique(mEdgesToOutlineTech, 1);
+    insertTechnique(mCornerCapTech, 1);
+    insertTechnique(mImmediateNeighborsTech, 1);
+    insertTechnique(mAreaPerPixelTech, 1);
 }
 
 
@@ -2113,7 +2183,8 @@ void GLRenderer::swapScene(Scene3D* oldScene, Scene3D* newScene)
     mReadFBPass->setScene(mMainScene);
     mEraseTexTarget->passes().back()->setScene(mMainScene);
     mLayerOperationTech->targets()[0]->passes().back()->setScene(mMainScene);
-    //mAreaPerPixelTech->targets()[0]->passes().back()->setScene(mMainScene);
+    mAreaPerPixelTech->targets()[0]->passes().back()->setScene(mMainScene);
+    mNeighborEdgesTarget->passes()[0]->setScene(mTopologyScene);
 
     mLayerCount = 0;
     mLayers.clear();
@@ -2124,9 +2195,13 @@ void GLRenderer::swapScene(Scene3D* oldScene, Scene3D* newScene)
     mFontScene->clearScene();
 
     insertTechnique(mSeamMaskTech, 1);
+    insertTechnique(mNeighborEdgesTech, 1);
+    insertTechnique(mEdgesToOutlineTech, 1);
+    insertTechnique(mCornerCapTech, 1);
+    insertTechnique(mImmediateNeighborsTech, 1);
     insertTechnique(mDepthTech, 1);
     insertTechnique(mProjTech);
-    //insertTechnique(mAreaPerPixelTech, 1);
+    insertTechnique(mAreaPerPixelTech, 1);
     //insertTechnique(mViewTexTech);    
     insertTechnique(mUITech);
 }
@@ -2151,11 +2226,11 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mReadFBTexture = mManager->createTexture("readFBTexture", GL_TEXTURE_2D, GL_RG32F, mWindowWidth, mWindowHeight, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mReadFBTextureI = mManager->createTexture("readFBTextureI", GL_TEXTURE_2D, GL_RG32I, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
         mReadFBTextureUI = mManager->createTexture("readFBTextureUI", GL_TEXTURE_2D, GL_RG32UI, mWindowWidth, mWindowHeight, GL_RG_INTEGER, GL_UNSIGNED_INT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+        mAreaPerPixelTexture = mManager->createTexture("AreaPerPixel", GL_TEXTURE_2D, GL_R32F, 2048, 2048, GL_RED, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+        mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
+        mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, 2048, 2048, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
 
-//         mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
-//         mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, 2048, 2048, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
-//         mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, 2048, 2048, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, false);
-    
         
         auto quad = mManager->createQuad("PPQuad", {0.0, 0.0}, {2048, 2048});
         auto ppQuadModel = mManager->createModel("ppModel", quad, {mManager->material("Dummy")});
@@ -2219,45 +2294,45 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         auto viewTexTarget = mManager->createRenderTarget("vieTexTarget", mManager, { 0, 0, 2048, 2048 }, { viewTexPass }, true, mFBO->id());
         mViewTexTech = mManager->createRenderTechnique("viewTexTech", {viewTexTarget});
         
+        auto areaPerPixelMat = mManager->createMaterial("AreaPerPixel", "AreaPerPixel");
+        auto areaPerPixelPass = mManager->createRenderPass("AreaPerPixel", mMainScene, areaPerPixelMat);
+        areaPerPixelPass->disableDepthTest();
+        mDummyTex = mManager->createTexture("dummy", GL_TEXTURE_2D, GL_R8, 2048, 2048, GL_RED, GL_UNSIGNED_BYTE, {}, GL_NEAREST, GL_NEAREST, 0, true);
+        mAreaPerPixelTarget = mManager->createRenderTarget("AreaPerPixelTarget", mManager, { 0, 0, 2048, 2048 }, { areaPerPixelPass }, { mDummyTex }, nullptr, false);
+        mAreaPerPixelTech = mManager->createRenderTechnique("AreaPerPixelTech", { mAreaPerPixelTarget });
+
+        mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
 
         //auto neighborhoodMesh = mManager->copyMesh(*mMainScene->meshes()[0], ":neighborhoodMesh");
-        //neighborhoodMesh->generateAdjacencyInformation();
-        //auto neighborhoodModel = mManager->createModel(":neighborhoodModel", neighborhoodMesh, {mManager->material("Dummy")});
-        //        
-        //auto neighborEdgesScene = mManager->createScene(":neighborEgdesScene", {mNormOrthoCamera}, {neighborhoodModel});
-        //neighborEdgesScene->setPrimitive(Primitive::Lines);
-        //
-        //auto neighborEdgesMat = mManager->createMaterial("NeighborEgdesMat", "NeighborEdges");
-        //auto neighborEdgesPass = mManager->createRenderPass("NeighborEdgesPass", neighborEdgesScene, neighborEdgesMat);
-        //neighborEdgesPass->setAutoClear(false);
-        //mNeighborEdgesTarget = mManager->createRenderTarget("NeighborEdgesTarget", mManager, { 0, 0, 2048, 2048 }, { neighborEdgesPass }, {}, nullptr, false);
-        //mNeighborEdgesTech = mManager->createRenderTechnique("NeighborEdgesTech", {mNeighborEdgesTarget});          
-        //
-        //auto edgesToOutlineMat = mManager->createMaterial("EdgesToOutlineMat", "EdgesToOutline");
-        //auto edgesToOutlinePass = mManager->createRenderPass("EdgesToOutlinePass", ppScene, edgesToOutlineMat);
-        //mEdgesToOutlineTarget = mManager->createRenderTarget("EdgesToOutlineTarget", mManager, { 0, 0, 2048, 2048 }, { edgesToOutlinePass }, {}, nullptr, false);
-        //mEdgesToOutlineTech = mManager->createRenderTechnique("EdgesToOutlineTech", {mEdgesToOutlineTarget}); 
-        
-//         auto neighborhoodScene = new Scene3D("neighborhoodScene", {mNormOrthoCamera}, {neighborhoodModel});
-//         
-//         auto neighborsMat = mManager->createMaterial("NeighborsMat", "Neighbors");
-//         auto neighborsPass = mManager->createRenderPass("NeighborsPass", neighborhoodScene, neighborsMat);
-//         neighborsPass->setAutoClear(false);
-//         mNeighborsTarget = mManager->createRenderTarget("NeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { neighborsPass }, {}, nullptr, false);
-//         mNeighborsTech = mManager->createRenderTechnique("NeighborsTech", {mNeighborsTarget});
-               
-        //auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
-        //auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
-        //cornerCapPass->setAutoClear(false);
-        //mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, {}, nullptr, false);
-        //mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", {mCornerCapTarget});
+        //neighborhoodMesh->generateUVIslandBorders();
+        //auto neighborhoodModel = mManager->createModel(":neighborhoodModel", neighborhoodMesh, { mManager->material("Dummy") });
 
-        //auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
-        //auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
-        //immediateNeighborsPass->setAutoClear(false);
-        //mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, {}, nullptr, false);
-        //mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", {mImmediateNeighborsTarget});
-        
+        //auto neighborEdgesScene = mManager->createScene(":neighborEgdesScene", { mNormOrthoCamera }, { neighborhoodModel });
+        //neighborEdgesScene->setPrimitive(Primitive::Lines);
+
+        auto neighborEdgesMat = mManager->createMaterial("NeighborEgdesMat", "NeighborEdges");
+        auto neighborEdgesPass = mManager->createRenderPass("NeighborEdgesPass", mTopologyScene, neighborEdgesMat);
+        neighborEdgesPass->setAutoClear(false);
+        mNeighborEdgesTarget = mManager->createRenderTarget("NeighborEdgesTarget", mManager, { 0, 0, 2048, 2048 }, { neighborEdgesPass }, { mNeighborEdgesTexture }, nullptr, false);
+        mNeighborEdgesTech = mManager->createRenderTechnique("NeighborEdgesTech", { mNeighborEdgesTarget });
+
+        auto edgesToOutlineMat = mManager->createMaterial("EdgesToOutlineMat", "EdgesToOutline");
+        auto edgesToOutlinePass = mManager->createRenderPass("EdgesToOutlinePass", ppScene, edgesToOutlineMat);
+        mEdgesToOutlineTarget = mManager->createRenderTarget("EdgesToOutlineTarget", mManager, { 0, 0, 2048, 2048 }, { edgesToOutlinePass }, { mNeighborhoodTexture, mTempNeighborhoodTexture }, nullptr, false);
+        mEdgesToOutlineTech = mManager->createRenderTechnique("EdgesToOutlineTech", { mEdgesToOutlineTarget });
+               
+        auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
+        auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
+        cornerCapPass->setAutoClear(false);
+        mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, { mNeighborhoodTexture }, nullptr, false);
+        mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", { mCornerCapTarget });
+
+        auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
+        auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
+        immediateNeighborsPass->setAutoClear(false);
+        mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, { mNeighborhoodTexture }, nullptr, false);
+        mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", { mImmediateNeighborsTarget });
+
         auto layerOperationMat = mManager->createMaterial("LayerOperationMat", "DrawNormals");
         auto layerOperationPass = mManager->createRenderPass("LayerOperationPass", mMainScene, layerOperationMat);
         layerOperationPass->disableDepthTest();
@@ -2312,9 +2387,13 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mScenes.clear();
         
         insertTechnique(mSeamMaskTech, 1);
+        insertTechnique(mNeighborEdgesTech, 1);
+        insertTechnique(mEdgesToOutlineTech, 1);
+        insertTechnique(mCornerCapTech, 1);
+        insertTechnique(mImmediateNeighborsTech, 1);
         insertTechnique(mDepthTech, 1);
         insertTechnique(mProjTech);
-
+        insertTechnique(mAreaPerPixelTech, 1);
         //insertTechnique(mViewTexTech);
         insertTechnique(mUITech);
         
@@ -2332,48 +2411,41 @@ void GLRenderer::swapChiselscene(Scene3D* newScene)
     loadChiselScene(newScene);
 }
 
-void GLRenderer::swapTopologyScene(Scene3D * topScene)
+void GLRenderer::swapTopologyScene(Scene3D* topScene)
 {
-    if (mTopologyScene != nullptr)
-    {
-        mTopologyScene = topScene;
-        mNeighborEdgesTarget->passes()[0]->setScene(mTopologyScene);
-    }
-    else
-    {
-        auto ppScene = mManager->scene("ppScene");
-        mTopologyScene = topScene;
-        auto neighborEdgesMat = mManager->createMaterial("NeighborEgdesMat", "NeighborEdges");
-        auto neighborEdgesPass = mManager->createRenderPass("NeighborEdgesPass", mTopologyScene, neighborEdgesMat);
-        neighborEdgesPass->setAutoClear(false);
-        mNeighborEdgesTarget = mManager->createRenderTarget("NeighborEdgesTarget", mManager, { 0, 0, 2048, 2048 }, { neighborEdgesPass }, {}, nullptr, false);
-        mNeighborEdgesTech = mManager->createRenderTechnique("NeighborEdgesTech", { mNeighborEdgesTarget });
+    mTopologyScene = topScene;
+    //if(mTopologyScene != nullptr)
+    //{
+    //    mTopologyScene = topScene;
+    //    mNeighborEdgesTarget->passes()[0]->setScene(mTopologyScene);
+    //}
+    //else
+    //{
+    //    auto ppScene = mManager->scene("ppScene");
+    //    mTopologyScene = topScene;
+    //    auto neighborEdgesMat = mManager->createMaterial("NeighborEgdesMat", "NeighborEdges");
+    //    auto neighborEdgesPass = mManager->createRenderPass("NeighborEdgesPass", mTopologyScene, neighborEdgesMat);
+    //    neighborEdgesPass->setAutoClear(false);
+    //    mNeighborEdgesTarget = mManager->createRenderTarget("NeighborEdgesTarget", mManager, { 0, 0, 2048, 2048 }, { neighborEdgesPass }, {}, nullptr, false);
+    //    mNeighborEdgesTech = mManager->createRenderTechnique("NeighborEdgesTech", { mNeighborEdgesTarget });
 
-        auto edgesToOutlineMat = mManager->createMaterial("EdgesToOutlineMat", "EdgesToOutline");
-        auto edgesToOutlinePass = mManager->createRenderPass("EdgesToOutlinePass", ppScene, edgesToOutlineMat);
-        mEdgesToOutlineTarget = mManager->createRenderTarget("EdgesToOutlineTarget", mManager, { 0, 0, 2048, 2048 }, { edgesToOutlinePass }, {}, nullptr, false);
-        mEdgesToOutlineTech = mManager->createRenderTechnique("EdgesToOutlineTech", { mEdgesToOutlineTarget });
+    //    auto edgesToOutlineMat = mManager->createMaterial("EdgesToOutlineMat", "EdgesToOutline");
+    //    auto edgesToOutlinePass = mManager->createRenderPass("EdgesToOutlinePass", ppScene, edgesToOutlineMat);
+    //    mEdgesToOutlineTarget = mManager->createRenderTarget("EdgesToOutlineTarget", mManager, { 0, 0, 2048, 2048 }, { edgesToOutlinePass }, {}, nullptr, false);
+    //    mEdgesToOutlineTech = mManager->createRenderTechnique("EdgesToOutlineTech", { mEdgesToOutlineTarget });
 
-        auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
-        auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
-        cornerCapPass->setAutoClear(false);
-        mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, {}, nullptr, false);
-        mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", { mCornerCapTarget });
+    //    auto cornerCapMat = mManager->createMaterial("CornerCapMat", "CornerCap");
+    //    auto cornerCapPass = mManager->createRenderPass("CornerCapPass", ppScene, cornerCapMat);
+    //    cornerCapPass->setAutoClear(false);
+    //    mCornerCapTarget = mManager->createRenderTarget("CornerCapTarget", mManager, { 0, 0, 2048, 2048 }, { cornerCapPass }, {}, nullptr, false);
+    //    mCornerCapTech = mManager->createRenderTechnique("CornerCapTech", { mCornerCapTarget });
 
-        auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
-        auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
-        immediateNeighborsPass->setAutoClear(false);
-        mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, {}, nullptr, false);
-        mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", { mImmediateNeighborsTarget });
-    }
-}
-
-void GLRenderer::createTopologyScene(Mesh* mesh)
-{
-    auto neighborhoodModel = mManager->createModel(":neighborhoodModel", mesh, {mManager->material("Dummy")});
-                
-    auto neighborEdgesScene = mManager->createScene(":neighborEgdesScene", {mNormOrthoCamera}, {neighborhoodModel});
-    neighborEdgesScene->setPrimitive(Primitive::Lines);    
+    //    auto immediateNeighborsMat = mManager->createMaterial("ImmediateNeighborsMat", "ImmediateNeighbors");
+    //    auto immediateNeighborsPass = mManager->createRenderPass("ImmediateNeighborsPass", ppScene, immediateNeighborsMat);
+    //    immediateNeighborsPass->setAutoClear(false);
+    //    mImmediateNeighborsTarget = mManager->createRenderTarget("ImmediateNeighborsTarget", mManager, { 0, 0, 2048, 2048 }, { immediateNeighborsPass }, {}, nullptr, false);
+    //    mImmediateNeighborsTech = mManager->createRenderTechnique("ImmediateNeighborsTech", { mImmediateNeighborsTarget });
+    //}
 }
 
 void GLRenderer::setSceneDirty(int index)
@@ -2690,10 +2762,10 @@ void GLRenderer::initAppUniformData()
     mUniformBuffers[GLUniBuffer::App]->updateCache(2 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushShapeTexture->textureArrayIndices()));
     mUniformBuffers[GLUniBuffer::App]->updateCache(3 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDepthTexTarget->depthTexOutput()->textureArrayIndices()));
     mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mBrushMaskTexture->textureArrayIndices()));
-//     mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
-//     mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
-//     mUniformBuffers[GLUniBuffer::App]->updateCache(8 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborEdgesTexture->textureArrayIndices()));
-//     mUniformBuffers[GLUniBuffer::App]->updateCache(9 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mTempNeighborhoodTexture->textureArrayIndices()));
+     mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
+     mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
+     mUniformBuffers[GLUniBuffer::App]->updateCache(8 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborEdgesTexture->textureArrayIndices()));
+     mUniformBuffers[GLUniBuffer::App]->updateCache(9 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mTempNeighborhoodTexture->textureArrayIndices()));
     //mUniformBuffers[GLUniBuffer::App]->updateCache(2 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mPaintTexTarget->colorTexOutputs()[2]->textureArrayIndices()));    
 //     mUniformBuffers[GLUniBuffer::App]->updateCache(4 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mDilatedLayerTexture->textureArrayIndices()));    
 

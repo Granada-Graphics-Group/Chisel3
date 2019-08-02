@@ -1953,7 +1953,7 @@ void ResourceManager::importScene3D(std::string name, std::string extension, std
         OBJLoader loader(this, scene.get(), fullPath);
         
     auto scenePtr = scene.get();
-        
+
     setDefaultChiselPath(mDefaultChiselPath);
     mCHISelPath = mDefaultChiselPath;
    
@@ -1966,6 +1966,8 @@ void ResourceManager::importScene3D(std::string name, std::string extension, std
     mCHISelName = scene->name();
     mScenes[scene->name()] = std::move(scene);
     
+    createTopology(mCHISelName);
+
     mRenderer->swapChiselScene(scenePtr);        
 }
 
@@ -2043,8 +2045,8 @@ void ResourceManager::createTopology(std::string name)
 
     if (found != end(mScenes))
     {
-        auto topologyMesh = copyMesh(*(found->second.get()->meshes()[0]), ":neighborhoodMesh");
-        topologyMesh->generateAdjacencyInformation();
+        auto topologyMesh = createMesh(":neighborhoodMesh"); //copyMesh(*(found->second.get()->meshes()[0]), ":neighborhoodMesh");
+        found->second.get()->meshes()[0]->generateUVIslandBorders(*topologyMesh);
         auto topologyModel = createModel(":neighborhoodModel", topologyMesh, { material("Dummy") });
         auto topologyScene = createScene(":neighborEgdesScene", { camera("orthoCamera") }, { topologyModel });
         topologyScene->setPrimitive(Primitive::Lines);
@@ -2087,12 +2089,14 @@ void ResourceManager::saveTopology(std::string name, std::string path)
 void ResourceManager::unloadTopology()
 {
     auto topologyScene = scene(":neighborEgdesScene");
-    
+ 
     mRenderer->removeScene(topologyScene);
+
+    topologyScene->clearScene();
 
     mMeshes.erase(":neighborhoodMesh");
     mModels.erase(":neighborhoodModel");
-
+    
     mScenes.erase(":neighborEgdesScene");
 }
 
@@ -2173,9 +2177,10 @@ void ResourceManager::loadChiselFile(std::string name, std::string path)
         
         archive(cereal::make_nvp("scenePath", mStdPaths[SCENE]));
         archive(cereal::make_nvp("sceneName", mCHISelName));
-        loadScene3D(mCHISelName, "");
 
         loadTopology(mCHISelName, "");
+
+        loadScene3D(mCHISelName, "");
         
         std::string databaseName;
         archive(cereal::make_nvp("databasePath", mStdPaths[DB]));
@@ -2214,20 +2219,18 @@ void ResourceManager::loadChiselFile(std::string name, std::string path)
 
 void ResourceManager::saveChiselProject(std::string name, std::string path)
 {
-    std::string oldPath;
-    std::string oldName;
+    std::string oldPath = mCHISelPath;
+    std::string oldName = mCHISelName;
     
     bool newPath = path.length() > 0;
     if(newPath)
     {
-        oldPath = mCHISelPath;
         mCHISelPath = path;
         createDirectory(path);
     }
     
     if(name.length() > 0 && mCHISelName != name)
     {
-        oldName = mCHISelName;
         mCHISelName = name;
 
         mScenes[name] = std::move(mScenes[oldName]);
@@ -2305,8 +2308,6 @@ void ResourceManager::unloadCHiselFile()
     {
         deleteTexture(layer->dataTexture());
         deleteTexture(layer->maskTexture());
-//         auto type = (layer->discrete()) ? Palette::Type::Discrete : Palette::Type::Linear;
-//         deletePaletteTexture(layer->palette(), type);
         deleteTexture(layer->paletteTexture());
     }    
     mLayers.clear();

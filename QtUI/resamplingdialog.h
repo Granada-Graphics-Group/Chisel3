@@ -21,7 +21,7 @@ public slots:
     void updateFilterVisibility();
     
 signals:
-    void resampling(std::string name, unsigned int layerIndex, unsigned int fieldIndex, double radius, unsigned int operationIndex);  
+    void resampling(std::string name, unsigned int layerIndex, unsigned int fieldIndex, std::pair<int, int> resolution, unsigned int operationIndex);  
 };
 
 

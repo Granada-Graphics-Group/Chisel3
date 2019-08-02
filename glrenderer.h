@@ -151,6 +151,8 @@ public:
     void insertLayer(unsigned int index, Texture* data, Texture* mask, Texture* palette);
     void setCurrentPaintTextures(Texture* data, Texture* mask, Texture* palette);
     void updateTechniqueDataWithLayer(const GLLayer& layer);
+    void updateLayerSizeDependentEditingResources(std::pair<int, int> resolution);
+    void updateAreaAndTopologyTechs(std::pair<int, int> resolution);
     void setCurrentPaletteTexture(Texture* palette);
     void eraseLayer(unsigned int layerIndex);
     void padLayerTextures(uint32_t layerIndex);

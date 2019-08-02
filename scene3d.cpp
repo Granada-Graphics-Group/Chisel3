@@ -18,29 +18,7 @@ Scene3D::Scene3D(std::string name, std::vector< Camera* > cameras, std::vector< 
         mCurrentCamera = mCameras.front();
     
     for(auto model : models)
-    {
         insertModel(model);
-//         Mesh* mesh = model->mesh();
-//         if(mesh != nullptr)
-//         {
-//             insertMesh(mesh);//mMeshes.push_back(mesh);
-//             insertGeometryInstance(mesh->name(), model);
-//         }
-        
-//         for(auto material : model->materials())
-//         {
-//             mMaterials.push_back(material);
-//             insertMaterialInstance(material->name(), model);
-//         }
-    }
-    
-//     auto max = std::numeric_limits<unsigned int>::max();
-//     MeshOffsets offsets{ max, max, max, max, {{0, max}} };
-//     
-//     for(int mat = 1; mat < mMaterials.size(); ++ mat)
-//         offsets.commandPerMaterial[mat] = max;
-//     
-//     mDrawMeshOffset2.resize(mMeshes.size(), offsets);
 }
 
 Scene3D::Scene3D(const Scene3D& other)
@@ -54,9 +32,6 @@ Scene3D::Scene3D(const Scene3D& other)
 
     for (auto model : other.models())
         insertModel(model);
-    
-//     for(int index = 0; index < static_cast<int>(mModels.size()); ++index)
-//         mModels[index]->addScene(this, mModels[index]->sceneIndex(std::const_cast<Scene3D*>(&other));    
 }
 
 

@@ -132,7 +132,17 @@ float Renderer::markToolRadius()
 
 void Renderer::updateSizeDependentResources()
 {
-    return mGLRenderer->updateSizeDependentResources();
+    mGLRenderer->updateSizeDependentResources();
+}
+
+void Renderer::updateLayerSizeDependentEditingResources(std::pair<int, int> resolution)
+{
+    mGLRenderer->updateLayerSizeDependentEditingResources(resolution);
+}
+
+void Renderer::updateAreaAndTopologyTechs(std::pair<int, int> resolution)
+{
+    mGLRenderer->updateAreaAndTopologyTechs(resolution);
 }
 
 void Renderer::setRenderMode()
