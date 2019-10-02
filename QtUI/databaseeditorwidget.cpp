@@ -312,8 +312,15 @@ DataBaseEditorWidget::DataBaseEditorWidget(DataBaseTableSchemaModel* schemaModel
     mImportResourceButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     mImportResourceButton->setMaximumHeight(30);
 
+    mDeleteResourceButton = new QPushButton("Delete", resourceTab);
+    mDeleteResourceButton->setObjectName(QStringLiteral("deleteResource"));
+    mDeleteResourceButton->setToolTip("Delete the selected resource");
+    mDeleteResourceButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    mDeleteResourceButton->setMaximumHeight(30);
+
     resourceButtonLayout->addStretch(1);
     resourceButtonLayout->addWidget(mImportResourceButton);
+    resourceButtonLayout->addWidget(mDeleteResourceButton);
     resourceButtonLayout->addStretch(1);
     
     resourceTabVerticalLayout->addLayout(resourceButtonLayout);    
@@ -362,6 +369,7 @@ DataBaseEditorWidget::DataBaseEditorWidget(DataBaseTableSchemaModel* schemaModel
     connect(mApplyVisibilityButton, &QPushButton::released, this, &DataBaseEditorWidget::updateColumnVisibility);
 
     connect(mImportResourceButton, &QPushButton::released, this, &DataBaseEditorWidget::importResource);
+    connect(mDeleteResourceButton, &QPushButton::released, this, &DataBaseEditorWidget::deleteResource);
 }
 
 DataBaseEditorWidget::~DataBaseEditorWidget()
@@ -689,6 +697,57 @@ void DataBaseEditorWidget::importResource()
         }
         emit resourceImported();
     }    
+}
+
+void DataBaseEditorWidget::deleteResource()
+{
+    auto resourceModel = static_cast<DataBaseResourceModel*>(mResourceView->model());
+    auto schema = static_cast<DataBaseTableSchemaModel*>(mSchemaView->model())->schema();
+
+    if (!resourceModel->isDir(mResourceView->currentIndex()))
+    {
+        auto filename = resourceModel->fileName(mResourceView->currentIndex());
+        
+        if(schema->containFieldType(DataBaseField::Type::Resource))
+        {
+            auto dataModel = static_cast<DataBaseTableDataModel*>(mDataView->model());        
+            std::vector<int> resourceFields;
+            
+            for(auto i = 0; i < schema->fields().size(); ++i)            
+                if(schema->field(i).isResource())
+                    resourceFields.push_back(i);
+            
+            auto tableFilter = schema->field(resourceFields[0]).mName + " = '" + filename.toStdString() + "'";
+            
+            for(auto i = 1; i < resourceFields.size(); ++i)
+                tableFilter += + " OR " + schema->field(resourceFields[i]).mName + " = '" + filename.toStdString() + "'";
+            
+            auto rowCount = dataModel->rowCount();
+            
+            dataModel->setFilter(tableFilter.c_str());
+            dataModel->select();
+            
+            rowCount = dataModel->rowCount();
+            
+            for(auto row = 0; row < dataModel->rowCount(); ++row)
+                for(const auto col : resourceFields)
+                {
+                    auto index = dataModel->index(row, col + 1);
+                    if(dataModel->data(index, Qt::DisplayRole).toString() == filename)
+                        auto valid = dataModel->setData(index, "");
+                }
+            
+            dataModel->submitAll();
+            dataModel->deleteResourceFile(filename.toStdString());
+            
+            dataModel->setFilter("");
+            dataModel->select();
+            
+        }
+        
+        resourceModel->remove(mResourceView->currentIndex());        
+    }
+
 }
 
 void DataBaseEditorWidget::copyTableToClipboard()

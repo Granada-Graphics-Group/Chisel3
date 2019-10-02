@@ -93,6 +93,7 @@ public:
     void computeLayerOperation(uint32_t layerOperation, const std::vector<glm::byte>& uniformData = {});
     Texture* computeAreaPerTexelTexture(std::pair<int, int> resolution);
     Texture* computeTopologyTexture(std::pair<int, int> resolution);
+    void resampleLayer(unsigned int sourceLayerIndex, unsigned int targetLayerIndex);
     
     void loadChiselScene(Scene3D* scene);
     void swapChiselScene(Scene3D* scene);

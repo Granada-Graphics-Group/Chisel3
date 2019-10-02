@@ -19,8 +19,9 @@ class OperationDialog : public QDialog
     Q_OBJECT
     
 public:
-    OperationDialog(Chisel* chisel, QWidget *parent = 0): OperationDialog("", chisel, parent) {}
-    OperationDialog(std::string layerName, Chisel* chisel, QWidget *parent = 0);
+    OperationDialog(Chisel* chisel, QWidget* parent = 0): OperationDialog(chisel, true, parent) {}
+    OperationDialog(Chisel* chisel, bool sameResolution = true, QWidget* parent = 0): OperationDialog("", chisel, sameResolution, parent) {}
+    OperationDialog(std::string layerName, Chisel* chisel, bool sameResolution = true, QWidget* parent = 0);
 
 // public slots:
 //     virtual void accept() override;
@@ -30,6 +31,7 @@ protected slots:
     void updateDBNumericFields(int layerIndex);
     std::pair<int, int> targetLayerResolution();
     std::pair<int, int> functionLayerResolution();
+    void setSameResolutionFilter(bool same) { mSameResolutionFilter = same; }
     void filterLayersByResolution(int resolutionIndex);
     void updateExecuteButtonState();
     void updateFieldWidgetVisibility();
@@ -48,6 +50,7 @@ private:
     
     Chisel* mChisel;
     ResourceManager* mManager;
+    bool mSameResolutionFilter = true;
     bool mValidName = false;   
 };
 

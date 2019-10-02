@@ -79,6 +79,7 @@ private slots:
     void cancelSchemaEditing();
     void updateVisibleColumns();
     void importResource();
+    void deleteResource();
     void copyTableToClipboard();
     void toggleColumnVisibilityWidget();
         
@@ -120,6 +121,7 @@ private:
 
     std::unique_ptr<DataBaseResourceView> mResourceView;
     QPushButton* mImportResourceButton;
+    QPushButton* mDeleteResourceButton;
     
     //QVBoxLayout* mGlobalVerticalLayout;
     VSizedLayout* mGlobalVerticalLayout;

@@ -30,7 +30,7 @@ public:
     bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole) Q_DECL_OVERRIDE;    
     void setPalette(Palette* palette);
     void addControlPoint();
-    void deleteControlPoint(const QModelIndex& index);
+    void deleteControlPoint(const QModelIndex& controlPointIndex);
     void deleteInf();
     void toggleIntepolation(bool value);
     

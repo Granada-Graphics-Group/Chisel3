@@ -328,6 +328,11 @@ Texture * Renderer::computeTopologyTexture(std::pair<int, int> resolution)
     return mGLRenderer->computeTopologyTexture(resolution);
 }
 
+void Renderer::resampleLayer(unsigned int sourceLayerIndex, unsigned int targetLayerIndex)
+{
+    mGLRenderer->resampleLayer(sourceLayerIndex, targetLayerIndex);
+}
+
 void Renderer::loadChiselScene(Scene3D* scene)
 {
     mGLRenderer->loadChiselScene(scene);

@@ -1866,6 +1866,14 @@ void GLRenderer::computeLayerOperation(unsigned int layerOperation, const std::v
         mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(cellAreaLayer.mValue->textureArrayIndices()));
         mUniformBuffers[GLUniBuffer::App]->updateGPU();
     }
+    else if (layerOperation == 4)
+    {
+        const auto& resampledLayer = mLayers[0];
+
+        operationProgram = mManager->shaderProgram("Resampling");
+        renderTarget->updateUniformData(0, uniformData.size(), uniformData.data());
+        renderTarget->setColorTextures({ resampledLayer.mValue, resampledLayer.mMask });
+    }
     
     renderTarget->passes()[0]->sceneMaterial()->setShader(operationProgram);
 
@@ -1953,6 +1961,33 @@ Texture* GLRenderer::computeTopologyTexture(std::pair<int, int> resolution)
     render();
     
     return mNeighborhoodTexture;
+}
+
+void GLRenderer::resampleLayer(unsigned int sourceLayerIndex, unsigned int targetLayerIndex)
+{
+    auto sourceLayer = mLayers[sourceLayerIndex];
+    auto targetLayer = mLayers[targetLayerIndex];
+
+    auto sourceFBODepthTexture = mManager->createTexture("sourceFBODepthTexture", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, sourceLayer.mValue->width(), sourceLayer.mValue->height(), GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);
+    auto sourceFBO = std::make_unique<FBObject>(GL_FRAMEBUFFER, std::vector<Texture*>{sourceLayer.mValue}, sourceFBODepthTexture);
+
+    auto targetFBODepthTexture = mManager->createTexture("targetFBODepthTexture", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, targetLayer.mValue->width(), targetLayer.mValue->height(), GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);
+    auto targetFBO = std::make_unique<FBObject>(GL_FRAMEBUFFER, std::vector<Texture*>{targetLayer.mValue}, targetFBODepthTexture);
+
+    glBlitNamedFramebuffer(sourceFBO->id(), targetFBO->id(), 0, 0, sourceLayer.mValue->width(), sourceLayer.mValue->height(),
+                                                             0, 0, targetLayer.mValue->width(), targetLayer.mValue->height(),
+                                                             GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    sourceFBO->setcolorAttachment(sourceLayer.mMask, 0);
+    targetFBO->setcolorAttachment(targetLayer.mMask, 0);
+
+    glBlitNamedFramebuffer(sourceFBO->id(), targetFBO->id(), 0, 0, sourceLayer.mValue->width(), sourceLayer.mValue->height(),
+                                                             0, 0, targetLayer.mValue->width(), targetLayer.mValue->height(),
+                                                             GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+
+    mManager->deleteTexture(sourceFBODepthTexture);
+    mManager->deleteTexture(targetFBODepthTexture);
 }
 
 

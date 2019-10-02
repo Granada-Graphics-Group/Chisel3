@@ -4,10 +4,11 @@
 #include "balloonmessagedialog.h"
 
 
-OperationDialog::OperationDialog(std::string layerName, Chisel* chisel, QWidget* parent)
+OperationDialog::OperationDialog(std::string layerName, Chisel* chisel, bool sameResolution, QWidget* parent)
 :
     QDialog(parent),
     mChisel(chisel),
+    mSameResolutionFilter(sameResolution),
     mManager(chisel->resourceManager())
 {
     mUi = std::make_unique<Ui::OperationDialog>();
@@ -148,21 +149,32 @@ void OperationDialog::filterLayersByResolution(int resolutionIndex)
     }
 
     {
-        QSignalBlocker blocker(mUi->functionLayerComboBox);
+        QSignalBlocker functionBlocker(mUi->functionLayerComboBox);
+        QSignalBlocker baseBlocker(mUi->baseLayerComboBox);
         
         mUi->functionLayerComboBox->clear();
         mUi->baseLayerComboBox->clear();
         
         auto layers = mChisel->layers();
-        
-        for(auto i = static_cast<int>(layers.size()) - 1; i > -1; --i)
-        {
-            if(layers[i]->resolution() == resolution)
+
+        if(mSameResolutionFilter)
+            for(auto i = static_cast<int>(layers.size()) - 1; i > -1; --i)
             {
-                mUi->functionLayerComboBox->addItem(layers[i]->name().c_str(), i);
-                mUi->baseLayerComboBox->addItem(layers[i]->name().c_str(), i);
+                if(layers[i]->resolution() == resolution)
+                {
+                    mUi->functionLayerComboBox->addItem(layers[i]->name().c_str(), i);
+                    mUi->baseLayerComboBox->addItem(layers[i]->name().c_str(), i);
+                }
             }
-        }
+        else
+            for (auto i = static_cast<int>(layers.size()) - 1; i > -1; --i)
+            {
+                if (layers[i]->resolution() != resolution)
+                {
+                    mUi->functionLayerComboBox->addItem(layers[i]->name().c_str(), i);
+                    mUi->baseLayerComboBox->addItem(layers[i]->name().c_str(), i);
+                }
+            }
     }
     
     if(mUi->functionLayerComboBox->count())

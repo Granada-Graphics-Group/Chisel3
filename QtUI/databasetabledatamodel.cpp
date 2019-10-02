@@ -180,6 +180,11 @@ void DataBaseTableDataModel::setResourceFiles(const std::vector<std::string>& re
         mResourceFiles.append(QString::fromStdString(resource));
 }
 
+void DataBaseTableDataModel::deleteResourceFile(std::string filename)
+{
+    mResourceFiles.removeAll(filename.c_str());
+}
+
 void DataBaseTableDataModel::addDoubleField(const std::string fieldName, const std::vector<std::array<double, 2> >& values)
 {
     auto index = fieldIndex(fieldName.data());

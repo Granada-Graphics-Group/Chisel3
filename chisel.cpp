@@ -1999,6 +1999,206 @@ Layer* Chisel::computeOrientationLayer(std::string layerName, const std::pair<in
     return orientationLayer;
 }
 
+Layer * Chisel::computeResampling(std::string layerName, unsigned int sourceLayerIndex, unsigned int fieldIndex, std::pair<int, int> resolution, StatOps operation)
+{
+    auto sourceLayer = mActiveLayers[sourceLayerIndex];
+    std::vector<double> sourceData;
+
+    auto resampledLayer = createLayer(layerName, sourceLayer->type(), resolution);
+
+    //if (sourceLayer->registerType() && fieldIndex > -1)
+    //{
+    //    auto regLayer = static_cast<RegisterLayer*>(sourceLayer);
+    //    auto fieldLayer = mResourceManager->createLayerFromTableField(regLayer, regLayer->field(fieldIndex));
+    //    mMainWindow->visualizer()->update(); 
+    //    sourceData = mRenderer->readLayerDataTexture(fieldLayer->dataTexture());
+    //    mResourceManager->deleteLayer(fieldLayer);
+    //}
+    //else
+    //    sourceData = mRenderer->readLayerData(sourceLayerIndex);
+
+    mRenderer->resampleLayer(sourceLayerIndex + 1, 0);
+
+    //std::vector<glm::byte> uniformData(sizeof(glm::uvec4), 0);
+    //glm::uvec4 layerIndices = glm::uvec4(sourceLayer->dataTexture()->textureArrayIndices(), sourceLayer->maskTexture()->textureArrayIndices());
+    //auto layerIndicesPtr = reinterpret_cast<glm::byte*>(glm::value_ptr(layerIndices));
+    //std::copy(layerIndicesPtr, layerIndicesPtr + sizeof(glm::uvec4), begin(uniformData));
+
+    //mRenderer->computeLayerOperation(4, uniformData);
+
+    //auto sourceMask = mRenderer->readLayerMask(sourceLayerIndex);
+    //float radius = sourceLayer->width() / resampledLayer->width();
+
+    //auto neighborhoodTexture = mResourceManager->texture("Neighborhood");
+    //auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);
+
+    //std::vector<float> neighborhoodStatsData(sourceData.size(), 0);
+    //std::vector<glm::byte> valueTextureData(sourceData.size() / radius, 0);
+    //std::vector<glm::byte> maskTextureData(sourceData.size(), 0);
+
+    //auto width = sourceLayer->dataTexture()->width();
+    //auto height = sourceLayer->dataTexture()->height();
+    //auto texelCount = width * height;
+    //std::array<int, 8> neighborOffsets = { -1, 1, width, -width, -1 + width, -1 - width, 1 + width, 1 - width };
+
+    //std::vector<uint64_t> surfaceCostData(sourceData.size(), std::numeric_limits<uint64_t>::max());
+    //std::vector<char> inspectedTexels(sourceData.size(), 2);
+
+    //for (auto i = 0; i < sourceMask.size(); ++i)
+    //    if (sourceMask[i] && neighborhoodData[2 * i] < 0)
+    //    {
+    //        std::vector<double> statisticsData;
+    //        std::vector<uint64_t> dirtyIndices;
+    //        std::set<std::pair<uint64_t, uint64_t>> activeTexels;
+
+    //        activeTexels.insert({ 0,i });
+    //        surfaceCostData[i] = 0;
+    //        inspectedTexels[i] = 1;
+
+    //        do
+    //        {
+    //            auto currentTexelIndex = activeTexels.cbegin()->second;
+    //            activeTexels.erase(activeTexels.cbegin());
+
+    //            if (sourceMask[currentTexelIndex])
+    //            {
+    //                /*if(surfaceCostData[currentTexelIndex] < radius)     */
+    //                for (int idx = 0; idx < 8; ++idx)
+    //                {
+    //                    int neighborTexelIndex = currentTexelIndex + neighborOffsets[idx];
+
+    //                    if (neighborTexelIndex > 0 && neighborTexelIndex < texelCount)
+    //                    {
+    //                        int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+
+    //                        if (neighborhoodDataValue >= 0 || (-neighborhoodDataValue & (1 << idx)) == 0)
+    //                        {
+    //                            int indirectIndex = 2 * neighborTexelIndex;
+    //                            neighborTexelIndex = neighborhoodData[indirectIndex + 1] * width + neighborhoodData[indirectIndex];
+
+    //                            auto validTexel = neighborTexelIndex > 0 && neighborTexelIndex < texelCount;
+    //                            if (!validTexel || validTexel && neighborhoodData[2 * neighborTexelIndex] > 0)
+    //                                neighborTexelIndex = 0;
+    //                        }
+    //                    }
+    //                    else
+    //                        neighborTexelIndex = 0;
+
+    //                    if (neighborTexelIndex != 0)
+    //                    {
+    //                        float costToNeighbor = surfaceCostData[currentTexelIndex] + 1;
+
+    //                        if (costToNeighbor <= radius && surfaceCostData[neighborTexelIndex] > costToNeighbor)
+    //                        {
+    //                            if (inspectedTexels[neighborTexelIndex] > 1)
+    //                            {
+    //                                activeTexels.insert({ costToNeighbor, neighborTexelIndex });
+    //                                inspectedTexels[neighborTexelIndex] = 1;
+    //                            }
+    //                            else if (inspectedTexels[neighborTexelIndex] == 1)
+    //                            {
+    //                                auto found = activeTexels.find({ surfaceCostData[neighborTexelIndex], neighborTexelIndex });
+    //                                if (found != end(activeTexels))
+    //                                {
+    //                                    activeTexels.erase(found);
+    //                                    activeTexels.insert({ costToNeighbor, neighborTexelIndex });
+    //                                }
+    //                            }
+
+    //                            if (neighborhoodData[2 * neighborTexelIndex] == 0 && neighborhoodData[2 * neighborTexelIndex + 1] == 0)
+    //                                auto a = 0;
+    //                            else
+    //                            {
+    //                                surfaceCostData[neighborTexelIndex] = costToNeighbor;
+    //                                dirtyIndices.push_back(neighborTexelIndex);
+    //                            }
+    //                        }
+    //                    }
+    //                }
+
+    //                inspectedTexels[currentTexelIndex] = 0;
+    //                statisticsData.push_back(sourceData[currentTexelIndex]);
+    //                dirtyIndices.push_back(currentTexelIndex);
+    //            }
+    //        } while (!activeTexels.empty());
+
+    //        for (const auto& index : dirtyIndices)
+    //        {
+    //            surfaceCostData[index] = std::numeric_limits<uint64_t>::max();
+    //            inspectedTexels[index] = 2;
+    //        }
+
+    //        maskTextureData[i] = 255;
+
+    //        switch (operation)
+    //        {
+    //        case StatOps::MeanValue:
+    //        {
+    //            neighborhoodStatsData[i] = std::accumulate(begin(statisticsData), end(statisticsData), 0.0) / statisticsData.size();
+    //            auto b = neighborhoodStatsData[i];
+    //            auto c = 0;
+    //        }
+    //        break;
+    //        case StatOps::MinValue:
+    //        {
+    //            neighborhoodStatsData[i] = *std::min_element(begin(statisticsData), end(statisticsData));
+    //        }
+    //        break;
+    //        case StatOps::MaxValue:
+    //        {
+    //            neighborhoodStatsData[i] = *std::max_element(begin(statisticsData), end(statisticsData));
+    //        }
+    //        break;
+    //        case StatOps::Variance:
+    //        {
+    //            auto mean = std::accumulate(begin(statisticsData), end(statisticsData), 0.0) / statisticsData.size();
+
+    //            auto const add_square = [&mean](double sum, double i)
+    //            {
+    //                auto d = i - mean;
+    //                return sum + d * d;
+    //            };
+
+    //            neighborhoodStatsData[i] = std::accumulate(begin(statisticsData), end(statisticsData), 0.0, add_square) / (statisticsData.size() - 1);
+    //        }
+    //        break;
+    //        case StatOps::StdDeviation:
+    //        {
+    //            auto mean = std::accumulate(begin(statisticsData), end(statisticsData), 0.0) / statisticsData.size();
+
+    //            auto const add_square = [&mean](double sum, double i)
+    //            {
+    //                auto d = i - mean;
+    //                return sum + d * d;
+    //            };
+
+    //            auto variance = std::accumulate(begin(statisticsData), end(statisticsData), 0.0, add_square) / (statisticsData.size() - 1);
+
+    //            neighborhoodStatsData[i] = std::sqrt(variance);
+    //        }
+    //        break;
+    //        case StatOps::NoNull:
+    //        {
+    //            //auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+
+    //        }
+    //        break;
+    //        case StatOps::Null:
+    //        {
+    //            //auto areaData = mRenderer->readFloatTexture(mResourceManager->texture("AreaPerPixel"));
+    //        }
+    //        break;
+    //        }
+    //    }
+
+    //auto statsByteData = reinterpret_cast<glm::byte*>(neighborhoodStatsData.data());
+    //std::copy(statsByteData, statsByteData + valueTextureData.size(), begin(valueTextureData));
+
+
+
+    return resampledLayer;
+}
+
 void Chisel::createPalette(std::string name)
 {
     auto newPalette = mResourceManager->createPalette("new", Palette::Type::Discrete, {{0, {1.0, 1.0, 1.0, 1.0}},{ 1, {0.0, 0.0, 0.0, 1.0}}});

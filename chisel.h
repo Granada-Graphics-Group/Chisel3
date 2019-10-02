@@ -160,6 +160,7 @@ public:
     std::array<Layer*, 3> computePositionLayer(std::string layerName, const std::pair<int, int> layerResolution);
     std::array<Layer*, 3> computeNormalLayer(std::string layerName, const std::pair<int, int> layerResolution);
     Layer* computeOrientationLayer(std::string layerName, const std::pair<int, int> layerResolution, glm::vec3 reference);
+    Layer* computeResampling(std::string layerName, unsigned int sourceLayerIndex, unsigned int fieldIndex, std::pair<int, int> resolution, StatOps operation);
     
     void createPalette(std::string name);
     void editPalette(unsigned int index);

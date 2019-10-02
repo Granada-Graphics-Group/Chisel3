@@ -12,21 +12,16 @@ IntValidatorReporter::IntValidatorReporter(int minimum, int maximum, QObject* pa
 
 QValidator::State IntValidatorReporter::validate(QString& input, int& pos) const
 {
-//     if(input.length() > 0)
-//     {
         auto result = QIntValidator::validate(input, pos);
-        
-        if (result == Invalid)
-            emit rejected("Write a valid integer");
-        else if (result == Intermediate && (input.size() > 1 || (input.size() == 1 && input.at(0) != '-')))
-            emit rejected("The integer is out of range");    
-        else if (result == Acceptable)
+
+        if (result == Acceptable)
             emit validated();
+        else if (result == Intermediate && ((input.size() > 1 && !input.contains('.')) || (input.size() == 1 && input.at(0) != '-')))
+            emit rejected("The integer is out of range");
+        else if (result == Invalid || (result == Intermediate && input.contains('.')))
+            emit rejected("Write a valid integer");
                     
         return result;
-//     }
-//     else
-//         return Invalid;
 }
 
 

@@ -19,7 +19,6 @@ ValidatedDelegate::ValidatedDelegate(ValidatorType type, QObject* parent)
 
 ValidatedDelegate::~ValidatedDelegate()
 {
-
     
 }
 
@@ -50,9 +49,11 @@ QWidget* ValidatedDelegate::createEditor(QWidget* parent, const QStyleOptionView
 
 void ValidatedDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
 {
-    auto value = index.model()->data(index, Qt::EditRole).toString();
+    auto value = index.model()->data(index, Qt::DisplayRole);
     auto line = static_cast<QLineEdit*>(editor);
-    line->setText(value);
+    
+    if(!std::isinf(value.toDouble()))
+        line->setText(value.toString());
 }
 
 void ValidatedDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const

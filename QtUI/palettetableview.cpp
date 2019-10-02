@@ -28,6 +28,7 @@ PaletteTableView::PaletteTableView(QWidget* parent)
     
     mErrorDialog = std::make_unique<BalloonMessageDialog>(this);
     mErrorDialog->setWindowFlags(mErrorDialog->windowFlags() | Qt::WindowTransparentForInput | Qt::WindowDoesNotAcceptFocus);
+    mErrorDialog->setTipOrientation(BalloonDialog::TipOrientation::Right);
     mErrorDialog->setAttribute(Qt::WA_ShowWithoutActivating);
     mErrorDialog->setBackgroundColor(Qt::darkRed);    
 }
@@ -51,12 +52,16 @@ void PaletteTableView::setModel(QAbstractItemModel* model)
 
 void PaletteTableView::addControlPoint()
 {
-    mAddControlPointState = true;
+    if (mAddControlPointState)
+        delControlPoint();
+
     auto customModel = dynamic_cast<PaletteModel *>(model());    
     customModel->addControlPoint();
     setCurrentIndex(customModel->index(customModel->rowCount() - 1, 0));
     edit(currentIndex());
-    
+
+    mAddControlPointState = true;
+
     emit controlPointCountChanged();
 }
 
@@ -149,12 +154,13 @@ void PaletteTableView::closeEditor(QWidget* editor, QAbstractItemDelegate::EndEd
 }
 
 void PaletteTableView::showErrorMessage(const QString& text)
-{
-    auto y = rowViewportPosition(currentIndex().row());
-    auto x = columnWidth(0);
-    
+{    
     mErrorDialog->setMessage(text, Qt::white);
-    mErrorDialog->move(mapToGlobal(QPoint(-x, y + rowHeight(currentIndex().row()) + horizontalHeader()->height())));
+
+    auto posY = rowViewportPosition(currentIndex().row()) - mErrorDialog->height() / 2 + rowHeight(currentIndex().row()) / 2 + horizontalHeader()->height();
+    auto posX = -mErrorDialog->width();
+
+    mErrorDialog->move(mapToGlobal(QPoint(posX, posY)));
     mErrorDialog->show();
 }
 

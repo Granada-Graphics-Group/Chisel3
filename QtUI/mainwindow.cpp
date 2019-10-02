@@ -992,9 +992,9 @@ void MainWindow::computeResampling(std::string name, unsigned int layerIndex, un
 
     mUi->Visualizer->makeCurrent();
 
+    mChisel->computeResampling(name, layerIndex, fieldIndex, resolution, static_cast<StatOps>(operationIndex));
 
-
-//    setState(State::LayerCreated);
+    setState(State::LayerCreated);
 
     QGuiApplication::restoreOverrideCursor();
 }

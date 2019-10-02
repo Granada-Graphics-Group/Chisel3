@@ -174,14 +174,15 @@ void PaletteModel::addControlPoint()
     mAddControlPointState = true;
 }
 
-void PaletteModel::deleteControlPoint(const QModelIndex& index)
+void PaletteModel::deleteControlPoint(const QModelIndex& controlPointIndex)
 {
-    auto value = data(index, Qt::DisplayRole).toDouble();
-    beginRemoveRows(QModelIndex(), index.row(), index.row());
+    auto valueIndex = index(controlPointIndex.row(), 0);
+    auto value = data(valueIndex, Qt::DisplayRole).toDouble();
+    beginRemoveRows(QModelIndex(), valueIndex.row(), valueIndex.row());
     mPalette->delControlPoint(value);
     endRemoveRows();
     
-    emit dataChanged(index, this->index(rowCount() - 1, columnCount() - 1));
+    emit dataChanged(valueIndex, this->index(rowCount() - 1, columnCount() - 1));
 }
 
 void PaletteModel::deleteInf()

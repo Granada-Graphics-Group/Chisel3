@@ -168,6 +168,7 @@ public:
     void computeLayerOperation(unsigned int layerOperation, const std::vector<glm::byte>& uniformData = {});
     Texture* computeAreaPerTexelTexture(std::pair<int, int> resolution);
     Texture* computeTopologyTexture(std::pair<int, int> resolution);
+    void resampleLayer(unsigned int sourceLayerIndex, unsigned int targetLayerIndex);
     
     std::vector<glm::byte> readTexture(Texture* texture);
     template<typename T>

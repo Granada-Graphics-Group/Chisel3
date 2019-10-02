@@ -72,6 +72,8 @@ QWidget* DataBaseTableDataDelegate::createEditor(QWidget* parent, const QStyleOp
             case DataBaseField::Type::Resource:
             {
                 auto resources = qvariant_cast<QStringList>(index.model()->data(index, Qt::UserRole + 1));
+                resources.prepend("");
+                
                 QComboBox* editor = new QComboBox(parent);
                 editor->setEditable(false);
                 editor->addItems(resources);
