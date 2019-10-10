@@ -400,8 +400,10 @@ bool DataBaseEditorWidget::selectId(int id)
 bool DataBaseEditorWidget::selectRow(int row)
 {
     if(row < mDataView->model()->columnCount())
-    {
-        mDataView->selectNewIndex(mDataView->model()->index(row, 0));
+    {        
+        mDataView->selectionModel()->setCurrentIndex(mDataView->model()->index(row, 0), QItemSelectionModel::SelectCurrent);
+        mDataView->selectionModel()->select(mDataView->model()->index(row, 0), QItemSelectionModel::SelectCurrent);
+        //mDataView->selectNewIndex(mDataView->model()->index(row, 0));
         return true;
     }
     

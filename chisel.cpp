@@ -762,8 +762,8 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
                     count[baseData[i]]++;
                 }
             
-            for(auto& [key, value] : areaStatistics)
-               value = value/count[key];
+            for (auto& statPair : areaStatistics)//(auto& [key, value] : areaStatistics)
+                statPair.second = statPair.second/count[statPair.first];//value = value/count[key];
         }
             break;        
         case StatOps::MinValue:
@@ -800,8 +800,8 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
                     count[baseData[i]]++;
                 }
             
-            for(auto& [key, value] : mean)
-               value = value/count[key];
+            for (auto& meanPair : mean)//(auto& [key, value] : mean)
+                meanPair.second = meanPair.second / count[meanPair.first];//value = value/count[key];
             
             for(auto i = 0; i < functionData.size(); ++i)
                 if(baseMask[i] != 0 && functionMask[i] != 0)
@@ -809,9 +809,9 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
                     auto tempValue = functionData[i] - mean[baseData[i]];
                     areaStatistics[baseData[i]] = tempValue * tempValue;
                 }
-            
-            for(auto& [key, value] : areaStatistics)
-               value = value/count[key];            
+
+            for (auto& statPair : areaStatistics)//(auto& [key, value] : areaStatistics)
+                statPair.second = statPair.second / count[statPair.first];//value = value/count[key];          
         }
             break;
             
@@ -827,8 +827,8 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
                     count[baseData[i]]++;
                 }
             
-            for(auto& [key, value] : mean)
-               value = value/count[key];
+            for (auto& meanPair : mean)//(auto& [key, value] : mean)
+                meanPair.second = meanPair.second / count[meanPair.first];//value = value/count[key];
             
             for(auto i = 0; i < functionData.size(); ++i)
                 if(baseMask[i] != 0 && functionMask[i] != 0)
@@ -837,8 +837,8 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
                     areaStatistics[baseData[i]] = tempValue * tempValue;
                 }
             
-            for(auto& [key, value] : areaStatistics)
-               value = std::sqrt(value/count[key]); 
+            for (auto& statPair : areaStatistics)//(auto& [key, value] : areaStatistics)
+                statPair.second = std::sqrt(statPair.second / count[statPair.first]);//value = std::sqrt(value/count[key]);
         }
             break;
         case StatOps::NoNull:
@@ -871,7 +871,9 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
         DataBaseTable* currentSchema = nullptr;
         if(mCurrentLayer != baseLayer)
         {
-            currentSchema = mDataBaseTableDataModel->schema();
+            if(mCurrentLayer->registerType())
+                currentSchema = mDataBaseTableDataModel->schema();
+
             mDataBaseTableDataModel->setSchema(regLayer->tableSchema());
         }
         
@@ -880,7 +882,7 @@ std::vector<std::array<double, 2>> Chisel::computeAreaStatistics(unsigned int fu
         else
             mDataBaseTableDataModel->setFieldData("Statistics", doubleAreaStatistics);
         
-        if(mCurrentLayer->registerType())
+        if(currentSchema)
             mDataBaseTableDataModel->setSchema(currentSchema);
     }
     

@@ -583,7 +583,7 @@ void MainWindow::setCurrentLayer(const QModelIndex& current, const QModelIndex& 
                 if(regLayer->hasResources())
                     mDataBaseEditorWidget->setResourceDirectory(regLayer->name());
                 else
-                    mDataBaseEditorWidget->clearResourceDirectorySelection();
+                    mDataBaseEditorWidget->clearResourceDirectorySelection();                
              
                 if(!mChisel->currentLayer()->isVisible())
                 {
@@ -595,14 +595,17 @@ void MainWindow::setCurrentLayer(const QModelIndex& current, const QModelIndex& 
                 
                 if(enableDatabaseLayerEditing())
                 {
+                    if (mUi->actionMarkTool->isChecked())
+                    {
+                        mDataBaseEditorWidget->selectEditingMode();
+                        mDataBaseEditorWidget->show();
+                    }
+
                     auto valid = mDataBaseEditorWidget->selectId(static_cast<int>(mCurrentPaletteValueWidget->value()));
                     mDataBaseEditorWidget->updateColumnVisibility();
                     
-                    if(!valid)
-                        mDataBaseEditorWidget->selectId(0);
-                    
-                    if(mUi->actionMarkTool->isChecked())
-                        mDataBaseEditorWidget->show();
+                    if (!valid)
+                        mDataBaseEditorWidget->selectRow(0);
                     
                     mCurrentPaletteValueWidget->setRowViewVisible(true);               
                     mCurrentPaletteValueWidget->setRowViewColumnVisibility(columnVisibility);
@@ -1118,7 +1121,7 @@ void MainWindow::changeEditingMode(QAction* action)
                 {
                     auto valid = mDataBaseEditorWidget->selectId(static_cast<int>(mCurrentPaletteValueWidget->value()));                
                     if(!valid)
-                        mDataBaseEditorWidget->selectId(0);
+                        mDataBaseEditorWidget->selectRow(0);
                 }
             }
         }
@@ -1750,11 +1753,15 @@ bool MainWindow::enableDatabaseLayerEditing()
 {
     if(mChisel->dataBaseTableDataModel()->rowCount() > 0)
     {
-        if(mChisel->currentLayer()->isVisible() && !mUi->actionMarkTool->isEnabled() && mChisel->visibleColumnModel()->primaryColumn() == 0)
+        if(mChisel->currentLayer()->isVisible() && mChisel->visibleColumnModel()->primaryColumn() == 0)
         {
-            mUi->actionMarkTool->setEnabled(true);
-            mUi->actionEraserTool->setEnabled(true);
-            mUi->actionPickerTool->setEnabled(true);
+            if (!mUi->actionMarkTool->isEnabled())
+            {
+                mUi->actionMarkTool->setEnabled(true);
+                mUi->actionEraserTool->setEnabled(true);
+                mUi->actionPickerTool->setEnabled(true);
+            }
+
             return true;
         }
     }

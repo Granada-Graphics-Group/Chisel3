@@ -101,15 +101,21 @@ bool DataBaseTableDataView::selectNewId(int id)
 {
     auto tableModel = static_cast<QSqlRelationalTableModel*>(model());
     auto queryModel = new QSqlQueryModel;
-    auto str = QString("SELECT Id FROM " + tableModel->tableName() + " WHERE Id =" + QString::number(id)).toStdString();
-    queryModel->setQuery("SELECT Id FROM " + tableModel->tableName() + " WHERE Id =" + QString::number(id));
+    auto str = QString("SELECT Id FROM " + tableModel->tableName());// +" WHERE Id =" + QString::number(id)).toStdString();
+    queryModel->setQuery("SELECT Id FROM " + tableModel->tableName());// + " WHERE Id =" + QString::number(id));
     
     if(!queryModel->lastError().isValid())
     {
-        auto row = queryModel->record(0).value("Id").toInt();
-        selectionModel()->select(tableModel->index(row, 0), QItemSelectionModel::Select);
+        for(auto i = 0; i < queryModel->rowCount(); ++i)
+            if (queryModel->record(i).value("Id").toInt() == id)
+            {
+                selectionModel()->select(tableModel->index(i, 0), QItemSelectionModel::SelectCurrent);
+                return true;
+            }
+        //auto row = queryModel->record(0).value("Id").toInt();
+        //selectionModel()->select(tableModel->index(row, 0), QItemSelectionModel::Select);
         
-        return true;
+        //return true;
     }
     
     return false;

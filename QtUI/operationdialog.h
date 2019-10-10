@@ -28,9 +28,11 @@ public:
     
 protected slots:
     void validateTargetLayerName();
-    void updateDBNumericFields(int layerIndex);
+    void updateDBNumericFields(int functionLayerCBIndex);
     std::pair<int, int> targetLayerResolution();
     std::pair<int, int> functionLayerResolution();
+    void setCheckNameValidity(bool check) { mCheckNameValidity = check; }
+    void setFieldWidgetVisibility(bool visible) { mFieldWidgetVisibility = visible; if (!visible) mUi->fieldWidget->hide(); }
     void setSameResolutionFilter(bool same) { mSameResolutionFilter = same; }
     void filterLayersByResolution(int resolutionIndex);
     void updateExecuteButtonState();
@@ -50,6 +52,8 @@ private:
     
     Chisel* mChisel;
     ResourceManager* mManager;
+    bool mCheckNameValidity = true;
+    bool mFieldWidgetVisibility = true;
     bool mSameResolutionFilter = true;
     bool mValidName = false;   
 };

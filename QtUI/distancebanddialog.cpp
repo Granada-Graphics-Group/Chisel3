@@ -6,6 +6,7 @@ DistanceBandDialog::DistanceBandDialog(Chisel* chisel, QWidget* parent)
     OperationDialog(chisel, parent)
 {
     setWindowTitle("Distance Band");
+    setFieldWidgetVisibility(false);
     
     mUi->fieldWidget->hide();
     mUi->operationWidget->hide();

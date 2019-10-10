@@ -5,6 +5,7 @@ DistanceFieldDialog::DistanceFieldDialog(Chisel* chisel, QWidget* parent)
     OperationDialog(chisel, parent)
 {
     setWindowTitle("Distance Field");
+    setFieldWidgetVisibility(false);
     
     mUi->functionLayerWidget->hide();
     mUi->fieldWidget->hide();

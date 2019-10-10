@@ -92,10 +92,12 @@ void OperationDialog::validateTargetLayerName()
     updateExecuteButtonState();
 }
 
-void OperationDialog::updateDBNumericFields(int layerIndex)
+void OperationDialog::updateDBNumericFields(int functionLayerCBIndex)
 {
     mUi->fieldComboBox->clear();
     
+    auto layerIndex = mUi->functionLayerComboBox->itemData(functionLayerCBIndex).toInt();
+
     if(mChisel->layer(layerIndex)->registerType())
     {                
         auto dbLayer = static_cast<const RegisterLayer*>(mChisel->layer(layerIndex));
@@ -158,7 +160,7 @@ void OperationDialog::filterLayersByResolution(int resolutionIndex)
         auto layers = mChisel->layers();
 
         if(mSameResolutionFilter)
-            for(auto i = static_cast<int>(layers.size()) - 1; i > -1; --i)
+            for(auto i = 0; i < layers.size(); ++i)//for(auto i = static_cast<int>(layers.size()) - 1; i > -1; --i)
             {
                 if(layers[i]->resolution() == resolution)
                 {
@@ -167,7 +169,7 @@ void OperationDialog::filterLayersByResolution(int resolutionIndex)
                 }
             }
         else
-            for (auto i = static_cast<int>(layers.size()) - 1; i > -1; --i)
+            for (auto i = 0; i < layers.size(); ++i)//for (auto i = static_cast<int>(layers.size()) - 1; i > -1; --i)
             {
                 if (layers[i]->resolution() != resolution)
                 {
@@ -188,7 +190,9 @@ void OperationDialog::updateExecuteButtonState()
     auto visible = mUi->functionLayerComboBox->isVisible();
     auto layerCount = mUi->functionLayerComboBox->count() > 0;
     
-    if((mValidName && visible && layerCount) || (mValidName && !visible))
+    auto nameValidity = (mCheckNameValidity) ? mValidName : true;
+
+    if((nameValidity && visible && layerCount) || (nameValidity && !visible))
         mUi->buttonExecute->setEnabled(true);
     else
         mUi->buttonExecute->setDisabled(true); 
@@ -198,7 +202,7 @@ void OperationDialog::updateFieldWidgetVisibility()
 {
     if (mUi->fieldComboBox->count() > 0)
     {
-        if(mUi->fieldWidget->isHidden())
+        if(mFieldWidgetVisibility && mUi->fieldWidget->isHidden())
             mUi->fieldWidget->show();
     }
     else if (mUi->fieldWidget->isVisible())

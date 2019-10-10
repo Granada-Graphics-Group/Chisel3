@@ -44,9 +44,9 @@ enum class MouseAction: unsigned int
 
 enum class StatOps: unsigned char
 {
-    MeanValue = 0,
+    MaxValue = 0,
     MinValue = 1,
-    MaxValue = 2,
+    MeanValue = 2,
     Variance = 3,
     StdDeviation = 4,
     NoNull = 5,
