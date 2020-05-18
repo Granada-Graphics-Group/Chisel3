@@ -126,6 +126,9 @@ std::pair<int, int> OperationDialog::targetLayerResolution()
         case 1:
             resolution = {4096, 4096};
             break;
+        case 2:
+            resolution = {8192, 8192};
+            break;
     }
 
     return resolution;
@@ -147,6 +150,9 @@ void OperationDialog::filterLayersByResolution(int resolutionIndex)
             break;
         case 1:
             resolution = {4096, 4096};
+            break;
+        case 2:
+            resolution = { 8192, 8192 };
             break;
     }
 

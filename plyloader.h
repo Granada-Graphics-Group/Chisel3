@@ -9,9 +9,11 @@
 #include <fstream>
 #include <vector>
 #include <array>
+#include <filesystem>
 
 class ResourceManager;
 class Scene3D;
+class Texture;
 
 struct PLYProperty
 {
@@ -70,6 +72,7 @@ public:
     
 private:
     bool readHeader(std::istream& inputStream);
+    void readComment(std::istream& lineStream);
     void readFormat(std::istream& lineStream);
     void readElement(std::istream& lineStream);
     void readProperty(std::istream& lineStream);
@@ -95,7 +98,9 @@ private:
     void readData(std::istream& inputStream);
     
     ResourceManager* mResourceManager = nullptr;
+    std::filesystem::path mPath;
     Scene3D* mScene = nullptr;
+    Texture* mTextureFile = nullptr;
     bool mIsBinary = false;
     bool mIsBigEndian = false;
     

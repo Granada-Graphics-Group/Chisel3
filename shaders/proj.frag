@@ -75,10 +75,16 @@ void main()
 
 //        vec4 projectedTex = textureProj(PPTextures[0], ProjTexCoord);
         if(textureVisibility == true)
-            FragColor = vColor;//texture(ArrayTexture[TexArrayIndex.x], vec3(CoordST, TexArrayIndex.y));
+        {
+            if(TexArrayIndex.x == -1)
+                FragColor = vColor;
+            else
+                FragColor = texture(ArrayTexture[TexArrayIndex.x], vec3(CoordST, TexArrayIndex.y));    
+        }
         else
             FragColor = defaultColor;
-                
+
+                        
         for(int i = 0; i < layerCount; ++i)
         {
             //float layerTex =  texture(ArrayTexture[layers[i].layer.x], vec3(CoordST, layers[i].layer.y)).r;        

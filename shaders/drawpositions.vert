@@ -35,7 +35,7 @@ void main(void)
     int index1 = int((gl_BaseInstanceARB + gl_InstanceID) / 1000);
     int index2 = int(mod(gl_BaseInstanceARB + gl_InstanceID, 1000));
 
-    Position = vec3(arrayMat[index1].modelMatrix[index2] * vec4(in_Position, 1.0));
+    Position = in_Position; //vec3(arrayMat[index1].modelMatrix[index2] * vec4(in_Position, 1.0));
 
     gl_Position = paintTexCameraMatrix * vec4(in_CoordTextura, 0.0, 1.0);
 }

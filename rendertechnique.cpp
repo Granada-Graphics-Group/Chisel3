@@ -82,9 +82,11 @@ void RenderTechnique::settingUP()
             }
                 
 //             current->setColorInputs(colorOutputs);
-            current->setColorInputIndices(colorOutputIndices);
+            if(colorOutputIndices.size())
+                current->setColorInputIndices(colorOutputIndices);
 //             current->setDepthInput(previuos->depthOutput()->id());
-            current->setDepthInputIndices({previuos->depthTexOutput()->textureArrayIndex(), previuos->depthTexOutput()->textureArrayLayerIndex()});
+            if(previuos->depthTexOutput() != nullptr)
+                current->setDepthInputIndices({previuos->depthTexOutput()->textureArrayIndex(), previuos->depthTexOutput()->textureArrayLayerIndex()});
         }
         
 // //         auto name = previuos->depthOutput()->name();

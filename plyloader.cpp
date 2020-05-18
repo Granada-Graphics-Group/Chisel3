@@ -1,6 +1,7 @@
 #include "plyloader.h"
 #include "resourcemanager.h"
 #include "scene3d.h"
+#include "material.h"
 
 #include <sstream>
 
@@ -9,7 +10,8 @@ constexpr std::array<size_t, 9> PLYProperty::typeSizes;
 PLYLoader::PLYLoader(ResourceManager* manager, Scene3D* scene, std::string filePath)
 :
     mResourceManager(manager),
-    mScene(scene)
+    mScene(scene),
+    mPath(filePath)
 {
     loadScene(filePath);
 }
@@ -53,7 +55,7 @@ bool PLYLoader::readHeader(std::istream& inputStream)
         {
             continue;
         }
-        else if (token == "comment")    continue;
+        else if (token == "comment")    readComment(lineStream);
         else if (token == "format")     readFormat(lineStream);
         else if (token == "element")    readElement(lineStream);
         else if (token == "property")   readProperty(lineStream);
@@ -63,6 +65,23 @@ bool PLYLoader::readHeader(std::istream& inputStream)
     }
     
     return true;    
+}
+
+void PLYLoader::readComment(std::istream & lineStream)
+{
+    std::string commentString;
+    lineStream >> commentString;
+
+    if (commentString == "TextureFile")
+    {
+        std::string textureFilePath;
+        lineStream >> textureFilePath;
+
+        auto absTextureFilePath = mPath.remove_filename() / textureFilePath;
+
+        mResourceManager->copyTextureImage(absTextureFilePath.string());
+        mTextureFile = mResourceManager->loadTextureImage(absTextureFilePath.string());
+    }
 }
 
 void PLYLoader::readFormat(std::istream& lineStream)
@@ -375,7 +394,10 @@ void PLYLoader::readData(std::istream& inputStream)
 
     auto model = mResourceManager->createModel("plyModel");
     auto material = mResourceManager->createMaterial("plyMaterial", "ProjectiveTex");
+    
     model->setMesh(mesh);
+
+    if(mTextureFile != nullptr) material->setDiffuseTexture(mTextureFile);
     model->insertMaterial(material);
 
     mScene->insertModel(model);

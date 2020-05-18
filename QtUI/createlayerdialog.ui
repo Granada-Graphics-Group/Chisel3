@@ -171,6 +171,11 @@
            <string>4096x4096</string>
           </property>
          </item>
+         <item>
+          <property name="text">
+           <string>8192x8192</string>
+          </property>
+         </item>
         </widget>
        </item>
       </layout>

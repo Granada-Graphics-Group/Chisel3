@@ -81,6 +81,9 @@ void CreateLayerDialog::accept()
             case 1:
                 resolution = {4096, 4096};
                 break;
+            case 2:
+                resolution = {8192, 8192};
+                break;
         }
             
         emit createNewLayerSignal(mUi->nameTextEdit->text(), type, resolution, -1);

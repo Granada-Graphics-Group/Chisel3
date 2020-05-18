@@ -139,6 +139,58 @@ inline std::string toGLSLImageFormat(int32_t format)
         case GL_RG8_SNORM       : return "rg8_snorm";
         case GL_R16_SNORM       : return "r16_snorm";
         case GL_R8_SNORM        : return "r8_snorm";
+        default                 : return "unknown";
+    }
+}
+
+inline std::string  textureTargetString(GLenum target)
+{
+    switch (target)
+    {
+        case GL_TEXTURE_1D                  : return "texture1D";
+        case GL_TEXTURE_2D                  : return "texture2D";
+        case GL_TEXTURE_3D                  : return "texture3D";
+        case GL_TEXTURE_1D_ARRAY            : return "texture 1D Array";
+        case GL_TEXTURE_2D_ARRAY            : return "texture 2D Array";
+        case GL_TEXTURE_RECTANGLE           : return "texture Rectangle";
+        case GL_TEXTURE_CUBE_MAP            : return "texture Cube Map";
+        case GL_TEXTURE_CUBE_MAP_ARRAY      : return "texture Cube Map Array";
+        case GL_TEXTURE_BUFFER              : return "texture Buffer";
+        case GL_TEXTURE_2D_MULTISAMPLE      : return "texture 2D Multisample";
+        case GL_TEXTURE_2D_MULTISAMPLE_ARRAY: return "texture 2D Multisample Array";
+        default                             : return "unknown texture target";
+    }
+}
+
+inline std::string samplerTypeString(GLenum internalFormat)
+{
+    switch (internalFormat)
+    {
+        case GL_R8I    :
+        case GL_R16I   :
+        case GL_R32I   :
+        case GL_RG16I  :
+        case GL_RG32I  :
+        case GL_RGB16I :
+        case GL_RGB32I : return "signed integer";
+        case GL_R8UI   :
+        case GL_R16UI  :
+        case GL_R32UI  :
+        case GL_RG16UI :
+        case GL_RG32UI :
+        case GL_RGB16UI:
+        case GL_RGB32UI: return "unsigned integer";
+        case GL_R16F   :
+        case GL_R32F   :
+        case GL_RG16F  :
+        case GL_RG32F  :
+        case GL_RGB16F :
+        case GL_RGB32F :
+        case GL_RGB    :
+        case GL_RGBA   :
+        case GL_RGB8   :
+        case GL_RGBA8  : return "float";
+        default        : return "unknown sampler type";
     }
 }
 

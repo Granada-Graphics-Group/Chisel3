@@ -342,160 +342,160 @@ void Mesh::generateUVIslandBorders(Mesh& mesh)
 
                     // --------------- //
                     
-                    faceVertices.push_back(uvBuffer[2 * currentVertexIndex]);
-                    faceVertices.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-                    faceVertices.push_back(0);
-                    
-                    faceUVs.push_back(uvBuffer[2 * pairVertexIndexNext]);
-                    faceUVs.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
-                    
-//                     LOG("Texel[",uvBuffer[2 * pairVertexIndexNext],", ", uvBuffer[2 * pairVertexIndexNext + 1], "]"); 
-                    
-                    faceIndices.push_back(faceIndices.size());
-                    
-                    faceVertices.push_back(uvBuffer[2 * currentVertexIndexNext]);
-                    faceVertices.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
-                    faceVertices.push_back(0);
-
-                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
-                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-                    
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
-                    
-//                     LOG("Texel[",uvBuffer[2 * pairVertexIndex],", ", uvBuffer[2 * pairVertexIndex + 1], "]"); 
-                    
-                    faceIndices.push_back(faceIndices.size());
-
-                    auto newPoint = computePoint(a, b, c, d, e, g);
-
-                    faceVertices.push_back(newPoint.x);
-                    faceVertices.push_back(newPoint.y);
-                    faceVertices.push_back(0);
-                    
-                    // -
-                    
-                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
-                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-                    
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
-                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
-                    
-//                     LOG("Texel[",uvBuffer[2 * pairVertexIndexNextNext],", ", uvBuffer[2 * pairVertexIndexNextNext + 1], "]"); 
- 
-                    faceIndices.push_back(faceIndices.size());
-
-                    
-                    faceVertices.push_back(uvBuffer[2 * pairVertexIndex]);
-                    faceVertices.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-                    faceVertices.push_back(0);
-                    
-                    faceUVs.push_back(uvBuffer[2 * currentVertexIndexNext]);
-                    faceUVs.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
-
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-                    
-                    faceIndices.push_back(faceIndices.size());
-                    
-                    faceVertices.push_back(uvBuffer[2 * pairVertexIndexNext]);
-                    faceVertices.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-                    faceVertices.push_back(0);
-
-                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
-                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-                    
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-                    
-                    faceIndices.push_back(faceIndices.size());
-
-                    newPoint = computePoint(d, e, g, a, b, c);
-
-                    faceVertices.push_back(newPoint.x);
-                    faceVertices.push_back(newPoint.y);
-                    faceVertices.push_back(0);
-                    
-                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
-                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-                    
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
-                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-                    
-                    faceIndices.push_back(faceIndices.size());
-                    
-                    // -                    
-
-                    // --------------- // 
-                    
-                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndex]);
-                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-                    nfaceVertices.push_back(0);
-                    
-                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndexNext]);
-                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-                    
-                    nfaceIndices.push_back(nfaceIndices.size());
-                    
-                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNext]);
-                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
-                    nfaceVertices.push_back(0);
-
-                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
-                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-                                        
-                    nfaceIndices.push_back(nfaceIndices.size());
-
-                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNextNext]);
-                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNextNext + 1]);
-                    nfaceVertices.push_back(-100);
-                    
-                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
-                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-                    
-                    nfaceIndices.push_back(nfaceIndices.size());
-                    
-                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndex]);
-                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-                    nfaceVertices.push_back(0);
-                    
-                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndexNext]);
-                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
-                    
-                    nfaceIndices.push_back(nfaceIndices.size());
-                    
-                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNext]);
-                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-                    nfaceVertices.push_back(0);
-
-                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
-                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-                    
-                    nfaceIndices.push_back(nfaceIndices.size());
-
-                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNextNext]);
-                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNextNext + 1]);
-                    nfaceVertices.push_back(-100);
-                    
-                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
-                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-
-                    nfaceIndices.push_back(nfaceIndices.size());                    
+//                    faceVertices.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    faceVertices.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                    faceVertices.push_back(0);
+//                    
+//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndexNext]);
+//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
+//
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
+//                    
+////                     LOG("Texel[",uvBuffer[2 * pairVertexIndexNext],", ", uvBuffer[2 * pairVertexIndexNext + 1], "]"); 
+//                    
+//                    faceIndices.push_back(faceIndices.size());
+//                    
+//                    faceVertices.push_back(uvBuffer[2 * currentVertexIndexNext]);
+//                    faceVertices.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
+//                    faceVertices.push_back(0);
+//
+//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
+//                    
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
+//                    
+////                     LOG("Texel[",uvBuffer[2 * pairVertexIndex],", ", uvBuffer[2 * pairVertexIndex + 1], "]"); 
+//                    
+//                    faceIndices.push_back(faceIndices.size());
+//
+//                    auto newPoint = computePoint(a, b, c, d, e, g);
+//
+//                    faceVertices.push_back(newPoint.x);
+//                    faceVertices.push_back(newPoint.y);
+//                    faceVertices.push_back(0);
+//                    
+//                    // -
+//                    
+//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
+//                    
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
+//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
+//                    
+////                     LOG("Texel[",uvBuffer[2 * pairVertexIndexNextNext],", ", uvBuffer[2 * pairVertexIndexNextNext + 1], "]"); 
+// 
+//                    faceIndices.push_back(faceIndices.size());
+//
+//                    
+//                    faceVertices.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    faceVertices.push_back(uvBuffer[2 * pairVertexIndex + 1]);
+//                    faceVertices.push_back(0);
+//                    
+//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndexNext]);
+//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
+//
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
+//                    
+//                    faceIndices.push_back(faceIndices.size());
+//                    
+//                    faceVertices.push_back(uvBuffer[2 * pairVertexIndexNext]);
+//                    faceVertices.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
+//                    faceVertices.push_back(0);
+//
+//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                    
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
+//                    
+//                    faceIndices.push_back(faceIndices.size());
+//
+//                    newPoint = computePoint(d, e, g, a, b, c);
+//
+//                    faceVertices.push_back(newPoint.x);
+//                    faceVertices.push_back(newPoint.y);
+//                    faceVertices.push_back(0);
+//                    
+//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                    
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
+//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
+//                    
+//                    faceIndices.push_back(faceIndices.size());
+//                    
+//                    // -                    
+//
+//                    // --------------- // 
+//                    
+//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                    nfaceVertices.push_back(0);
+//                    
+//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndexNext]);
+//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
+//                    
+//                    nfaceIndices.push_back(nfaceIndices.size());
+//                    
+//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNext]);
+//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
+//                    nfaceVertices.push_back(0);
+//
+//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
+//                                        
+//                    nfaceIndices.push_back(nfaceIndices.size());
+//
+//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNextNext]);
+//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNextNext + 1]);
+//                    nfaceVertices.push_back(-100);
+//                    
+//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
+//                    
+//                    nfaceIndices.push_back(nfaceIndices.size());
+//                    
+//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndex]);
+//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndex + 1]);
+//                    nfaceVertices.push_back(0);
+//                    
+//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndexNext]);
+//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
+//                    
+//                    nfaceIndices.push_back(nfaceIndices.size());
+//                    
+//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNext]);
+//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
+//                    nfaceVertices.push_back(0);
+//
+//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//                    
+//                    nfaceIndices.push_back(nfaceIndices.size());
+//
+//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNextNext]);
+//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNextNext + 1]);
+//                    nfaceVertices.push_back(-100);
+//                    
+//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
+//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
+//
+//                    nfaceIndices.push_back(nfaceIndices.size());                    
                 }
             }
         }

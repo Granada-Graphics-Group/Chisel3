@@ -19,8 +19,11 @@ RenderTarget::RenderTarget(std::string name, ResourceManager* manager, std::arra
     mUseDefaultTarget(defaultTarget),
     mDefaultTargetID(defaultTargetID)
 {
-    if(!mUseDefaultTarget)
+    if (!mUseDefaultTarget)
+    {
+        checkDepthTestIsNecessary();
         createTextureTargets(mPasses.back());
+    }
     else
         mFBO = std::make_unique<FBObject>(defaultTargetID);
 }
@@ -40,12 +43,9 @@ RenderTarget::RenderTarget(std::string name, ResourceManager* manager, std::arra
     {
         attachColorTexturesToFBO();
         
-        auto enableDepth = false;
-        for(const auto& pass : passes)
-            if(pass->isDepthTestEnabled())
-                enableDepth = true;
+        checkDepthTestIsNecessary();
         
-        if(enableDepth && depthTarget == nullptr)
+        if(mDepthTestEnabled && depthTarget == nullptr)
         {
             std::string textureName = mName + "Depth";
             mDepthTexture = mResourceManager->createTexture(textureName, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);                
@@ -96,7 +96,7 @@ void RenderTarget::setDepthTexture(Texture* depthTexture)
 {
     mDepthTexture = depthTexture;
     
-    if(!mUseDefaultTarget && depthTexture != nullptr)
+    if(mDepthTestEnabled && !mUseDefaultTarget && depthTexture != nullptr)
     {
         mViewport = { { 0, 0, mDepthTexture->width(), mDepthTexture->height() } };
         mFBO->setDepthAttachment(mDepthTexture);
@@ -116,13 +116,16 @@ void RenderTarget::attachColorTexturesToFBO(bool updateDepthTexture)
             for(int i = 0; i < mColorTextures.size(); ++i)              
                 mFBO->setcolorAttachment(mColorTextures[i], i);
             
-            if(updateDepthTexture)
+            if (mDepthTestEnabled)
             {
-                mResourceManager->deleteTexture(mDepthTexture);
-                mDepthTexture = mResourceManager->createTexture(mName + "Depth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);
+                if (updateDepthTexture)
+                {
+                    mResourceManager->deleteTexture(mDepthTexture);
+                    mDepthTexture = mResourceManager->createTexture(mName + "Depth", GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);
+                }
+
+                mFBO->setDepthAttachment(mDepthTexture);
             }
-            
-            mFBO->setDepthAttachment(mDepthTexture);
 
             mFBO->checkCompleteness();
         }
@@ -155,6 +158,14 @@ void RenderTarget::updateUniformData(GLintptr offset, GLsizeiptr size, const GLv
 }
 
 //*** Private Methods ***//
+
+void RenderTarget::checkDepthTestIsNecessary()
+{
+    for (const auto& pass : mPasses)
+        if (pass->isDepthTestEnabled())
+            mDepthTestEnabled = true;
+}
+
 void RenderTarget::createTextureTargets()
 {
     int currentMaxIndex = 0;
@@ -194,8 +205,7 @@ void RenderTarget::createTextureTargets()
 
 void RenderTarget::createTextureTargets(RenderPass* pass)
 {
-    size_t colorOutputs = 0;
-    bool depth = true;    
+    size_t colorOutputs = 0; 
             
     if(pass->usingSceneMaterial())
         colorOutputs = pass->sceneMaterial()->shader()->outputs().size();            
@@ -219,7 +229,7 @@ void RenderTarget::createTextureTargets(RenderPass* pass)
 //         mResourceManager->insertTexture(mColorTextures.back().get());
     }
             
-    if(depth)
+    if(mDepthTestEnabled)
     {
         std::string textureName = mName + "Depth";
         mDepthTexture = mResourceManager->createTexture(textureName, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, mViewport[2], mViewport[3], GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, false);

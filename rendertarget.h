@@ -53,6 +53,7 @@ public:
     void updateUniformData(GLintptr offset, GLsizeiptr size, const GLvoid* data);
     
 private:
+    void checkDepthTestIsNecessary();
     void createTextureTargets();
     void createTextureTargets(RenderPass* pass);
     
@@ -67,6 +68,7 @@ private:
     std::vector<glm::byte> mUniformData;
         
     std::vector< Texture* > mColorTextures;
+    bool mDepthTestEnabled = false;
     Texture* mDepthTexture = nullptr;
 
     std::vector<std::unique_ptr<TextureView>> mColorViews;

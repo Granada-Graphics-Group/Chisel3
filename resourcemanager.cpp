@@ -33,7 +33,11 @@
 #include <regex>
 #include <iostream>
 #include <array>
+#include <chrono>
 
+using clock_type = typename std::conditional< std::chrono::high_resolution_clock::is_steady,
+    std::chrono::high_resolution_clock,
+    std::chrono::steady_clock >::type;
 
 ResourceManager::ResourceManager(Chisel* chisel, Renderer* renderer)
 :
@@ -661,11 +665,11 @@ void ResourceManager::loadEffects(const std::string& path, const std::vector<std
     effectLoader.parseGLSLEffectFiles();
 }
 
-Texture* ResourceManager::loadTexture(std::string path, bool create)
+Texture* ResourceManager::loadTextureImage(std::string filepath, bool create)
 {
     QImage image, imageGL;
         
-    if(image.load(path.data()))
+    if(image.load(filepath.data()))
     {
         imageGL = QGLWidget::convertToGLFormat(image);
         
@@ -688,14 +692,25 @@ Texture* ResourceManager::loadTexture(std::string path, bool create)
         std::vector<glm::byte> pixelData(imageGL.byteCount());        
         pixelData.assign(imageGL.bits(), imageGL.bits() + imageGL.byteCount());
 
-        auto tex = createTexture(path, GL_TEXTURE_2D, iformat, width, height, format, GL_UNSIGNED_BYTE, pixelData, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, true);
+        auto tex = createTexture(fileName(filepath), GL_TEXTURE_2D, iformat, width, height, format, GL_UNSIGNED_BYTE, pixelData, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, 8, true);
                         
         return tex;
     }
     else
     {
-        LOG_ERR("RManager couldn't load the file ", path);
+        LOG_ERR("RManager couldn't load the file ", filepath);
         return nullptr;        
+    }
+}
+
+void ResourceManager::copyTextureImage(std::string filepath)
+{
+    if (fileExists(filepath))
+    {
+        if (!directoryExists(mCHISelPath + mStdPaths[IMAGE]))
+            createDirectory(mCHISelPath + mStdPaths[IMAGE]);
+
+        copyFile(filepath, mCHISelPath + mStdPaths[IMAGE] + fileName(filepath));
     }
 }
 
@@ -785,7 +800,7 @@ Texture* ResourceManager::createTexture(std::string name, GLenum target, GLenum 
     else
     {
         if (!generate)
-            createTextureArray(15, {}, arrayTarget, internalFormat, width, height, format, type, magFilter, minFilter, anitropyLevel, GL_TRUE);
+            createTextureArray(5, {}, arrayTarget, internalFormat, width, height, format, type, magFilter, minFilter, anitropyLevel, GL_TRUE);
         else
             createTextureArray(1, {}, arrayTarget, internalFormat, width, height, format, type, magFilter, minFilter, anitropyLevel, GL_FALSE);
     }
@@ -800,6 +815,17 @@ Texture* ResourceManager::createTexture(std::string name, GLenum target, GLenum 
     mGLTexArrays[arrayTarget][samplerKey][paramKey].back()->commitFreeLayer(texPtr);
             
     return texPtr;
+}
+
+Texture * ResourceManager::createUniqueDepthTexture(std::string name, GLenum target, GLenum internalFormat, GLsizei width, GLsizei height, GLenum type, bool generate)
+{
+
+    return nullptr;
+}
+
+Texture * ResourceManager::createSharedDepthTexture(GLsizei width, GLsizei height, bool generate)
+{
+    return createTexture("SharedDepth" + std::to_string(width) + "|" + std::to_string(height), GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 8, generate);
 }
 
 Texture * ResourceManager::copyTexture(std::string sourceName, std::string copyName)
@@ -1815,7 +1841,6 @@ void ResourceManager::createPaletteTexture(const std::string& layerName, Palette
     palette->setTexture(paletteTexture);    
 }
 
-
 void ResourceManager::deletePaletteTexture(Palette* palette, Palette::Type type)
 {
 //     if(palette->texture(type) != nullptr)
@@ -1825,10 +1850,42 @@ void ResourceManager::deletePaletteTexture(Palette* palette, Palette::Type type)
 //     }
 }
 
+std::string paramKeyString(int_fast64_t paramKey)
+{
+    GLenum internalFormat = static_cast<GLenum>(paramKey >> 32);
+    int width = static_cast<int>((0x00000000FFFF0000 & paramKey) >> 16);
+    int height = static_cast<int>(0x000000000000FFFF & paramKey);
+    return "internalformat: " + toGLSLImageFormat(internalFormat) + ", width: " + std::to_string(width) + ", height: " + std::to_string(height);
+}
+
+std::string ResourceManager::textureLoadInfo()
+{
+    std::string load;
+    for (auto &target : mGLTexArrays)
+    {
+        load += "target: " + textureTargetString(target.first) + "\n";
+        for (auto &sampler : target.second)
+            for (auto &paramKey : sampler.second)
+            {
+                load += "  " + paramKeyString(paramKey.first) + "\n";
+                for (auto &textureArray : paramKey.second)
+                {
+                    load += "    textureArray Id: " + std::to_string(textureArray->id()) + ", bindless: " + std::to_string(textureArray->isBindless()) + ", sparseness: " + std::to_string(textureArray->isSparse()) + ", texture count: " + std::to_string(textureArray->textures().size()) + "\n";
+
+                    for (auto &texture : textureArray->textures())
+                        if (texture != nullptr)
+                            load += "      texture Name: " + texture->name() + "\n";
+                }
+            }
+    }
+
+    return load;
+}
 
 void ResourceManager::loadScene3D(std::string name, std::string path)
 {
-    std::string absoluteFileName = ((path.length() > 0) ? path : mCHISelPath) + ((name.length() > 0) ? name : mCHISelName) + mFileExtensions[SCENE];
+    std::string absolutePath = (path.length() > 0) ? path : mCHISelPath;
+    std::string absoluteFileName = absolutePath + ((name.length() > 0) ? name : mCHISelName) + mFileExtensions[SCENE];
     std::ifstream input(absoluteFileName, std::ios::binary);
 
     cereal::PortableBinaryInputArchive archive(input);
@@ -1892,8 +1949,8 @@ void ResourceManager::loadScene3D(std::string name, std::string path)
         std::string diffuseTextureName;
         archive(diffuse.mColor, diffuseTextureName);
         
-        if(diffuseTextureName.length() > 0)
-            diffuse.mTexture = texture(diffuseTextureName);
+        if (diffuseTextureName.length() > 0)
+            diffuse.mTexture = loadTextureImage(absolutePath + mStdPaths[IMAGE] + diffuseTextureName);//texture(diffuseTextureName);
         
         material->setDiffuse(diffuse);
         
@@ -1940,6 +1997,9 @@ void ResourceManager::importScene3D(std::string name, std::string extension, std
 {
     if(mCHISelName.length() > 0)
         unloadCHiselFile();
+
+    setDefaultChiselPath(mDefaultChiselPath);
+    mCHISelPath = mDefaultChiselPath;
     
     auto scene = std::make_unique<Scene3D>(name);
     std::transform(begin(extension), end(extension), begin(extension), ::tolower);
@@ -1953,9 +2013,6 @@ void ResourceManager::importScene3D(std::string name, std::string extension, std
         OBJLoader loader(this, scene.get(), fullPath);
         
     auto scenePtr = scene.get();
-
-    setDefaultChiselPath(mDefaultChiselPath);
-    mCHISelPath = mDefaultChiselPath;
    
     if(!directoryExists(mCHISelPath + mStdPaths[LAYER]))
         createDirectory(mCHISelPath + mStdPaths[LAYER]);
@@ -1966,7 +2023,10 @@ void ResourceManager::importScene3D(std::string name, std::string extension, std
     mCHISelName = scene->name();
     mScenes[scene->name()] = std::move(scene);
     
+    auto t_start = clock_type::now();
     createTopology(mCHISelName);
+    auto t_end = clock_type::now();
+    std::cout << "Topology Creation time: " << std::chrono::duration<double, std::milli>(t_end - t_start).count() << " milliseconds" << std::endl;
 
     mRenderer->swapChiselScene(scenePtr);        
 }
@@ -2178,6 +2238,9 @@ void ResourceManager::loadChiselFile(std::string name, std::string path)
         archive(cereal::make_nvp("scenePath", mStdPaths[SCENE]));
         archive(cereal::make_nvp("sceneName", mCHISelName));
 
+        if(mVersion > 1.0)
+            archive(cereal::make_nvp("imagePath", mStdPaths[IMAGE]));
+
         loadTopology(mCHISelName, "");
 
         loadScene3D(mCHISelName, "");
@@ -2242,12 +2305,23 @@ void ResourceManager::saveChiselProject(std::string name, std::string path)
     
     cereal::JSONOutputArchive archive(output);
     
-    archive(cereal::make_nvp("version", 1.0));
+    archive(cereal::make_nvp("version", 1.1));
     archive(cereal::make_nvp("scenePath", mStdPaths[SCENE]));
     archive(cereal::make_nvp("sceneName", mCHISelName));
+    archive(cereal::make_nvp("imagePath", mStdPaths[IMAGE]));
+
     saveScene3D(mCHISelName);
 
     saveTopology(mCHISelName);
+
+    if(newPath)
+    {
+        if (directoryExists(oldPath + mStdPaths[IMAGE]))
+        {
+            createDirectory(mCHISelPath + mStdPaths[IMAGE]);
+            copyDirectory(oldPath + mStdPaths[IMAGE], mCHISelPath + mStdPaths[IMAGE], false);
+        }
+    }
     
     archive(cereal::make_nvp("databasePath", mStdPaths[DB]));
     if(mSQLiteDatabaseManager->isDatabaseOpen())
@@ -2362,6 +2436,13 @@ std::vector<std::string> ResourceManager::directoryFiles(std::string path) const
     return files;
 }
 
+bool ResourceManager::fileExists(std::string filepath) const
+{
+    QFileInfo file(QString::fromStdString(filepath));
+
+    return file.exists();
+}
+
 bool ResourceManager::fileExists(std::string path, std::string name) const
 {
     QDir dir(QString::fromStdString(path));
@@ -2372,6 +2453,12 @@ bool ResourceManager::fileExists(std::string path, std::string name) const
     return false;
 }
 
+std::string ResourceManager::fileName(std::string filepath) const
+{
+    QFileInfo file(QString::fromStdString(filepath));
+
+    return (file.exists()) ? file.fileName().toStdString() : "";       
+}
 
 bool ResourceManager::directoryExists(std::string path) const
 {

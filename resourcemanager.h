@@ -126,7 +126,8 @@ public:
     void initGLResourceData();
     Program* createComputeShader(const std::string& name, const std::string& source);
     void loadEffects(const std::string& path, const std::vector<std::string>& filters);    
-    Texture* loadTexture(std::string path, bool create = false);    
+    Texture* loadTextureImage(std::string filepath, bool create = false);
+    void copyTextureImage(std::string filepath);
     void generateTextureArrays();
 
     const SamplerParamMap& texture1DArrays() const { return mGLTexArrays.at(GL_TEXTURE_1D_ARRAY); }
@@ -146,6 +147,8 @@ public:
     
 
     Texture* createTexture(std::string name, GLenum target, GLenum internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const std::vector<glm::byte>& data, GLenum magFilter, GLenum minFilter, GLenum anitropyLevel, bool generate);
+    Texture* createUniqueDepthTexture(std::string name, GLenum target, GLenum internalFormat, GLsizei width, GLsizei height, GLenum type, bool generate);
+    Texture* createSharedDepthTexture(GLsizei width, GLsizei height, bool generate);
     Texture* copyTexture(std::string sourceName, std::string copyName = "");
     Texture* copyTexture(Texture* source, std::string copyName = "");
     bool deleteTexture(Texture* texture);
@@ -193,6 +196,7 @@ public:
     void createPaletteTexture(Palette* palette);
     void createPaletteTexture(const std::string& layerName, Palette* palette);
     void deletePaletteTexture(Palette* palette, Palette::Type type);
+    std::string textureLoadInfo();
     
     void loadScene3D(std::string name, std::string path);    
     void importScene3D(std::string name, std::string extension, std::string path);    
@@ -221,7 +225,9 @@ private:
     bool renameFile(std::string path, std::string oldName, std::string newName);
     bool copyFile(std::string source, std::string destination);
     std::vector<std::string> directoryFiles(std::string path) const;
+    bool fileExists(std::string filepath) const;
     bool fileExists(std::string path, std::string name) const;
+    std::string fileName(std::string filepath) const;
     bool directoryExists(std::string path) const;
     bool isDirectoryEmpty(std::string path) const;
     bool createDirectory(std::string path);
@@ -271,16 +277,17 @@ private:
     enum FType : int
     {
         CHIS = 0,
-        SCENE = 1,
+        SCENE = 1,        
         TOP = 2,
         DB = 3,
-        LAYER = 4,
-        PALETTE = 5,
-        RESOURCES = 6
+        IMAGE = 4,
+        LAYER = 5,
+        PALETTE = 6,
+        RESOURCES = 7
     };
     
-    std::vector<std::string> mFileExtensions = { ".chl", ".scn", ".top", ".db", ".lay", ".plt", ".*" };
-    std::vector<std::string> mStdPaths = { "", "", "", "", "layers/", "palettes/", "resources/" };
+    std::vector<std::string> mFileExtensions = { ".chl", ".scn", ".top", ".db", ".*", ".lay", ".plt", ".*" };
+    std::vector<std::string> mStdPaths = { "", "", "", "", "images/", "layers/", "palettes/", "resources/" };
     
     std::string mAppPath;
     std::string mCHISelPath;

@@ -34,6 +34,7 @@ public:
     GLboolean sparse() const { return mSparseness; }
     SamplerType samplerType() const { return mSamplerType; }
     const std::list<unsigned int>& cleaningList() const { return mCleaningList; }
+    unsigned int textureCount() const { return mLayerCount - static_cast<unsigned int>(mFreeList.size()); }
     const std::vector<Texture *>& textures() const { return mTextures; }
     Texture* texture(std::string texture) const;
     std::vector<glm::byte> textureData(unsigned int layer) const;

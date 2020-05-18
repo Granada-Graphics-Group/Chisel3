@@ -832,7 +832,10 @@ ColorChannel FBXLoader::getMaterialProperty(const FbxSurfaceMaterial* material, 
             const FbxFileTexture* texture = property.GetSrcObject<FbxFileTexture>();
             
             if (texture)
-                channel.mTexture = mResourceManager->loadTexture(texture->GetFileName());
+            {
+                mResourceManager->copyTextureImage(texture->GetFileName());
+                channel.mTexture = mResourceManager->loadTextureImage(texture->GetFileName());
+            }
         }
     }
     
@@ -851,7 +854,10 @@ Texture *FBXLoader::getMaterialPropertyTexture(const FbxSurfaceMaterial* materia
             const FbxFileTexture* texture = property.GetSrcObject<FbxFileTexture>();
             
             if (texture)
-                return mResourceManager->loadTexture(texture->GetFileName());
+            {
+                mResourceManager->copyTextureImage(texture->GetFileName());
+                return mResourceManager->loadTextureImage(texture->GetFileName());
+            }
         }
     }
     
