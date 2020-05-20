@@ -11,15 +11,15 @@ PLYLoader::PLYLoader(ResourceManager* manager, Scene3D* scene, std::string fileP
 :
     mResourceManager(manager),
     mScene(scene),
-    mPath(filePath)
+    mFilePath(filePath)
 {
-    loadScene(filePath);
+    loadScene(mFilePath.string());
 }
 
 
 // *** Public Methods *** //
 
-Scene3D * PLYLoader::loadScene(std::string filePath)
+Scene3D* PLYLoader::loadScene(std::string filePath)
 {
     std::ifstream fileStream;
     fileStream.open(filePath, std::ios::in);
@@ -77,7 +77,7 @@ void PLYLoader::readComment(std::istream & lineStream)
         std::string textureFilePath;
         lineStream >> textureFilePath;
 
-        auto absTextureFilePath = mPath.remove_filename() / textureFilePath;
+        auto absTextureFilePath = mFilePath.remove_filename() / textureFilePath;
 
         mResourceManager->copyTextureImage(absTextureFilePath.string());
         mTextureFile = mResourceManager->loadTextureImage(absTextureFilePath.string());

@@ -68,6 +68,8 @@ class PLYLoader
 {
 public:
     PLYLoader(ResourceManager* manager, Scene3D* scene, std::string filePath);
+    Scene3D* scene() { return mScene; }
+
     Scene3D* loadScene(std::string filePath);
     
 private:
@@ -98,7 +100,7 @@ private:
     void readData(std::istream& inputStream);
     
     ResourceManager* mResourceManager = nullptr;
-    std::filesystem::path mPath;
+    std::filesystem::path mFilePath;
     Scene3D* mScene = nullptr;
     Texture* mTextureFile = nullptr;
     bool mIsBinary = false;

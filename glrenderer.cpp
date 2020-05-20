@@ -2319,7 +2319,7 @@ void GLRenderer::loadChiselScene(Scene3D* scene)
         mEraseTexPass = mManager->createRenderPass("eraseTexPass", mMainScene, eraseTexMat);
         mEraseTexPass->setAutoClearColor(false);
         mEraseTexPass->disableDepthTest();
-        mEraseTexTarget = mManager->createRenderTarget("eraseTexTarget", mManager, {0, 0, 2048, 2048}, {mEraseTexPass}, false);
+        mEraseTexTarget = mManager->createRenderTarget("eraseTexTarget", mManager, { 0, 0, 2048, 2048 }, { mEraseTexPass }, {}, nullptr, false);
 
         auto eraseDilationMat = mManager->createMaterial("eraseDilationMat", "EraseDilation");
         auto eraseDilationPass = mManager->createRenderPass("eraseDilationPass", ppScene, eraseDilationMat);
