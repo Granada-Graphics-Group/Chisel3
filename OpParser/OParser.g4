@@ -14,7 +14,7 @@ defs            : def (';' def)* ';'?
                 ;
 
 def             : STRING '=' expr
-                | NAME ('#' NAME)? '=' expr
+                | NAME ('#' NAME)? ('[' INT ']')? '=' expr
                 ;
 
 expr            : '(' expr ')'                                  # parExp

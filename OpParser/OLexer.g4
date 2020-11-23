@@ -88,7 +88,7 @@ INT             :   DIGIT+
                 ;
 fragment DIGIT  :   [0-9];
 fragment HEX    :   [0][xX][0-9a-fA-F]+;
-NAME            :   LETTER (LETTER | DIGIT)+;
+NAME            :   LETTER (LETTER | DIGIT)*;
 fragment LETTER :   [a-zA-Z\u0080-\u00FF_];
 STRING          :   '"' .*? '"'
                 |   '\'' .*? '\''

@@ -62,6 +62,27 @@ void Translator::exitDef(OParser::DefContext* ctx)
         }
     }
     
+    //auto targetLayerResolution = std::stoi(ctx->INT()->getText());
+
+    //if (targetLayerResolution != 0)
+    //{
+    //    if (info.resolution.first != 0 && info.resolution.first != targetLayerResolution)
+    //    {
+
+    //    }
+    //}
+    //else
+    //{
+    //    if (info.resolution.first != 0)
+    //        targetLayerResolution = info.resolution.first;
+    //    else
+    //    {
+    //        auto token = ctx->INT()->getSymbol();
+    //        mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
+    //        mSemanticErrorMessages += "line " + std::to_string(token->getLine()) + " : position " + std::to_string(token->getCharPositionInLine()) + ": " + ctx->INT()->getText() + " is not a valid resolution";
+    //    }
+
+    //}
     
     if(mOffendingSymbols.size() == 0)
     {

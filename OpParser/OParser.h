@@ -1,5 +1,5 @@
 
-// Generated from /media/loki/Niflheim/Tesis/github/Chisel3/OpParser/OParser.g4 by ANTLR 4.7
+// Generated from C:/CHISel3/OpParser/OParser.g4 by ANTLR 4.7
 
 #pragma once
 
@@ -91,6 +91,7 @@ public:
     ExprContext *expr();
     std::vector<antlr4::tree::TerminalNode *> NAME();
     antlr4::tree::TerminalNode* NAME(size_t i);
+    antlr4::tree::TerminalNode *INT();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
