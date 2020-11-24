@@ -58,31 +58,40 @@ void Translator::exitDef(OParser::DefContext* ctx)
         {
             auto token = ctx->NAME(1)->getSymbol();
             mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
-            mSemanticErrorMessages += "line " + std::to_string(token->getLine()) + " : position " + std::to_string(token->getCharPositionInLine()) + ": " + paletteName + " is not a valid palette";            
+            mSemanticErrorMessages += "line " + std::to_string(token->getLine()) + " : position " + std::to_string(token->getCharPositionInLine()) + ": " + paletteName + " is not a valid palette\n";            
         }
     }
     
-    //auto targetLayerResolution = std::stoi(ctx->INT()->getText());
+    auto targetLayerResolution = info.resolution;
 
-    //if (targetLayerResolution != 0)
-    //{
-    //    if (info.resolution.first != 0 && info.resolution.first != targetLayerResolution)
-    //    {
+    if (ctx->INT() != nullptr)
+    {
+        auto resolutionInteger = std::stoi(ctx->INT()->getText());
 
-    //    }
-    //}
-    //else
-    //{
-    //    if (info.resolution.first != 0)
-    //        targetLayerResolution = info.resolution.first;
-    //    else
-    //    {
-    //        auto token = ctx->INT()->getSymbol();
-    //        mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
-    //        mSemanticErrorMessages += "line " + std::to_string(token->getLine()) + " : position " + std::to_string(token->getCharPositionInLine()) + ": " + ctx->INT()->getText() + " is not a valid resolution";
-    //    }
-
-    //}
+        if (resolutionInteger == 2048 || resolutionInteger == 4096 || resolutionInteger == 8192)
+        {
+            if (targetLayerResolution.first == 0)
+                targetLayerResolution = std::pair{ resolutionInteger, resolutionInteger };
+            else
+            {
+                auto token = ctx->INT()->getSymbol();
+                mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
+                mSemanticErrorMessages += "line " + std::to_string(token->getLine()) + " : position " + std::to_string(token->getCharPositionInLine()) + ": " + std::to_string(resolutionInteger) + " is conflicting with the inferred layer resolution\n";
+            }
+        }
+        else
+        {
+            auto token = ctx->INT()->getSymbol();
+            mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
+            mSemanticErrorMessages += "line " + std::to_string(token->getLine()) + " : position " + std::to_string(token->getCharPositionInLine()) + ": " + std::to_string(resolutionInteger) + " is not a valid resolution\n";
+        }
+    }
+    else if (targetLayerResolution.first == 0)
+    {
+        auto token = ctx->NAME(0)->getSymbol();
+        mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
+        mSemanticErrorMessages += "line " + std::to_string(token->getLine()) + " : no resolution was specified\n";
+    }
     
     if(mOffendingSymbols.size() == 0)
     {
@@ -92,7 +101,7 @@ void Translator::exitDef(OParser::DefContext* ctx)
         
         if(search == end(layers))    
         {
-            auto newLayer = mChisel->resourceManager()->createLayer(targetLayerName, info.type, info.resolution, palette);
+            auto newLayer = mChisel->resourceManager()->createLayer(targetLayerName, info.type, targetLayerResolution, palette);
             mNewLayers.push_back(newLayer);
             targetLayer = newLayer;
             mChisel->resourceManager()->commitFreeImageUnit(targetLayer->dataTexture()->textureArray());
@@ -308,7 +317,7 @@ void Translator::exitShiftExp(OParser::ShiftExpContext* ctx)
                 mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
             }
                         
-            mSemanticErrorMessages += "line " + std::to_string(tokenB->getLine()) + " : position " + std::to_string(tokenB->getCharPositionInLine()) + ": The type of the right operand needs to be an integer";            
+            mSemanticErrorMessages += "line " + std::to_string(tokenB->getLine()) + " : position " + std::to_string(tokenB->getCharPositionInLine()) + ": The type of the right operand needs to be an integer\n";            
         }
     }
     else
@@ -322,7 +331,7 @@ void Translator::exitShiftExp(OParser::ShiftExpContext* ctx)
             mOffendingSymbols[static_cast<int>(token->getStartIndex())] = token;
         }
         
-        mSemanticErrorMessages += "line " + std::to_string(tokenA->getLine()) + " : position " + std::to_string(tokenA->getCharPositionInLine()) + ": The type of the left operand needs to be an integer";
+        mSemanticErrorMessages += "line " + std::to_string(tokenA->getLine()) + " : position " + std::to_string(tokenA->getCharPositionInLine()) + ": The type of the left operand needs to be an integer\n";
     }
 }
 

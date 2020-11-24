@@ -1644,7 +1644,12 @@ void MainWindow::computeExpression(const QString expression)
         mLayerOperationWidget->setErrorLogText(errorMessages[1]);
     }
     else
+    {
         mLayerOperationWidget->hideWidget();
+
+        if(mState == State::ModelLoaded && mChisel->hasLayers())
+            setState(State::LayerCreated);
+    }
     
     mUi->Visualizer->update();    
 }
