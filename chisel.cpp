@@ -1333,177 +1333,175 @@ Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int ind
     auto areaData = mRenderer->readFloatTexture(areaTexture);//computeAreaPerCell(seedLayer->resolution());
     auto neighborhoodData = mRenderer->readFloatTexture(neighborhoodTexture);//computeTopology(seedLayer->resolution());
     std::vector<float> distanceData(areaData.size(), std::numeric_limits<float>::max());
-//    std::vector<float> distanceDataX(areaData.size(), std::numeric_limits<float>::max());
+    std::vector<float> distanceDataX(areaData.size(), std::numeric_limits<float>::max());
     
     std::vector<glm::byte> valueTextureData(distanceData.size() * sizeof(float), 0);
     std::vector<glm::byte> maskTextureData(distanceData.size(), 0);
-//    std::vector<glm::byte> maskTextureDataX(distanceData.size(), 0);
+    std::vector<glm::byte> maskTextureDataX(distanceData.size(), 0);
     
     std::set<std::pair<double, uint64_t>> activeTexels;
     std::vector<char> inspectedTexels(areaData.size(), 2);
-    //-glm::ivec2 immediateOffsets[8] = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}, {-1, 1}, {-1, -1}, {1, 1}, {1, -1}};    
-    //-std::array<int, 8> neighborOffsets = { -seedTexture->width(), seedTexture->width(), 1, -1, -seedTexture->width() + 1, -seedTexture->width() - 1, seedTexture->width() + 1, seedTexture->width() - 1 };
+    //glm::ivec2 immediateOffsets[8] = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}, {-1, 1}, {-1, -1}, {1, 1}, {1, -1}};    
+    //std::array<int, 8> neighborOffsets = { -seedTexture->width(), seedTexture->width(), 1, -1, -seedTexture->width() + 1, -seedTexture->width() - 1, seedTexture->width() + 1, seedTexture->width() - 1 };
     std::array<int, 8> neighborOffsets = { -1, 1, seedTexture->width(), -seedTexture->width(), -1 + seedTexture->width(), -1 - seedTexture->width(), 1 + seedTexture->width(), 1 - seedTexture->width() };
     
 
-    //auto normalLayers = computeNormalLayer("Normals", seedLayer->resolution());    
-    //auto posLayers = computePositionLayer("Position", seedLayer->resolution());
-    //mGLWidget->repaint();
-    //
-    //std::array<std::vector<float>, 3> normalData;
-    //normalData[0] = mRenderer->readFloatTexture(normalLayers[0]->dataTexture());
-    //normalData[1] = mRenderer->readFloatTexture(normalLayers[1]->dataTexture());
-    //normalData[2] = mRenderer->readFloatTexture(normalLayers[2]->dataTexture());
-    //auto normalMask = mRenderer->readTexture(normalLayers[0]->maskTexture());
-    //
-    //std::array<std::vector<float>, 3> posData;
-    //posData[0] = mRenderer->readFloatTexture(posLayers[0]->dataTexture());
-    //posData[1] = mRenderer->readFloatTexture(posLayers[1]->dataTexture());
-    //posData[2] = mRenderer->readFloatTexture(posLayers[2]->dataTexture());        
-    //    
-    //    
-    //std::vector<glm::vec3> positionTexels; //{{0, 1, 0}, {0.3, -1, 0.8}, {0.8, 0.8, 1}, {-1, 0.7, 0}};
-    //std::vector<glm::vec3> normalTexels; //{{0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {-1, 0, 0}};
-    //
-    //for(auto i = 0; i < normalMask.size(); ++i)
-    //{
-    //    glm::vec3 pos{posData[0][i], posData[1][i], posData[2][i]};
-    //    glm::vec3 norm{std::rint(normalData[0][i]), std::rint(normalData[1][i]), std::rint(normalData[2][i])};       
-    //    
-    //    if(norm.x > -0.5 && norm.x < 0.5) norm.x = std::abs(norm.x);
-    //    if(norm.y > -0.5 && norm.y < 0.5) norm.y = std::abs(norm.y);
-    //    if(norm.z > -0.5 && norm.z < 0.5) norm.z = std::abs(norm.z);
-    //            
-    //    positionTexels.push_back(pos);
-    //    normalTexels.push_back(norm);
-    //    
-    //}
+    auto normalLayers = computeNormalLayer("Normals", seedLayer->resolution());    
+    auto posLayers = computePositionLayer("Position", seedLayer->resolution());
+    mGLWidget->repaint();
+    
+    std::array<std::vector<float>, 3> normalData;
+    normalData[0] = mRenderer->readFloatTexture(normalLayers[0]->dataTexture());
+    normalData[1] = mRenderer->readFloatTexture(normalLayers[1]->dataTexture());
+    normalData[2] = mRenderer->readFloatTexture(normalLayers[2]->dataTexture());
+    auto normalMask = mRenderer->readTexture(normalLayers[0]->maskTexture());
+    
+    std::array<std::vector<float>, 3> posData;
+    posData[0] = mRenderer->readFloatTexture(posLayers[0]->dataTexture());
+    posData[1] = mRenderer->readFloatTexture(posLayers[1]->dataTexture());
+    posData[2] = mRenderer->readFloatTexture(posLayers[2]->dataTexture());        
+        
+        
+    std::vector<glm::vec3> positionTexels; //{{0, 1, 0}, {0.3, -1, 0.8}, {0.8, 0.8, 1}, {-1, 0.7, 0}};
+    std::vector<glm::vec3> normalTexels; //{{0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {-1, 0, 0}};
+    
+    for(auto i = 0; i < normalMask.size(); ++i)
+    {
+        glm::vec3 pos{posData[0][i], posData[1][i], posData[2][i]};
+        glm::vec3 norm{std::rint(normalData[0][i]), std::rint(normalData[1][i]), std::rint(normalData[2][i])};       
+        
+        if(norm.x > -0.5 && norm.x < 0.5) norm.x = std::abs(norm.x);
+        if(norm.y > -0.5 && norm.y < 0.5) norm.y = std::abs(norm.y);
+        if(norm.z > -0.5 && norm.z < 0.5) norm.z = std::abs(norm.z);
+                
+        positionTexels.push_back(pos);
+        normalTexels.push_back(norm);
+        
+    }
 
-    //auto originIndex = -1;
+    auto originIndex = -1;
     for(auto i = 0; i < seedData.size(); ++i)
-        if(seedData[i] && neighborhoodData[2 * i] < 0/* && originIndex == -1*/)
+        if(seedData[i] && neighborhoodData[2 * i] < 0 && originIndex == -1)
         {
-            //auto v = 1762181;
-            //if(seedTexture->width() == 4096)
-            //    v = 7046922;
-            //
-            //activeTexels.insert({0,v});
-            //distanceData[v] = 0.0f;
-            //inspectedTexels[v] = 1;
-            //originIndex = v;
-
-            activeTexels.insert({0,i});
-            distanceData[i] = 0.0f;
-            inspectedTexels[i] = 1;
+            auto v = 1762181;
+            if (seedTexture->width() == 4096)
+                v = 7046922;
+            else if (seedTexture->width() == 8192)
+                v = 28184084;
+            
+            activeTexels.insert({0,v});
+            distanceData[v] = 0.0f;
+            inspectedTexels[v] = 1;
+            originIndex = v;
         }
 
     
-    //auto originPosition = positionTexels[originIndex];
-    //auto originNormal = normalTexels[originIndex];
+    auto originPosition = positionTexels[originIndex];
+    auto originNormal = normalTexels[originIndex];
 
-    //for(auto i = 1; i < positionTexels.size(); ++i)
-    //    if(normalMask[i] && i != originIndex)
-    //    {
-    //        auto position = positionTexels[i];
-    //        auto faceNormal = normalTexels[i];
-    //        
-    //        if(originNormal == faceNormal)
-    //        {
-    //            distanceDataX[i] = glm::distance(originPosition, position); 
-    //        }
-    //        else if (originNormal + faceNormal != glm::vec3(0)) // contiguos faces
-    //        {
-    //            auto rotationAxis = glm::cross(originNormal, faceNormal);
+    for(auto i = 1; i < positionTexels.size(); ++i)
+        if(normalMask[i] && i != originIndex)
+        {
+            auto position = positionTexels[i];
+            auto faceNormal = normalTexels[i];
+            
+            if(originNormal == faceNormal)
+            {
+                distanceDataX[i] = glm::distance(originPosition, position); 
+            }
+            else if (originNormal + faceNormal != glm::vec3(0)) // contiguos faces
+            {
+                auto rotationAxis = glm::cross(originNormal, faceNormal);
 
-    //            auto lower = originNormal + faceNormal - rotationAxis;
-    //            auto higher = originNormal + faceNormal + rotationAxis;
-    //            
-    //            auto halfSize = 1.0;
-    //            
-    //            auto positionOnOriginNormal = position * glm::abs(originNormal) - originPosition * glm::abs(originNormal);
-    //            auto distance = glm::abs((positionOnOriginNormal.x + positionOnOriginNormal.y + positionOnOriginNormal.z));
-    //            auto rotatedPosition = glm::abs(originNormal) * originPosition + (halfSize + distance) * faceNormal + glm::abs(rotationAxis) * position;
-    //            
-    //            auto distanceOnRotationAxisHigher = glm::abs(rotatedPosition - higher) * glm::abs(rotationAxis);
-    //            auto distanceOnHigher = distanceOnRotationAxisHigher.x + distanceOnRotationAxisHigher.y + distanceOnRotationAxisHigher.z;
-    //            auto rotatedPosition90 = higher + distance * rotationAxis + distanceOnHigher * faceNormal;
-    //            
-    //            auto distanceOnRotationAxisLower = glm::abs(rotatedPosition - lower) * glm::abs(rotationAxis);
-    //            auto distanceOnLower = distanceOnRotationAxisLower.x + distanceOnRotationAxisLower.y + distanceOnRotationAxisLower.z;
-    //            auto rotatedPositionMinus90 = lower - distance * rotationAxis + distanceOnLower * faceNormal;
+                auto lower = originNormal + faceNormal - rotationAxis;
+                auto higher = originNormal + faceNormal + rotationAxis;
+                
+                auto halfSize = 1.0;
+                
+                auto positionOnOriginNormal = position * glm::abs(originNormal) - originPosition * glm::abs(originNormal);
+                auto distance = glm::abs((positionOnOriginNormal.x + positionOnOriginNormal.y + positionOnOriginNormal.z));
+                auto rotatedPosition = glm::abs(originNormal) * originPosition + (halfSize + distance) * faceNormal + glm::abs(rotationAxis) * position;
+                
+                auto distanceOnRotationAxisHigher = glm::abs(rotatedPosition - higher) * glm::abs(rotationAxis);
+                auto distanceOnHigher = distanceOnRotationAxisHigher.x + distanceOnRotationAxisHigher.y + distanceOnRotationAxisHigher.z;
+                auto rotatedPosition90 = higher + distance * rotationAxis + distanceOnHigher * faceNormal;
+                
+                auto distanceOnRotationAxisLower = glm::abs(rotatedPosition - lower) * glm::abs(rotationAxis);
+                auto distanceOnLower = distanceOnRotationAxisLower.x + distanceOnRotationAxisLower.y + distanceOnRotationAxisLower.z;
+                auto rotatedPositionMinus90 = lower - distance * rotationAxis + distanceOnLower * faceNormal;
 
-    //            std::array<float, 3> distances;
-    //            distances[0] = glm::distance(originPosition, rotatedPosition);
-    //            distances[1] = glm::distance(originPosition, rotatedPosition90);
-    //            distances[2] = glm::distance(originPosition, rotatedPositionMinus90);
+                std::array<float, 3> distances;
+                distances[0] = glm::distance(originPosition, rotatedPosition);
+                distances[1] = glm::distance(originPosition, rotatedPosition90);
+                distances[2] = glm::distance(originPosition, rotatedPositionMinus90);
 
-    //            distanceDataX[i] = *std::min_element(begin(distances), end(distances));
-    //        }
-    //        else
-    //        {
-    //            std::array<glm::vec3, 5> originalPositions;
-    //            std::array<glm::vec3, 5> rotatedPositions;
-    //            originalPositions[0] = originPosition;
-    //            
-    //            glm::vec3 helperNormal {originNormal.y, originNormal.z, originNormal.x };            
-    //            auto rotationAxis = glm::cross(originNormal, helperNormal);
-    //            
-    //            auto halfSize = 1.0;            
+                distanceDataX[i] = *std::min_element(begin(distances), end(distances));
+            }
+            else
+            {
+                std::array<glm::vec3, 5> originalPositions;
+                std::array<glm::vec3, 5> rotatedPositions;
+                originalPositions[0] = originPosition;
+                
+                glm::vec3 helperNormal {originNormal.y, originNormal.z, originNormal.x };            
+                auto rotationAxis = glm::cross(originNormal, helperNormal);
+                
+                auto halfSize = 1.0;            
 
-    //            auto originPositionOnHelperNormal = originPosition * glm::abs(helperNormal) - helperNormal;
-    //            auto positionOnHelperNormal = position * glm::abs(helperNormal) - helperNormal;            
-    //            
-    //            auto ogDistance = glm::abs(originPositionOnHelperNormal.x + originPositionOnHelperNormal.y + originPositionOnHelperNormal.z);
-    //            auto distance = glm::abs(positionOnHelperNormal.x + positionOnHelperNormal.y + positionOnHelperNormal.z);
-    //            
-    //            rotatedPositions[0] = glm::abs(originNormal) * originPosition + (3 * halfSize + distance) * helperNormal + glm::abs(rotationAxis) * position;
-    //            
-    //            auto originalHigher = originNormal + helperNormal + rotationAxis;
-    //            auto higher = originNormal + 3 * halfSize * helperNormal + rotationAxis;
-    //            
-    //            for(char j = 0; j < 4; ++j)
-    //            {
-    //                auto ogDistanceOnAxisHigher = glm::abs(originalPositions[j] - originalHigher) * glm::abs(rotationAxis);
-    //                auto ogDistanceOnHigher = ogDistanceOnAxisHigher.x + ogDistanceOnAxisHigher.y + ogDistanceOnAxisHigher.z;
-    //                originalPositions[j + 1] = originalHigher + ogDistance * rotationAxis - ogDistanceOnHigher * helperNormal;
-    //                originalHigher += 2 * halfSize * rotationAxis;
-    //                
-    //                auto originPositionOnHelperNormal = originalPositions[j + 1] * glm::abs(helperNormal) - helperNormal;
-    //                ogDistance = glm::abs(originPositionOnHelperNormal.x + originPositionOnHelperNormal.y + originPositionOnHelperNormal.z);
-    //                                
-    //                auto distanceOnRotationAxisHigher = glm::abs(rotatedPositions[j] - higher) * glm::abs(rotationAxis);
-    //                auto distanceOnHigher = distanceOnRotationAxisHigher.x + distanceOnRotationAxisHigher.y + distanceOnRotationAxisHigher.z;
-    //                rotatedPositions[j + 1] = higher + distance * rotationAxis + distanceOnHigher * helperNormal;
-    //                higher += 2 * halfSize * rotationAxis;
-    //                
-    //                auto positionOnHelperNormal = rotatedPositions[j + 1] * glm::abs(helperNormal) - 3.0 * halfSize * helperNormal;
-    //                distance = glm::abs(positionOnHelperNormal.x + positionOnHelperNormal.y + positionOnHelperNormal.z);
-    //            }
-    //            
-    //            std::vector<float> distances;
-    //            
-    //            for(char j = 0; j < 5; ++j)
-    //            {
-    //                if(j != 0)
-    //                    distances.push_back(glm::distance(originalPositions[j], rotatedPositions[j - 1]));                    
-    //                
-    //                distances.push_back(glm::distance(originalPositions[j], rotatedPositions[j]));
-    //                
-    //                if(j != 4)
-    //                    distances.push_back(glm::distance(originalPositions[j], rotatedPositions[j + 1]));             
-    //            }
-    //            
-    //            distanceDataX[i] = *std::min_element(begin(distances), end(distances));
-    //        }
-    //        
-    //        maskTextureDataX[i] = 255;
-    //    }
+                auto originPositionOnHelperNormal = originPosition * glm::abs(helperNormal) - helperNormal;
+                auto positionOnHelperNormal = position * glm::abs(helperNormal) - helperNormal;            
+                
+                auto ogDistance = glm::abs(originPositionOnHelperNormal.x + originPositionOnHelperNormal.y + originPositionOnHelperNormal.z);
+                auto distance = glm::abs(positionOnHelperNormal.x + positionOnHelperNormal.y + positionOnHelperNormal.z);
+                
+                rotatedPositions[0] = glm::abs(originNormal) * originPosition + (3 * halfSize + distance) * helperNormal + glm::abs(rotationAxis) * position;
+                
+                auto originalHigher = originNormal + helperNormal + rotationAxis;
+                auto higher = originNormal + 3 * halfSize * helperNormal + rotationAxis;
+                
+                for(char j = 0; j < 4; ++j)
+                {
+                    auto ogDistanceOnAxisHigher = glm::abs(originalPositions[j] - originalHigher) * glm::abs(rotationAxis);
+                    auto ogDistanceOnHigher = ogDistanceOnAxisHigher.x + ogDistanceOnAxisHigher.y + ogDistanceOnAxisHigher.z;
+                    originalPositions[j + 1] = originalHigher + ogDistance * rotationAxis - ogDistanceOnHigher * helperNormal;
+                    originalHigher += 2 * halfSize * rotationAxis;
+                    
+                    auto originPositionOnHelperNormal = originalPositions[j + 1] * glm::abs(helperNormal) - helperNormal;
+                    ogDistance = glm::abs(originPositionOnHelperNormal.x + originPositionOnHelperNormal.y + originPositionOnHelperNormal.z);
+                                    
+                    auto distanceOnRotationAxisHigher = glm::abs(rotatedPositions[j] - higher) * glm::abs(rotationAxis);
+                    auto distanceOnHigher = distanceOnRotationAxisHigher.x + distanceOnRotationAxisHigher.y + distanceOnRotationAxisHigher.z;
+                    rotatedPositions[j + 1] = higher + distance * rotationAxis + distanceOnHigher * helperNormal;
+                    higher += 2 * halfSize * rotationAxis;
+                    
+                    auto positionOnHelperNormal = rotatedPositions[j + 1] * glm::abs(helperNormal) - 3.0 * halfSize * helperNormal;
+                    distance = glm::abs(positionOnHelperNormal.x + positionOnHelperNormal.y + positionOnHelperNormal.z);
+                }
+                
+                std::vector<float> distances;
+                
+                for(char j = 0; j < 5; ++j)
+                {
+                    if(j != 0)
+                        distances.push_back(glm::distance(originalPositions[j], rotatedPositions[j - 1]));                    
+                    
+                    distances.push_back(glm::distance(originalPositions[j], rotatedPositions[j]));
+                    
+                    if(j != 4)
+                        distances.push_back(glm::distance(originalPositions[j], rotatedPositions[j + 1]));             
+                }
+                
+                distanceDataX[i] = *std::min_element(begin(distances), end(distances));
+            }
+            
+            maskTextureDataX[i] = 255;
+        }
 
-    //for(auto layer : normalLayers)
-    //    deleteLayer(layer->name());
-    //
-    //for(auto layer : posLayers)
-    //    deleteLayer(layer->name());
+    for(auto layer : normalLayers)
+        deleteLayer(layer->name());
+    
+    for(auto layer : posLayers)
+        deleteLayer(layer->name());
                 
     if(activeTexels.size())
     {
@@ -1572,12 +1570,12 @@ Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int ind
             }
             
             inspectedTexels[currentTexelIndex] = 0;
-            //if(normalMask[currentTexelIndex])
+            if(normalMask[currentTexelIndex])
                 maskTextureData[currentTexelIndex] = 255;
         }while(!activeTexels.empty());
         
-        //for(auto& distance: distanceData)
-        //    distance /= 100.0;
+        for(auto& distance: distanceData)
+            distance /= 100.0;
         
         auto distanceByteData = reinterpret_cast<glm::byte*>(distanceData.data());
         std::copy(distanceByteData, distanceByteData + distanceData.size() * sizeof(float), begin(valueTextureData));
@@ -1585,51 +1583,51 @@ Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int ind
         auto distanceLayer = mResourceManager->createLayer(layerName, Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureData, seedLayer->palette());
         addActiveLayer(distanceLayer);
 
-        //distanceByteData = reinterpret_cast<glm::byte*>(distanceDataX.data());
-        //std::copy(distanceByteData, distanceByteData + distanceDataX.size() * sizeof(float), begin(valueTextureData));
-        //        
-        //auto distanceXLayer = mResourceManager->createLayer("RealDistance", Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureDataX, seedLayer->palette());
-        //addActiveLayer(distanceXLayer);
-        //        
-        //std::vector<float> difference(areaData.size(), std::numeric_limits<float>::lowest());        
-        //float max = std::numeric_limits<float>::lowest();
-        //float min = std::numeric_limits<float>::max();
-        //float mean = 0;
-        //float finalDistance = 0;
-        //uint64_t elements = 0;
-        //
-        //for(uint64_t i = 0; i < distanceData.size(); i++)
-        //    if(maskTextureDataX[i])
-        //    {
-        //        if(distanceDataX[i] > finalDistance)
-        //            finalDistance = distanceDataX[i]; 
-        //        
-        //        auto diff = abs(distanceDataX[i] - distanceData[i]);
-        //        
-        //        if(diff > 0 && diff < 10000000)
-        //        {
-        //            if(diff < min)
-        //                min = diff;
-        //            else if (diff > max)
-        //                max = diff;
-        //            
-        //            mean += diff;
-        //            elements++;
-        //        }
-        //        
-        //        difference[i] = diff;
-        //    }
-        //    
-        //mean /= elements;
-        //
-        //std::cout << std::setprecision(8) << "Precision Test::min: " << min << ", max: " << max << ", mean: " << mean << ", finalDistance: " << finalDistance << std::endl;
-        //
-        //distanceByteData = reinterpret_cast<glm::byte*>(difference.data());
-        //std::copy(distanceByteData, distanceByteData + difference.size() * sizeof(float), begin(valueTextureData));
-        //        
-        //auto errorLayer = mResourceManager->createLayer("Error", Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureDataX, seedLayer->palette());
-        //addActiveLayer(errorLayer);
-        //        
+        distanceByteData = reinterpret_cast<glm::byte*>(distanceDataX.data());
+        std::copy(distanceByteData, distanceByteData + distanceDataX.size() * sizeof(float), begin(valueTextureData));
+                
+        auto distanceXLayer = mResourceManager->createLayer("RealDistance", Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureDataX, seedLayer->palette());
+        addActiveLayer(distanceXLayer);
+                
+        std::vector<float> difference(areaData.size(), std::numeric_limits<float>::lowest());        
+        float max = std::numeric_limits<float>::lowest();
+        float min = std::numeric_limits<float>::max();
+        float mean = 0;
+        float finalDistance = 0;
+        uint64_t elements = 0;
+        
+        for(uint64_t i = 0; i < distanceData.size(); i++)
+            if(maskTextureDataX[i])
+            {
+                if(distanceDataX[i] > finalDistance)
+                    finalDistance = distanceDataX[i]; 
+                
+                auto diff = abs(distanceDataX[i] - distanceData[i]);
+                
+                if(diff > 0 && diff < 10000000)
+                {
+                    if(diff < min)
+                        min = diff;
+                    else if (diff > max)
+                        max = diff;
+                    
+                    mean += diff;
+                    elements++;
+                }
+                
+                difference[i] = diff;
+            }
+            
+        mean /= elements;
+        
+        std::cout << std::setprecision(8) << "Precision Test::min: " << min << ", max: " << max << ", mean: " << mean << ", finalDistance: " << finalDistance << std::endl;
+        
+        distanceByteData = reinterpret_cast<glm::byte*>(difference.data());
+        std::copy(distanceByteData, distanceByteData + difference.size() * sizeof(float), begin(valueTextureData));
+                
+        auto errorLayer = mResourceManager->createLayer("Error", Layer::Type::Float32, seedLayer->resolution(), valueTextureData, maskTextureDataX, seedLayer->palette());
+        addActiveLayer(errorLayer);
+                
         mMainWindow->selectLayer(mActiveLayerModel->index(0, 0));
 
         mRenderer->padLayerTextures(0);

@@ -1618,38 +1618,38 @@ void GLRenderer::updateAreaAndTopologyTechs(std::pair<int, int> resolution)
 
     mManager->commitFreeImageUnit(mAreaPerPixelTexture->textureArray());
 
-    //mManager->deleteTexture(mTempNeighborhoodTexture);
-    //mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, resolution.first, resolution.second, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
-    //mManager->deleteTexture(mNeighborhoodTexture);
-    //mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, resolution.first, resolution.second, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
-    //mManager->deleteTexture(mNeighborEdgesTexture);
-    //mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, resolution.first, resolution.second, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+    mManager->deleteTexture(mTempNeighborhoodTexture);
+    mTempNeighborhoodTexture = mManager->createTexture("TempNeighborhood", GL_TEXTURE_2D, GL_RG32F, resolution.first, resolution.second, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+    mManager->deleteTexture(mNeighborhoodTexture);
+    mNeighborhoodTexture = mManager->createTexture("Neighborhood", GL_TEXTURE_2D, GL_RG32F, resolution.first, resolution.second, GL_RG, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
+    mManager->deleteTexture(mNeighborEdgesTexture);
+    mNeighborEdgesTexture = mManager->createTexture("NeighborEdges", GL_TEXTURE_2D, GL_RGBA32F, resolution.first, resolution.second, GL_RGBA, GL_FLOAT, {}, GL_NEAREST, GL_NEAREST, 0, true);
 
     mAreaPerPixelTarget->setColorTextures({ mDummyTex });
     mAreaPerPixelTech->settingUP();
 
-    //mNeighborEdgesTarget->setColorTextures({ mNeighborEdgesTexture });
-    //mNeighborEdgesTech->settingUP();
+    mNeighborEdgesTarget->setColorTextures({ mNeighborEdgesTexture });
+    mNeighborEdgesTech->settingUP();
 
-    //mEdgesToOutlineTarget->setColorTextures({ mNeighborhoodTexture, mTempNeighborhoodTexture });
-    //mEdgesToOutlineTech->settingUP();
+    mEdgesToOutlineTarget->setColorTextures({ mNeighborhoodTexture, mTempNeighborhoodTexture });
+    mEdgesToOutlineTech->settingUP();
 
-    //mCornerCapTarget->setColorTextures({ mNeighborhoodTexture });
-    //mCornerCapTech->settingUP();
+    mCornerCapTarget->setColorTextures({ mNeighborhoodTexture });
+    mCornerCapTech->settingUP();
 
-    //mImmediateNeighborsTarget->setColorTextures({ mNeighborhoodTexture });
-    //mImmediateNeighborsTech->settingUP();
+    mImmediateNeighborsTarget->setColorTextures({ mNeighborhoodTexture });
+    mImmediateNeighborsTech->settingUP();
 
     mUniformBuffers[GLUniBuffer::App]->updateCache(5 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mAreaPerPixelTexture->textureArrayIndices()));
-    //mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
-    //mUniformBuffers[GLUniBuffer::App]->updateCache(8 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborEdgesTexture->textureArrayIndices()));
-    //mUniformBuffers[GLUniBuffer::App]->updateCache(9 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mTempNeighborhoodTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(7 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborhoodTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(8 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mNeighborEdgesTexture->textureArrayIndices()));
+    mUniformBuffers[GLUniBuffer::App]->updateCache(9 * sizeof(glm::uvec2), sizeof(glm::uvec2), glm::value_ptr(mTempNeighborhoodTexture->textureArrayIndices()));
     mUniformBuffers[GLUniBuffer::App]->updateGPU();
 
-    //insertTechnique(mNeighborEdgesTech, 1);
-    //insertTechnique(mEdgesToOutlineTech, 1);
-    //insertTechnique(mCornerCapTech, 1);
-    //insertTechnique(mImmediateNeighborsTech, 1);
+    insertTechnique(mNeighborEdgesTech, 1);
+    insertTechnique(mEdgesToOutlineTech, 1);
+    insertTechnique(mCornerCapTech, 1);
+    insertTechnique(mImmediateNeighborsTech, 1);
     insertTechnique(mAreaPerPixelTech, 1);
 }
 
