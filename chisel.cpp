@@ -1385,9 +1385,9 @@ Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int ind
         {
             auto v = 1762181;
             if (seedTexture->width() == 4096)
-                v = 7046922;
+                v = 7046922;//9145014;//9145108;
             else if (seedTexture->width() == 8192)
-                v = 28184084;
+                v = 28184084;//36574572;//36574760;
             
             activeTexels.insert({0,v});
             distanceData[v] = 0.0f;
@@ -1505,30 +1505,40 @@ Layer* Chisel::computeDistanceFieldLayer(std::string layerName, unsigned int ind
                 
     if(activeTexels.size())
     {
-        auto texelCount = seedLayer->width() * seedLayer->height();
+        int64_t texelCount = seedLayer->width() * seedLayer->height();
         auto validateTexel = [&texelCount](const auto& texel) { return texel > 0 && texel < texelCount; };
 
         do
         {
             auto currentTexelIndex = activeTexels.cbegin()->second;
-            activeTexels.erase(activeTexels.cbegin());
-            
+            activeTexels.erase(activeTexels.cbegin());            
+            //LOG("Current texel: [", currentTexelIndex / seedLayer->width(), ", ", currentTexelIndex % seedLayer->width(), "]");
+
+            int64_t neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
+            //LOG("-> Dato de Vecindad texel actual: ", neighborhoodDataValue);
+
             for(int i = 0; i < 8; ++i)
             {
-                int neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
+                int64_t neighborTexelIndex = currentTexelIndex + neighborOffsets[i];
+                //LOG("--> Neighbor texel: [", neighborTexelIndex / seedLayer->width(), ", ", neighborTexelIndex % seedLayer->width(), "]");
 
                 if (validateTexel(neighborTexelIndex))
-                {
-                    int neighborhoodDataValue = neighborhoodData[2 * currentTexelIndex];
-
+                {   // Does the neighbor has indirect information (point to a new texel)?
                     if (neighborhoodDataValue >= 0 || (-neighborhoodDataValue & (1 << i)) == 0)
                     {
-                        int indirectIndex = 2 * neighborTexelIndex;
-                        neighborTexelIndex = neighborhoodData[indirectIndex + 1] * seedTexture->width() + neighborhoodData[indirectIndex];
+                        int64_t indirectIndex = 2 * neighborTexelIndex;
+                        glm::ivec2 neighborTexel(neighborhoodData[indirectIndex], neighborhoodData[indirectIndex + 1]);
+                        neighborTexelIndex = neighborTexel.y * seedTexture->height() + neighborTexel.x;
+                        //LOG("----> Indireccion del vecino: [", neighborhoodData[indirectIndex + 1], ", ", neighborhoodData[indirectIndex], "]");
+                        //LOG("----> Dato de vencidad de la indireccion: [", neighborhoodData[2 * neighborTexelIndex + 1], ", ", neighborhoodData[2 * neighborTexelIndex], "]");
 
+                        // Discard the texel neighbor if it is invalid or points to texel with indirect information
                         auto validTexel = validateTexel(neighborTexelIndex);
-                        if (!validTexel || validTexel && neighborhoodData[2 * neighborTexelIndex] > 0)
+                        if (!validTexel || (validTexel && neighborhoodData[2 * neighborTexelIndex] > 0))
+                        {
+                            //LOG("----> Descalificado");
                             neighborTexelIndex = 0;
+                        }
                     }
                 }
                 else

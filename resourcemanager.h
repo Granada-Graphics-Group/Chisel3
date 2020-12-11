@@ -174,7 +174,9 @@ public:
     void exportLayerAsImage(Layer* layer, const std::string& pathName);
     template<class T>
     void exportImage(std::string pathName, Layer* layer, const std::vector<T>& data, const std::vector<glm::byte>& mask);
-    void exportImage2(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data);    
+    void exportEdgesToOutlineImage(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data);
+    void exportDepthImage(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data);
+    void exportNeighborhoodImage(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data);
     std::string layerResourceDir(std::string name) const;
     std::vector<std::string> layerResourceFiles(std::string name) const;    
 

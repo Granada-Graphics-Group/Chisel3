@@ -1509,7 +1509,7 @@ void ResourceManager::exportImage(std::string pathName, Layer* layer, const std:
     layerImage.save(pathName.data());    
 }
 
-void ResourceManager::exportImage2(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data)
+void ResourceManager::exportEdgesToOutlineImage(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data)
 {
     std::vector<unsigned char> pixelData(width * height * 4);
         
@@ -1517,8 +1517,8 @@ void ResourceManager::exportImage2(std::string pathName, uint16_t width, uint16_
     {        
         if(data[texel] > 0)
         {
-            glm::uvec2 texelIndex((texel/2) % width, texel /(2 * height));
-            LOG("Texel[", texelIndex.x, ", ", texelIndex.y, "] -> [", data[texel], ", ", data[texel + 1], "] -> [", static_cast<uint32_t>(data[texel] * 2048), ", ", static_cast<uint32_t>(data[texel + 1] * 2048),"] -> [", static_cast<uint32_t>(data[texel] * 4096), ", ", static_cast<uint32_t>(data[texel + 1] * 4096),"]");
+            //glm::uvec2 texelIndex((texelIndex/2) % width, texelIndex /(2 * height));
+            //LOG("Texel[", texelIndex.x, ", ", texelIndex.y, "] -> [", data[texelIndex], ", ", data[texelIndex + 1], "] -> [", static_cast<uint32_t>(data[texelIndex] * 2048), ", ", static_cast<uint32_t>(data[texelIndex + 1] * 2048),"] -> [", static_cast<uint32_t>(data[texelIndex] * 4096), ", ", static_cast<uint32_t>(data[texelIndex + 1] * 4096),"]", "] -> [", static_cast<uint32_t>(data[texelIndex] * 8192), ", ", static_cast<uint32_t>(data[texelIndex + 1] * 8192), "]");
             
             glm::ivec2 neighborTexel(data[texel], data[texel + 1]);
             
@@ -1526,17 +1526,84 @@ void ResourceManager::exportImage2(std::string pathName, uint16_t width, uint16_
             pixelData[4 * neighborTexel.y * height + 4 * neighborTexel.x + 1] = static_cast<unsigned char>(200);
             pixelData[4 * neighborTexel.y * height + 4 * neighborTexel.x + 2] = static_cast<unsigned char>(255);
             pixelData[4 * neighborTexel.y * height + 4 * neighborTexel.x + 3] = static_cast<unsigned char>(255);  
-            
-//             pixelData[4 * texel/2] = static_cast<unsigned char>(255);
-//             pixelData[4 * texel/2 + 1] = static_cast<unsigned char>(0);
-//             pixelData[4 * texel/2 + 2] = static_cast<unsigned char>(0);
-//             pixelData[4 * texel/2 + 3] = static_cast<unsigned char>(255);
         }
     }
     
     QImage layerImage(pixelData.data(), width, height, QImage::Format_RGBA8888);
     layerImage = layerImage.mirrored(false, true);
     layerImage.save(pathName.data());    
+}
+
+void ResourceManager::exportDepthImage(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data)
+{
+    std::vector<unsigned char> pixelData(width * height * 4);
+
+    for (std::size_t texel = 0; texel < data.size(); texel++)
+    {
+        if (data[texel] > 0)
+        {
+            pixelData[4 * texel] = static_cast<unsigned char>(255);
+            pixelData[4 * texel + 1] = static_cast<unsigned char>(200);
+            pixelData[4 * texel + 2] = static_cast<unsigned char>(0);
+            pixelData[4 * texel + 3] = static_cast<unsigned char>(255);
+        }
+    }
+
+    QImage layerImage(pixelData.data(), width, height, QImage::Format_RGBA8888);
+    layerImage = layerImage.mirrored(false, true);
+    layerImage.save(pathName.data());
+}
+
+void ResourceManager::exportNeighborhoodImage(std::string pathName, uint16_t width, uint16_t height, const std::vector<float>& data)
+{
+    std::vector<unsigned char> pixelData(width * height * 4);
+
+    for (std::size_t texelIndex = 0; texelIndex < data.size(); texelIndex += 2)
+    {
+        // Does the texel store the coordinates to a new texelIndex?
+        if (data[texelIndex] > 0)
+        {
+            pixelData[2 * texelIndex] = static_cast<unsigned char>(255);
+            pixelData[2 * texelIndex + 1] = static_cast<unsigned char>(255);
+            pixelData[2 * texelIndex + 2] = static_cast<unsigned char>(255);
+            pixelData[2 * texelIndex + 3] = static_cast<unsigned char>(255);
+
+
+            glm::ivec2 neighborTexelIndex(data[texelIndex], data[texelIndex + 1]);
+            glm::ivec2 neighborTexelIndexInData(2 * neighborTexelIndex.y * height + 2 * neighborTexelIndex.x, 2 * neighborTexelIndex.y * height + 2 * neighborTexelIndex.x + 1);
+
+            //The coordinates point to a texel inside an island
+            if (data[neighborTexelIndexInData.x] < 0)
+            {
+                pixelData[4 * neighborTexelIndex.y * height + 4 * neighborTexelIndex.x] = static_cast<unsigned char>(0);
+                pixelData[4 * neighborTexelIndex.y * height + 4 * neighborTexelIndex.x + 1] = static_cast<unsigned char>(0);
+                pixelData[4 * neighborTexelIndex.y * height + 4 * neighborTexelIndex.x + 2] = static_cast<unsigned char>(200);
+                pixelData[4 * neighborTexelIndex.y * height + 4 * neighborTexelIndex.x + 3] = static_cast<unsigned char>(255);
+            }
+            else if (data[neighborTexelIndexInData.x] > 0) //The coordinates point to a texelIndex outside an island
+            {
+                pixelData[4 * neighborTexelIndex.y * height + 4 * neighborTexelIndex.x] = static_cast<unsigned char>(200);
+                pixelData[4 * neighborTexelIndex.y * height + 4 * neighborTexelIndex.x + 1] = static_cast<unsigned char>(0);
+                pixelData[4 * neighborTexelIndex.y * height + 4 * neighborTexelIndex.x + 2] = static_cast<unsigned char>(0);
+                pixelData[4 * neighborTexelIndex.y * height + 4 * neighborTexelIndex.x + 3] = static_cast<unsigned char>(255);
+            }
+        }// The texel stores the neighborhood information inside an island
+        else if (data[texelIndex] < 0)
+        {
+            // Has the pixel been written before?
+            if (pixelData[2 * texelIndex + 3] != 255)
+            {
+                pixelData[2 * texelIndex] = static_cast<unsigned char>(0);
+                pixelData[2 * texelIndex + 1] = static_cast<unsigned char>(200);
+                pixelData[2 * texelIndex + 2] = static_cast<unsigned char>(0);
+                pixelData[2 * texelIndex + 3] = static_cast<unsigned char>(255);
+            }
+        }
+    }
+
+    QImage layerImage(pixelData.data(), width, height, QImage::Format_RGBA8888);
+    layerImage = layerImage.mirrored(false, true);
+    layerImage.save(pathName.data());
 }
 
 

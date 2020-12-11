@@ -34,6 +34,9 @@ void NormalsDialog::accept()
             case 1:
                 resolution = {4096, 4096};
                 break;
+            case 2:
+                resolution = {8192, 8192};
+                break;
         }
         
         emit normals(   mUi->nameTextEdit->text().toStdString(),

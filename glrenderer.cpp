@@ -782,18 +782,11 @@ void GLRenderer::render()
                 mMainScene->setViewCameraNeedUpdate(true);
                 
                 mSeamMaskTexture = mSeamMaskTarget->colorTexOutputs()[0];
-//-                 std::vector<glm::byte> textureData(mSeamMaskTexture->height() * mSeamMaskTexture->width() * sizeOfGLInternalFormat(mSeamMaskTexture->internalFormat())); 
-//                 glGetTextureSubImage(mSeamMaskTexture->textureArrayId(), 0, 0, 0, mSeamMaskTexture->textureArrayLayerIndex(), mSeamMaskTexture->width(), mSeamMaskTexture->height(), 1, mSeamMaskTexture->format(), mSeamMaskTexture->type(), textureData.size(), textureData.data());
-//                 
-//                 QImage layerImage(textureData.data(), mSeamMaskTexture->width(), mSeamMaskTexture->height(), QImage::Format_RGBA8888);
-//                 layerImage = layerImage.mirrored(false, true);
-//                 layerImage.save("./seamMask.png");
             }
-            
-//-             if(tech == mEdgesToOutlineTech)
-//             {
-//                 mManager->exportImage2("./neighborsE.png", mNeighborhoodTexture->width(), mNeighborhoodTexture->height(), readFloatTexture(mNeighborhoodTexture));
-//             }
+             //if (tech == mImmediateNeighborsTech)
+             //{
+             //    mManager->exportNeighborhoodImage("./neighborsFinal.png", mNeighborhoodTexture->width(), mNeighborhoodTexture->height(), readFloatTexture(mNeighborhoodTexture));
+             //}
         }
 
         updateRenderQueue();

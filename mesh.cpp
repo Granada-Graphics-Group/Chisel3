@@ -210,8 +210,6 @@ void Mesh::generateUVIslandBorders(Mesh& mesh)
         LOG_WARN("Mesh::generateUVIslandBorders: duplicated egdes are possible");
     
     uint64_t noPairEdgeCount = 0;
-//     std::set<std::array<uint32_t, 2>> borderHalfEdges;
-//     std::set<std::array<uint32_t, 3>> borderFaces;
     std::vector<uint32_t> borderHalfEdges;
     std::vector<uint32_t> borderFaces;
     
@@ -219,19 +217,7 @@ void Mesh::generateUVIslandBorders(Mesh& mesh)
     std::vector<float> edgeUVs;
     std::vector<float> edgeNormals;
     std::vector<uint32_t> edgeIndices;
-    
-    std::vector<float> faceVertices;
-    std::vector<float> faceUVs;
-    std::vector<float> faceEdges;
-    std::vector<uint32_t> faceIndices;
-    
-    std::vector<float> nfaceVertices;
-    std::vector<float> nfaceUVs;
-    std::vector<uint32_t> nfaceIndices;
 
-    
-    bool hola = false;
-    
     for(auto mapped: map)
     {
         uint64_t currenHEIndex = mapped.first;
@@ -256,11 +242,10 @@ void Mesh::generateUVIslandBorders(Mesh& mesh)
                 uint32_t pairVertexIndexNextNext = pairHE->next()->next()->origin();
                 glm::vec4 pairUVs{uvBuffer[2 * pairVertexIndexNext], uvBuffer[2 * pairVertexIndexNext + 1], uvBuffer[2 * pairVertexIndex], uvBuffer[2 * pairVertexIndex + 1]};
                 
-                if(currentUVs != pairUVs && !hola)
+                if(currentUVs != pairUVs)
                 {
-                    //hola = true;
-                    //-LOG("Island border halfEdge: [", currentVertexIndex, ", ", currentVertexIndexNext, "] -> " , glm::to_string(currentUVs));
-                    //-LOG("Island border pair halfEdge: [", pairVertexIndex, ", ", pairVertexIndexNext, "] -> opposite of" , glm::to_string(pairUVs));
+                    //LOG("Island border halfEdge: [", currentVertexIndex, ", ", currentVertexIndexNext, "] -> " , glm::to_string(currentUVs));
+                    //LOG("Island border pair halfEdge: [", pairVertexIndex, ", ", pairVertexIndexNext, "] -> opposite of" , glm::to_string(pairUVs));
                     
                     borderHalfEdges.push_back(currentVertexIndex); borderHalfEdges.push_back(currentVertexIndexNext);
                     borderHalfEdges.push_back(pairVertexIndex); borderHalfEdges.push_back(pairVertexIndexNext);
@@ -339,163 +324,6 @@ void Mesh::generateUVIslandBorders(Mesh& mesh)
                     edgeNormals.push_back(edgeNormal.y);                    
                     
                     edgeIndices.push_back(edgeIndices.size());
-
-                    // --------------- //
-                    
-//                    faceVertices.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    faceVertices.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//                    faceVertices.push_back(0);
-//                    
-//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndexNext]);
-//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-//
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
-//                    
-////                     LOG("Texel[",uvBuffer[2 * pairVertexIndexNext],", ", uvBuffer[2 * pairVertexIndexNext + 1], "]"); 
-//                    
-//                    faceIndices.push_back(faceIndices.size());
-//                    
-//                    faceVertices.push_back(uvBuffer[2 * currentVertexIndexNext]);
-//                    faceVertices.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
-//                    faceVertices.push_back(0);
-//
-//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-//                    
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
-//                    
-////                     LOG("Texel[",uvBuffer[2 * pairVertexIndex],", ", uvBuffer[2 * pairVertexIndex + 1], "]"); 
-//                    
-//                    faceIndices.push_back(faceIndices.size());
-//
-//                    auto newPoint = computePoint(a, b, c, d, e, g);
-//
-//                    faceVertices.push_back(newPoint.x);
-//                    faceVertices.push_back(newPoint.y);
-//                    faceVertices.push_back(0);
-//                    
-//                    // -
-//                    
-//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    faceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-//                    
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext]);
-//                    faceEdges.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);                    
-//                    
-////                     LOG("Texel[",uvBuffer[2 * pairVertexIndexNextNext],", ", uvBuffer[2 * pairVertexIndexNextNext + 1], "]"); 
-// 
-//                    faceIndices.push_back(faceIndices.size());
-//
-//                    
-//                    faceVertices.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    faceVertices.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-//                    faceVertices.push_back(0);
-//                    
-//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndexNext]);
-//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
-//
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-//                    
-//                    faceIndices.push_back(faceIndices.size());
-//                    
-//                    faceVertices.push_back(uvBuffer[2 * pairVertexIndexNext]);
-//                    faceVertices.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-//                    faceVertices.push_back(0);
-//
-//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//                    
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-//                    
-//                    faceIndices.push_back(faceIndices.size());
-//
-//                    newPoint = computePoint(d, e, g, a, b, c);
-//
-//                    faceVertices.push_back(newPoint.x);
-//                    faceVertices.push_back(newPoint.y);
-//                    faceVertices.push_back(0);
-//                    
-//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    faceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//                    
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndex + 1]);                    
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext]);
-//                    faceEdges.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-//                    
-//                    faceIndices.push_back(faceIndices.size());
-//                    
-//                    // -                    
-//
-//                    // --------------- // 
-//                    
-//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//                    nfaceVertices.push_back(0);
-//                    
-//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndexNext]);
-//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-//                    
-//                    nfaceIndices.push_back(nfaceIndices.size());
-//                    
-//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNext]);
-//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
-//                    nfaceVertices.push_back(0);
-//
-//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-//                                        
-//                    nfaceIndices.push_back(nfaceIndices.size());
-//
-//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNextNext]);
-//                    nfaceVertices.push_back(uvBuffer[2 * currentVertexIndexNextNext + 1]);
-//                    nfaceVertices.push_back(-100);
-//                    
-//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    nfaceUVs.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-//                    
-//                    nfaceIndices.push_back(nfaceIndices.size());
-//                    
-//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndex]);
-//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndex + 1]);
-//                    nfaceVertices.push_back(0);
-//                    
-//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndexNext]);
-//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndexNext + 1]);
-//                    
-//                    nfaceIndices.push_back(nfaceIndices.size());
-//                    
-//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNext]);
-//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNext + 1]);
-//                    nfaceVertices.push_back(0);
-//
-//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//                    
-//                    nfaceIndices.push_back(nfaceIndices.size());
-//
-//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNextNext]);
-//                    nfaceVertices.push_back(uvBuffer[2 * pairVertexIndexNextNext + 1]);
-//                    nfaceVertices.push_back(-100);
-//                    
-//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex]);
-//                    nfaceUVs.push_back(uvBuffer[2 * currentVertexIndex + 1]);
-//
-//                    nfaceIndices.push_back(nfaceIndices.size());                    
                 }
             }
         }
@@ -513,26 +341,7 @@ void Mesh::generateUVIslandBorders(Mesh& mesh)
     mesh.updateData(GLBuffer::Index, 0, edgeIndices.size() * sizeof(uint32_t), edgeIndices.data());
     
     std::vector<uint32_t> subMeshIndexes(1, static_cast<uint32_t>(edgeIndices.size()));
-    mesh.updateSubMeshData(subMeshIndexes);
-
-    // ------------------------------ //
-    
-//     updateData(GLBuffer::Vertex, 0, faceVertices.size() * sizeof(float), faceVertices.data());
-//     updateData(GLBuffer::UV, 0, faceUVs.size() * sizeof(float), faceUVs.data());
-//     updateData(GLBuffer::Color, 0, faceEdges.size() * sizeof(float), faceEdges.data());
-//     updateData(GLBuffer::Index, 0, faceIndices.size() * sizeof(uint32_t), faceIndices.data());
-//     
-//     std::vector<uint32_t> subMeshIndexes2(1, static_cast<uint32_t>(faceIndices.size()));
-//     updateSubMeshData(subMeshIndexes2);
-    
-    // ------------------------------ //
-    
-/*    updateData(GLBuffer::Vertex, 0, nfaceVertices.size() * sizeof(float), nfaceVertices.data());
-    updateData(GLBuffer::UV, 0, nfaceUVs.size() * sizeof(float), nfaceUVs.data());
-    updateData(GLBuffer::Index, 0, nfaceIndices.size() * sizeof(uint32_t), nfaceIndices.data());
-    
-    std::vector<uint32_t> subMeshIndexes3(1, static_cast<uint32_t>(nfaceIndices.size()));
-    updateSubMeshData(subMeshIndexes3);  */  
+    mesh.updateSubMeshData(subMeshIndexes); 
 }
 
 int Mesh::sceneIndex(Scene3D* scene) const
