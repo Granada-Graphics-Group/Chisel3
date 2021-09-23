@@ -3427,7 +3427,7 @@ void GLRenderer::updateMultiDrawCommand(Scene3D* scene)
 //             LOG("Model matrix: ", glm::to_string(model->modelMatrix()));
                         
             auto diffuseTexture = model->material(i)->diffuseTexture();
-            auto texArrayIndices = (diffuseTexture != nullptr) ? diffuseTexture->textureArrayIndices() : glm::ivec2{-1, -1};
+            auto texArrayIndices = (diffuseTexture != nullptr) ? glm::ivec2{diffuseTexture->textureArrayIndices()} : glm::ivec2{ -1, -1 };
             updateSize = mBuffers[GLBuffer::TAIndex]->componentCount() * mBuffers[GLBuffer::TAIndex]->componentSize();
             updateOffset = instanceOffset * updateSize + (i * updateSize);            
             mBuffers[GLBuffer::TAIndex]->updateCache(updateOffset, updateSize, glm::value_ptr(texArrayIndices));                        
