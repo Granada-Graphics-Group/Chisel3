@@ -3,6 +3,7 @@
 
 #include <GL/glew.h>
 #include <unordered_map>
+#include <string>
 
 class Sampler
 {
